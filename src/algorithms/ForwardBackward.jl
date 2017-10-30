@@ -1,5 +1,5 @@
-mutable struct FBSSolver <: ProximalAlgorithm
-    x::AbstractArray{Float64}
+mutable struct FBSSolver{T <: Union{Tuple, AbstractArray}} <: ProximalAlgorithm
+    x::T
     fs
     As
     fq
@@ -10,7 +10,8 @@ mutable struct FBSSolver <: ProximalAlgorithm
     tol::Float64
     adaptive::Bool
     fast::Bool
-    z
+    y # gradient step
+    z # proximal-gradient step
     z_prev
     FPR_x
     Aqx
@@ -30,23 +31,24 @@ end
 # Constructor
 
 # function FBSSolver(x0, fs, As, fq, Aq, g, gam, maxit, tol, adaptive, fast)
-function FBSSolver(x0; fs=IndFree(), As=Eye(eltype(x0), size(x0)), fq=IndFree(), Aq=Eye(eltype(x0), size(x0)), g=IndFree(), gamma=-1.0, maxit=10000, tol=1e-4, adaptive=false, fast=false)
-    n = size(x0)
-    ms = size(As, 1)
+function FBSSolver(x0; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)), g=Zero(), gamma=-1.0, maxit=10000, tol=1e-4, adaptive=false, fast=false)
+    n = blocksize(x0)
     mq = size(Aq, 1)
-    x = copy(x0)
-    z = similar(x0)
-    z_prev = similar(x0)
-    FPR_x = similar(x0)
-    Aqx = zeros(mq)
-    Asx = zeros(ms)
-    gradfq_Aqx = zeros(mq)
-    gradfs_Asx = zeros(ms)
-    At_gradf_Ax = zeros(n)
-    Aqz_prev = zeros(mq)
-    Asz_prev = zeros(ms)
-    gradfq_Aqz_prev = zeros(mq)
-    FBSSolver(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, fast, z, z_prev, FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, Aqz_prev, Asz_prev, gradfq_Aqz_prev)
+    ms = size(As, 1)
+    x = blockcopy(x0)
+    y = blocksimilar(x0)
+    z = blocksimilar(x0)
+    z_prev = blocksimilar(x0)
+    FPR_x = blocksimilar(x0)
+    Aqx = blockzeros(mq)
+    Asx = blockzeros(ms)
+    gradfq_Aqx = blockzeros(mq)
+    gradfs_Asx = blockzeros(ms)
+    At_gradf_Ax = blockzeros(n)
+    Aqz_prev = blockzeros(mq)
+    Asz_prev = blockzeros(ms)
+    gradfq_Aqz_prev = blockzeros(mq)
+    FBSSolver(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, fast, y, z, z_prev, FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, Aqz_prev, Asz_prev, gradfq_Aqz_prev)
 end
 
 ################################################################################
@@ -54,11 +56,11 @@ end
 
 maxit(solver::FBSSolver) = solver.maxit
 
-converged(solver::FBSSolver, it) = vecnorm(solver.FPR_x, Inf)/solver.gamma <= solver.tol
+converged(solver::FBSSolver, it) = blockmaxabs(solver.FPR_x)/solver.gamma <= solver.tol
 
 verbose(solver::FBSSolver, it) = false
 
-display(it, solver::FBSSolver) = println("$(it) $(solver.gamma) $(vecnorm(solver.FPR_x, Inf)/solver.gamma)")
+display(it, solver::FBSSolver) = println("$(it) $(solver.gamma) $(blockmaxabs(solver.FPR_x)/solver.gamma)")
 
 ################################################################################
 # Initialization
@@ -70,27 +72,30 @@ function initialize(sol::FBSSolver)
     sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqx)
     A_mul_B!(sol.Asx, sol.As, sol.x)
     sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asx)
-    sol.At_gradf_Ax = sol.As'*sol.gradfs_Asx + sol.Aq'*sol.gradfq_Aqx
+    blockaxpy!(sol.At_gradf_Ax, sol.As'*sol.gradfs_Asx, 1.0, sol.Aq'*sol.gradfq_Aqx)
     sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
 
     if sol.gamma <= 0.0 # estimate L in this case, and set gamma = 1/L
+        # this part should be as follows:
         # 1) if adaptive = false and only fq is present then L is "accurate"
-        # TODO: implement this case
         # 2) otherwise L is "inaccurate" and set adaptive = true
+        # TODO: implement case 1), now 2) is always performed
         xeps = sol.x .+ sqrt(eps())
         Aqxeps = sol.Aq*xeps
         gradfq_Aqxeps, = gradient(sol.fq, Aqxeps)
         Asxeps = sol.As*xeps
         gradfs_Asxeps, = gradient(sol.fs, Asxeps)
-        At_gradf_Axeps = sol.As'*gradfs_Asxeps + sol.Aq'*gradfq_Aqxeps
-        L = vecnorm(sol.At_gradf_Ax .- At_gradf_Axeps)/(sqrt(eps()*length(xeps)))
+        At_gradf_Axeps = sol.As'*gradfs_Asxeps .+ sol.Aq'*gradfq_Aqxeps
+        L = blockvecnorm(sol.At_gradf_Ax .- At_gradf_Axeps)/(sqrt(eps()*blocklength(xeps)))
         sol.adaptive = true
         # in both cases set gamma = 1/L
         sol.gamma = 1.0/L
     end
 
-    prox!(sol.z, sol.g, sol.x - sol.gamma*sol.At_gradf_Ax, sol.gamma)
-    sol.FPR_x = sol.x - sol.z
+    blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
+    prox!(sol.z, sol.g, sol.y, sol.gamma)
+    # sol.FPR_x .= sol.x .- sol.z
+    blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.z)
 
 end
 
@@ -108,8 +113,9 @@ function iterate(sol::FBSSolver, it)
 
     if sol.adaptive
         for it_gam = 1:100 # TODO: replace/complement with lower bound on gamma
-            normFPR_x = vecnorm(sol.FPR_x)
-            uppbnd = sol.f_Ax - vecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_x^2;
+            normFPR_x = blockvecnorm(sol.FPR_x)
+            uppbnd = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_x^2;
+            # TODO: we can save allocations in the next four lines
             Aqz = sol.Aq*sol.z
             gradfq_Aqz, fq_Aqz = gradient(sol.fq, Aqz)
             Asz = sol.As*sol.z
@@ -117,8 +123,10 @@ function iterate(sol::FBSSolver, it)
             f_Az = fs_Asz + fq_Aqz
             if f_Az > uppbnd + 1e-6*abs(sol.f_Ax)
                 sol.gamma = 0.5*sol.gamma
-                sol.z, = prox(sol.g, sol.x - sol.gamma*sol.At_gradf_Ax, sol.gamma)
-                sol.FPR_x = sol.x - sol.z
+                blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
+                sol.z, = prox(sol.g, sol.y, sol.gamma)
+                # sol.FPR_x .= sol.x .- sol.z
+                blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.z)
             else
                 break
             end
@@ -134,14 +142,13 @@ function iterate(sol::FBSSolver, it)
             sol.Asx = Asz
             sol.fs_Asx = fs_Asz
             sol.gradfs_Asx = gradfs_Asz
-            sol.At_gradf_Ax = sol.As'*sol.gradfs_Asx + sol.Aq'*sol.gradfq_Aqx
+            # TODO: we can save allocations in the next line
+            blockaxpy!(sol.At_gradf_Ax, sol.As'*sol.gradfs_Asx, 1.0, sol.Aq'*sol.gradfq_Aqx)
             sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
         end
-        prox!(sol.z, sol.g, sol.x - sol.gamma*sol.At_gradf_Ax, sol.gamma)
-        sol.FPR_x = sol.x - sol.z
     else
         extr = it/(it+3)
-        sol.x = sol.z + extr*(sol.z - sol.z_prev)
+        sol.x .= sol.z .+ extr.*(sol.z .- sol.z_prev)
         sol.z, sol.z_prev = sol.z_prev, sol.z
         if sol.adaptive == true
             # extrapolate other extrapolable quantities
@@ -149,8 +156,8 @@ function iterate(sol::FBSSolver, it)
             sol.Aqx = Aqz .+ diff_Aqx
             diff_gradfq_Aqx = extr*(gradfq_Aqz .- sol.gradfq_Aqz_prev)
             sol.gradfq_Aqx = gradfq_Aqz .+ diff_gradfq_Aqx
-            sol.fq_Aqx = fq_Aqz + vecdot(gradfq_Aqz, diff_Aqx) + 0.5*vecdot(diff_Aqx, diff_gradfq_Aqx)
-            sol.Asx = Asz .+ extr*(Asz .- sol.Asz_prev)
+            sol.fq_Aqx = fq_Aqz + blockvecdot(gradfq_Aqz, diff_Aqx) + 0.5*blockvecdot(diff_Aqx, diff_gradfq_Aqx)
+            sol.Asx .= Asz .+ extr.*(Asz .- sol.Asz_prev)
             # store the z-quantities for future extrapolation
             sol.Aqz_prev = Aqz
             sol.gradfq_Aqz_prev = gradfq_Aqz
@@ -158,7 +165,8 @@ function iterate(sol::FBSSolver, it)
             # compute gradient of fs
             sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asx)
             # TODO: we can probably save the MATVEC by Aq' in the next line
-            sol.At_gradf_Ax = sol.As'*sol.gradfs_Asx + sol.Aq'*sol.gradfq_Aqx
+            # TODO: we can save allocations in the next line
+            blockaxpy!(sol.At_gradf_Ax, sol.As'*sol.gradfs_Asx, 1.0, sol.Aq'*sol.gradfq_Aqx)
             sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
         end
     end
@@ -167,11 +175,13 @@ function iterate(sol::FBSSolver, it)
         sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqx)
         A_mul_B!(sol.Asx, sol.As, sol.x)
         sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asx)
-        sol.At_gradf_Ax = sol.As'*sol.gradfs_Asx + sol.Aq'*sol.gradfq_Aqx
+        blockaxpy!(sol.At_gradf_Ax, sol.As'*sol.gradfs_Asx, 1.0, sol.Aq'*sol.gradfq_Aqx)
         sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
     end
-    prox!(sol.z, sol.g, sol.x - sol.gamma*sol.At_gradf_Ax, sol.gamma)
-    sol.FPR_x = sol.x - sol.z
+    blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
+    prox!(sol.z, sol.g, sol.y, sol.gamma)
+    # sol.FPR_x .= sol.x .- sol.z
+    blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.z)
 
 end
 
@@ -183,7 +193,7 @@ function fbs!(x0; kwargs...)
     solver = FBSSolver(x0; kwargs...)
     # run iterations
     it = run(solver)
-    x0 .= solver.x
+    blockcopy!(x0, solver.x)
     return (solver, it)
 end
 

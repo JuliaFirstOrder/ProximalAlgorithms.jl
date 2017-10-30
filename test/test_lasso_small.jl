@@ -17,12 +17,16 @@ x_star = [-3.877278911564627e-01, 0, 0, 2.174149659863943e-02, 6.168435374149660
 # Nonfast/Nonadaptive
 
 x = zeros(n)
+sol, it = ProximalAlgorithms.fbs!(x; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
+x = zeros(n)
 @time sol, it = ProximalAlgorithms.fbs!(x; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 @test it == 140
 
 # Nonfast/Adaptive
 
+x = zeros(n)
+sol, it = ProximalAlgorithms.fbs!(x; fq=f, Aq=A, g=g, adaptive=true)
 x = zeros(n)
 @time sol, it = ProximalAlgorithms.fbs!(x; fq=f, Aq=A, g=g, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
@@ -31,12 +35,16 @@ x = zeros(n)
 # Fast/Nonadaptive
 
 x = zeros(n)
+sol, it = ProximalAlgorithms.fbs!(x; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, fast=true)
+x = zeros(n)
 @time sol, it = ProximalAlgorithms.fbs!(x; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, fast=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 @test it == 83
 
 # Fast/Adaptive
 
+x = zeros(n)
+sol, it = ProximalAlgorithms.fbs!(x; fq=f, Aq=A, g=g, adaptive=true, fast=true)
 x = zeros(n)
 @time sol, it = ProximalAlgorithms.fbs!(x; fq=f, Aq=A, g=g, adaptive=true, fast=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4

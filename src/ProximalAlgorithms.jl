@@ -5,6 +5,11 @@ using AbstractOperators
 
 import Base: start, next, done, println
 
+include("utilities/identity.jl")
+include("utilities/zero.jl")
+include("utilities/block.jl")
+include("utilities/broadcast.jl")
+
 abstract type ProximalAlgorithm end
 
 # The following methods give `ProximalAlgorithm` objects the iterable behavior.
@@ -36,7 +41,7 @@ end
 # `initialize`, `iterate`, `verbose`, `display`, `maxit`, `converged`
 # work for each specific solver. This is done in the following included files.
 
-include("ForwardBackward.jl")
+include("algorithms/ForwardBackward.jl")
 
 # ...and then for example:
 
