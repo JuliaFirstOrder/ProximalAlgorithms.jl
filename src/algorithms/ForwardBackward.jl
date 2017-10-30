@@ -94,7 +94,6 @@ function initialize(sol::FBSSolver)
 
     blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
     prox!(sol.z, sol.g, sol.y, sol.gamma)
-    # sol.FPR_x .= sol.x .- sol.z
     blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.z)
 
 end
@@ -125,7 +124,6 @@ function iterate(sol::FBSSolver, it)
                 sol.gamma = 0.5*sol.gamma
                 blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
                 sol.z, = prox(sol.g, sol.y, sol.gamma)
-                # sol.FPR_x .= sol.x .- sol.z
                 blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.z)
             else
                 break
@@ -153,9 +151,9 @@ function iterate(sol::FBSSolver, it)
         if sol.adaptive == true
             # extrapolate other extrapolable quantities
             diff_Aqx = extr*(Aqz .- sol.Aqz_prev)
-            sol.Aqx = Aqz .+ diff_Aqx
+            sol.Aqx .= Aqz .+ diff_Aqx
             diff_gradfq_Aqx = extr*(gradfq_Aqz .- sol.gradfq_Aqz_prev)
-            sol.gradfq_Aqx = gradfq_Aqz .+ diff_gradfq_Aqx
+            sol.gradfq_Aqx .= gradfq_Aqz .+ diff_gradfq_Aqx
             sol.fq_Aqx = fq_Aqz + blockvecdot(gradfq_Aqz, diff_Aqx) + 0.5*blockvecdot(diff_Aqx, diff_gradfq_Aqx)
             sol.Asx .= Asz .+ extr.*(Asz .- sol.Asz_prev)
             # store the z-quantities for future extrapolation
@@ -175,12 +173,12 @@ function iterate(sol::FBSSolver, it)
         sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqx)
         A_mul_B!(sol.Asx, sol.As, sol.x)
         sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asx)
+        # TODO: we can save allocations in the next line
         blockaxpy!(sol.At_gradf_Ax, sol.As'*sol.gradfs_Asx, 1.0, sol.Aq'*sol.gradfq_Aqx)
         sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
     end
     blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
     prox!(sol.z, sol.g, sol.y, sol.gamma)
-    # sol.FPR_x .= sol.x .- sol.z
     blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.z)
 
 end
