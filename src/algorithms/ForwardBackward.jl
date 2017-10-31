@@ -30,8 +30,7 @@ end
 ################################################################################
 # Constructor
 
-# function FBSSolver(x0, fs, As, fq, Aq, g, gam, maxit, tol, adaptive, fast)
-function FBSSolver(x0; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)), g=Zero(), gamma=-1.0, maxit=10000, tol=1e-4, adaptive=false, fast=false)
+function FBSSolver(x0; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)),  g=Zero(), gamma=-1.0, maxit=10000, tol=1e-4, adaptive=false, fast=false)
     n = blocksize(x0)
     mq = size(Aq, 1)
     ms = size(As, 1)
@@ -150,9 +149,9 @@ function iterate(sol::FBSSolver, it)
         sol.z, sol.z_prev = sol.z_prev, sol.z
         if sol.adaptive == true
             # extrapolate other extrapolable quantities
-            diff_Aqx = extr*(Aqz .- sol.Aqz_prev)
+            diff_Aqx = extr.*(Aqz .- sol.Aqz_prev)
             sol.Aqx .= Aqz .+ diff_Aqx
-            diff_gradfq_Aqx = extr*(gradfq_Aqz .- sol.gradfq_Aqz_prev)
+            diff_gradfq_Aqx = extr.*(gradfq_Aqz .- sol.gradfq_Aqz_prev)
             sol.gradfq_Aqx .= gradfq_Aqz .+ diff_gradfq_Aqx
             sol.fq_Aqx = fq_Aqz + blockvecdot(gradfq_Aqz, diff_Aqx) + 0.5*blockvecdot(diff_Aqx, diff_gradfq_Aqx)
             sol.Asx .= Asz .+ extr.*(Asz .- sol.Asz_prev)
