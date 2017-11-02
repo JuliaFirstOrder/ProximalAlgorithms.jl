@@ -1,4 +1,7 @@
-mutable struct FBSSolver{T <: Union{Tuple, AbstractArray}} <: ProximalAlgorithm
+################################################################################
+# Forward-backward splitting iterator
+
+mutable struct FBSIterator{T <: Union{Tuple, AbstractArray}} <: ProximalAlgorithm
     x::T
     fs
     As
@@ -30,7 +33,7 @@ end
 ################################################################################
 # Constructor
 
-function FBSSolver(x0; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)),  g=Zero(), gamma=-1.0, maxit=10000, tol=1e-4, adaptive=false, fast=false)
+function FBSIterator(x0; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)),  g=Zero(), gamma=-1.0, maxit=10000, tol=1e-4, adaptive=false, fast=false)
     n = blocksize(x0)
     mq = size(Aq, 1)
     ms = size(As, 1)
@@ -47,24 +50,24 @@ function FBSSolver(x0; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Iden
     Aqz_prev = blockzeros(mq)
     Asz_prev = blockzeros(ms)
     gradfq_Aqz_prev = blockzeros(mq)
-    FBSSolver(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, fast, y, z, z_prev, FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, Aqz_prev, Asz_prev, gradfq_Aqz_prev)
+    FBSIterator(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, fast, y, z, z_prev, FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, Aqz_prev, Asz_prev, gradfq_Aqz_prev)
 end
 
 ################################################################################
 # Utility methods
 
-maxit(solver::FBSSolver) = solver.maxit
+maxit(sol::FBSIterator) = sol.maxit
 
-converged(solver::FBSSolver, it) = blockmaxabs(solver.FPR_x)/solver.gamma <= solver.tol
+converged(sol::FBSIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
-verbose(solver::FBSSolver, it) = false
+verbose(sol::FBSIterator, it) = false
 
-display(it, solver::FBSSolver) = println("$(it) $(solver.gamma) $(blockmaxabs(solver.FPR_x)/solver.gamma)")
+display(it, sol::FBSIterator) = println("$(it) $(sol.gamma) $(blockmaxabs(sol.FPR_x)/sol.gamma)")
 
 ################################################################################
 # Initialization
 
-function initialize(sol::FBSSolver)
+function initialize(sol::FBSIterator)
 
     # compute first forward-backward step here
     A_mul_B!(sol.Aqx, sol.Aq, sol.x)
@@ -100,7 +103,7 @@ end
 ################################################################################
 # Iteration
 
-function iterate(sol::FBSSolver, it)
+function iterate(sol::FBSIterator, it)
 
     Aqz = 0.0
     gradfq_Aqz = 0.0
@@ -183,15 +186,13 @@ function iterate(sol::FBSSolver, it)
 end
 
 ################################################################################
-# Solver interface
+# Solver interface(s)
 
-function fbs!(x0; kwargs...)
-    # create iterable
-    solver = FBSSolver(x0; kwargs...)
-    # run iterations
-    it = run(solver)
-    blockcopy!(x0, solver.x)
-    return (solver, it)
+function FBS!(x0; kwargs...)
+    sol = FBSIterator(x0; kwargs...)
+    it = run(sol)
+    blockcopy!(x0, sol.x)
+    return (sol, it)
 end
 
-pg! = fbs!
+FBSSolver(; kwargs1...) = (x0; kwargs2...) -> FBS!(x0; kwargs1..., wargs2...)

@@ -29,11 +29,13 @@ function done(solver::ProximalAlgorithm, it)
     return it >= maxit(solver) || converged(solver, it)
 end
 
-# The following is to run a (previously constructed) solver
+# Running a `ProximalAlgorithm` executes the iterations
 
 function run(solver::ProximalAlgorithm)
     it = 0
-    for _ in solver it += 1 end
+    for _ in solver
+        it += 1
+    end
     return it
 end
 
@@ -41,6 +43,7 @@ end
 # `initialize`, `iterate`, `verbose`, `display`, `maxit`, `converged`
 # work for each specific solver. This is done in the following included files.
 
+include("algorithms/Template.jl")
 include("algorithms/ForwardBackward.jl")
 
 # ...and then for example:
