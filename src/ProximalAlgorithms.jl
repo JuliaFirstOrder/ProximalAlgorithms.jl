@@ -21,8 +21,7 @@ end
 
 function next(solver::ProximalAlgorithm, it::Tint) where {Tint}
     ret = iterate(solver, it)
-    if verbose(solver, it) display(it, solver) end
-    return (ret, it+one(Tint))
+    return (ret, it + one(Tint))
 end
 
 function done(solver::ProximalAlgorithm, it)
@@ -30,11 +29,12 @@ function done(solver::ProximalAlgorithm, it)
 end
 
 # Running a `ProximalAlgorithm` executes the iterations
+# Records iter number separately from iterable mechanism so as to return them
 
 function run(solver::ProximalAlgorithm)
     it = 0
-    for _ in solver
-        it += 1
+    for (it, _) in enumerate(solver)
+        if verbose(solver, it) display(solver, it) end
     end
     return it
 end

@@ -62,7 +62,7 @@ converged(sol::FBSIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
 verbose(sol::FBSIterator, it) = false
 
-display(it, sol::FBSIterator) = println("$(it) $(sol.gamma) $(blockmaxabs(sol.FPR_x)/sol.gamma)")
+display(sol::FBSIterator, it) = println("$(it) $(sol.gamma) $(blockmaxabs(sol.FPR_x)/sol.gamma)")
 
 ################################################################################
 # Initialization
