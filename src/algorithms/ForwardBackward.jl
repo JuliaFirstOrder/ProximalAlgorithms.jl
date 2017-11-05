@@ -1,16 +1,16 @@
 ################################################################################
 # Forward-backward splitting iterator
 
-mutable struct FBSIterator{T <: Union{Tuple, AbstractArray}} <: ProximalAlgorithm
+mutable struct FBSIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I, T}
     x::T
     fs
     As
     fq
     Aq
     g
-    gamma::Float64
-    maxit::Int64
-    tol::Float64
+    gamma::R
+    maxit::I
+    tol::R
     adaptive::Bool
     fast::Bool
     y # gradient step
@@ -33,7 +33,7 @@ end
 ################################################################################
 # Constructor
 
-function FBSIterator(x0; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)),  g=Zero(), gamma=-1.0, maxit=10000, tol=1e-4, adaptive=false, fast=false)
+function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)),  g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, fast=false) where {I, R, T}
     n = blocksize(x0)
     mq = size(Aq, 1)
     ms = size(As, 1)
@@ -50,7 +50,7 @@ function FBSIterator(x0; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Id
     Aqz_prev = blockzeros(mq)
     Asz_prev = blockzeros(ms)
     gradfq_Aqz_prev = blockzeros(mq)
-    FBSIterator(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, fast, y, z, z_prev, FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, Aqz_prev, Asz_prev, gradfq_Aqz_prev)
+    FBSIterator{I, R, T}(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, fast, y, z, z_prev, FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, Aqz_prev, Asz_prev, gradfq_Aqz_prev)
 end
 
 ################################################################################
@@ -103,7 +103,7 @@ end
 ################################################################################
 # Iteration
 
-function iterate(sol::FBSIterator, it)
+function iterate(sol::FBSIterator{I, R, T}, it) where {I, R, T}
 
     Aqz = 0.0
     gradfq_Aqz = 0.0
@@ -183,16 +183,17 @@ function iterate(sol::FBSIterator, it)
     prox!(sol.z, sol.g, sol.y, sol.gamma)
     blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.z)
 
+    return sol.z
+
 end
 
 ################################################################################
 # Solver interface(s)
 
-function FBS!(x0; kwargs...)
+function FBS(x0; kwargs...)
     sol = FBSIterator(x0; kwargs...)
-    it = run(sol)
-    blockcopy!(x0, sol.x)
-    return (sol, it)
+    (it, point) = run(sol)
+    return (it, point, sol)
 end
 
-FBSSolver(; kwargs1...) = (x0; kwargs2...) -> FBS!(x0; kwargs1..., wargs2...)
+FBSSolver(; kwargs1...) = (x0; kwargs2...) -> FBS(x0; kwargs1..., wargs2...)

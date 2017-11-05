@@ -10,33 +10,32 @@ include("utilities/zero.jl")
 include("utilities/block.jl")
 include("utilities/broadcast.jl")
 
-abstract type ProximalAlgorithm end
+abstract type ProximalAlgorithm{I, T} end
 
 # The following methods give `ProximalAlgorithm` objects the iterable behavior.
 
-function start(solver::ProximalAlgorithm)
+function start(solver::ProximalAlgorithm{I, T}) where {I, T}
     initialize(solver)
-    return 0
+    return zero(I)
 end
 
-function next(solver::ProximalAlgorithm, it::Tint) where {Tint}
-    ret = iterate(solver, it)
-    return (ret, it + one(Tint))
+function next(solver::ProximalAlgorithm{I, T}, it::I) where {I, T}
+    point::T = iterate(solver, it)
+    return (point, it + one(I))
 end
 
-function done(solver::ProximalAlgorithm, it)
+function done(solver::ProximalAlgorithm{I, T}, it::I) where {I, T}
     return it >= maxit(solver) || converged(solver, it)
 end
 
-# Running a `ProximalAlgorithm` executes the iterations
-# Records iter number separately from iterable mechanism so as to return them
+# Running a `ProximalAlgorithm` unrolls the iterations
 
-function run(solver::ProximalAlgorithm)
-    it = 0
-    for (it, _) in enumerate(solver)
+function run(solver::ProximalAlgorithm{I, T}) where {I, T}
+    local it::I, point::T
+    for (it, point) in enumerate(solver)
         if verbose(solver, it) display(solver, it) end
     end
-    return it
+    return (it, point)
 end
 
 # It remains to define what concrete ProximalAlgorithm types are and how

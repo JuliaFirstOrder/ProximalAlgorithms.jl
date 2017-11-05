@@ -1,4 +1,7 @@
-# Operations on block-arrays, i.e., tuples of (block-)arrays.
+const RealOrComplex = Union{R, Complex{R}} where {R <: Real}
+const BlockArray = Union{AbstractArray{C1, N} where N, Tuple{Vararg{AbstractArray{C2, N} where {C2 <: RealOrComplex, N}}}} where C1 <: RealOrComplex
+
+# Operations on block-arrays
 
 blocksize(x::Tuple) = blocksize.(x)
 blocksize(x::AbstractArray) = size(x)
