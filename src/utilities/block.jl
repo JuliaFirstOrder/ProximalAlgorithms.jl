@@ -9,6 +9,12 @@ blocksize(x::AbstractArray) = size(x)
 blocklength(x::Tuple) = sum(blocklength.(x))
 blocklength(x::AbstractArray) = length(x)
 
+blockvecnorm(x::Tuple) = sqrt(blockvecdot(x, x))
+blockvecnorm{R <: Number}(x::AbstractArray{R}) = vecnorm(x)
+
+blockmaxabs(x::Tuple) = maximum(blockmaxabs.(x))
+blockmaxabs{R <: Number}(x::AbstractArray{R}) = maximum(abs, x)
+
 blocksimilar(x::Tuple) = blocksimilar.(x)
 blocksimilar(x::AbstractArray) = similar(x)
 
@@ -23,12 +29,6 @@ blockset!(y::AbstractArray, x) = (y .= x)
 
 blockvecdot{T <: Tuple}(x::T, y::T) = sum(blockvecdot.(x,y))
 blockvecdot{R <: Number}(x::AbstractArray{R}, y::AbstractArray{R}) = vecdot(x, y)
-
-blockvecnorm(x::Tuple) = sqrt(blockvecdot(x, x))
-blockvecnorm{R <: Number}(x::AbstractArray{R}) = vecnorm(x)
-
-blockmaxabs(x::Tuple) = maximum(blockmaxabs.(x))
-blockmaxabs{R <: Number}(x::AbstractArray{R}) = maximum(abs, x)
 
 blockzeros(t::Tuple, s::Tuple) = blockzeros.(t, s)
 blockzeros(t::Type, n::NTuple{N, Integer} where {N}) = zeros(t, n)

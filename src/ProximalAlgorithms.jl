@@ -31,7 +31,7 @@ end
 # Running a `ProximalAlgorithm` unrolls the iterations
 
 function run(solver::ProximalAlgorithm{I, T}) where {I, T}
-    local it::I, point::T
+    local it, point
     for (it, point) in enumerate(solver)
         if verbose(solver, it) display(solver, it) end
     end
