@@ -39,7 +39,7 @@ function run(solver::ProximalAlgorithm{I, T}) where {I, T}
 end
 
 # It remains to define what concrete ProximalAlgorithm types are and how
-# `initialize`, `iterate`, `verbose`, `display`, `maxit`, `converged`
+# `initialize`, `iterate`, `maxit`, `converged`, `verbose`, `display`
 # work for each specific solver. This is done in the following included files.
 
 include("algorithms/Template.jl")

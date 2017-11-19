@@ -1,5 +1,12 @@
 ################################################################################
 # Forward-backward splitting iterator
+#
+# This iterator implements the algorithms ISTA (when fast=False) and FISTA
+# (when fast=True) described in
+# [1] Beck, Teboulle "A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems," SIAM Journal on Imaging Sciences vol. 2, no. 1, pp. 183-202 (2009)
+# or equivalently (when fast=True) Algorithm 2 described in
+# [2] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave Optimization," (2008)
+#
 
 mutable struct FBSIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I, T}
     x::T
@@ -13,6 +20,8 @@ mutable struct FBSIterator{I <: Integer, R <: Real, T <: BlockArray} <: Proximal
     tol::R
     adaptive::Bool
     fast::Bool
+    verbose::I
+    theta::R # extrapolation parameter
     y # gradient step
     z # proximal-gradient step
     z_prev
@@ -33,7 +42,7 @@ end
 ################################################################################
 # Constructor
 
-function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)),  g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, fast=false) where {I, R, T}
+function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)),  g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, fast=false, verbose=1) where {I, R, T}
     n = blocksize(x0)
     mq = size(Aq, 1)
     ms = size(As, 1)
@@ -50,7 +59,7 @@ function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq
     Aqz_prev = blockzeros(mq)
     Asz_prev = blockzeros(ms)
     gradfq_Aqz_prev = blockzeros(mq)
-    FBSIterator{I, R, T}(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, fast, y, z, z_prev, FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, Aqz_prev, Asz_prev, gradfq_Aqz_prev)
+    FBSIterator{I, R, T}(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, fast, verbose, 1.0, y, z, z_prev, FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, Aqz_prev, Asz_prev, gradfq_Aqz_prev)
 end
 
 ################################################################################
@@ -60,9 +69,11 @@ maxit(sol::FBSIterator) = sol.maxit
 
 converged(sol::FBSIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
-verbose(sol::FBSIterator, it) = false
+verbose(sol::FBSIterator, it) = sol.verbose > 0
 
-display(sol::FBSIterator, it) = println("$(it) $(sol.gamma) $(blockmaxabs(sol.FPR_x)/sol.gamma)")
+function display(sol::FBSIterator, it)
+    println("$(it) $(sol.gamma) $(blockmaxabs(sol.FPR_x)/sol.gamma)")
+end
 
 ################################################################################
 # Initialization
@@ -125,7 +136,7 @@ function iterate(sol::FBSIterator{I, R, T}, it) where {I, R, T}
             if f_Az > uppbnd + 1e-6*abs(sol.f_Ax)
                 sol.gamma = 0.5*sol.gamma
                 blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
-                sol.z, = prox(sol.g, sol.y, sol.gamma)
+                prox!(sol.z, sol.g, sol.y, sol.gamma)
                 blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.z)
             else
                 break
@@ -147,7 +158,11 @@ function iterate(sol::FBSIterator{I, R, T}, it) where {I, R, T}
             sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
         end
     else
-        extr = it/(it+3)
+        # compute extrapolation coefficient
+        theta1 = (1.0+sqrt(1.0+4*sol.theta^2))/2.0
+        extr = (sol.theta - 1.0)/theta1
+        sol.theta = theta1
+        # perform extrapolation
         sol.x .= sol.z .+ extr.*(sol.z .- sol.z_prev)
         sol.z, sol.z_prev = sol.z_prev, sol.z
         if sol.adaptive == true

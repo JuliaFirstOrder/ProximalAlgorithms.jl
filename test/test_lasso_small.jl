@@ -39,7 +39,7 @@ it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, fa
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, fast=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
-@test it == 83
+@test it == 94
 
 # Fast/Adaptive
 
@@ -48,4 +48,4 @@ it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, adaptive=true, fast=tru
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, adaptive=true, fast=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
-@test it == 126
+@test it == 156
