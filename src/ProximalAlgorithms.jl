@@ -44,6 +44,7 @@ end
 
 include("algorithms/Template.jl")
 include("algorithms/ForwardBackward.jl")
+include("algorithms/ZeroFPR.jl")
 
 # ...and then for example:
 

@@ -28,16 +28,12 @@ x_star = ([-3.877278911564627e-01, 0, 0], [2.174149659863943e-02, 6.168435374149
 # Nonfast/Nonadaptive
 
 x0 = ProximalAlgorithms.blockzeros(x_star)
-it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=opA, g=g, gamma=1.0/norm(A)^2)
-x0 = ProximalAlgorithms.blockzeros(x_star)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=opA, g=g, gamma=1.0/norm(A)^2)
 @test ProximalAlgorithms.blockmaxabs(x .- x_star) <= 1e-4
 @test it == 140
 
 # Nonfast/Adaptive
 
-x0 = ProximalAlgorithms.blockzeros(x_star)
-it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=opA, g=g, adaptive=true)
 x0 = ProximalAlgorithms.blockzeros(x_star)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=opA, g=g, adaptive=true)
 @test ProximalAlgorithms.blockmaxabs(x .- x_star) <= 1e-4
@@ -46,8 +42,6 @@ x0 = ProximalAlgorithms.blockzeros(x_star)
 # Fast/Nonadaptive
 
 x0 = ProximalAlgorithms.blockzeros(x_star)
-it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=opA, g=g, gamma=1.0/norm(A)^2, fast=true)
-x0 = ProximalAlgorithms.blockzeros(x_star)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=opA, g=g, gamma=1.0/norm(A)^2, fast=true)
 @test ProximalAlgorithms.blockmaxabs(x .- x_star) <= 1e-4
 @test it == 94
@@ -55,8 +49,12 @@ x0 = ProximalAlgorithms.blockzeros(x_star)
 # Fast/Adaptive
 
 x0 = ProximalAlgorithms.blockzeros(x_star)
-it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=opA, g=g, adaptive=true, fast=true)
-x0 = ProximalAlgorithms.blockzeros(x_star)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=opA, g=g, adaptive=true, fast=true)
 @test ProximalAlgorithms.blockmaxabs(x .- x_star) <= 1e-4
 @test it == 156
+
+# ZeroFPR
+
+x0 = ProximalAlgorithms.blockzeros(x_star)
+@time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=opA, g=g, gamma=1.0/norm(A)^2, maxit=100)
+@test ProximalAlgorithms.blockmaxabs(x .- x_star) <= 1e-4
