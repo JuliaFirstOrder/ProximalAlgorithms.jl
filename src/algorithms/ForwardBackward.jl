@@ -42,7 +42,7 @@ end
 ################################################################################
 # Constructor
 
-function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)),  g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, fast=false, verbose=1) where {I, R, T}
+function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)), g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, fast=false, verbose=1) where {I, R, T}
     n = blocksize(x0)
     mq = size(Aq, 1)
     ms = size(As, 1)
@@ -126,7 +126,7 @@ function iterate(sol::FBSIterator{I, R, T}, it) where {I, R, T}
     if sol.adaptive
         for it_gam = 1:100 # TODO: replace/complement with lower bound on gamma
             normFPR_x = blockvecnorm(sol.FPR_x)
-            uppbnd = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_x^2;
+            uppbnd = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_x^2
             # TODO: we can save allocations in the next four lines
             Aqz = sol.Aq*sol.z
             gradfq_Aqz, fq_Aqz = gradient(sol.fq, Aqz)
