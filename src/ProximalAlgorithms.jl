@@ -5,10 +5,9 @@ using AbstractOperators
 
 import Base: start, next, done, println
 
+include("utilities/block.jl")
 include("utilities/identity.jl")
 include("utilities/zero.jl")
-include("utilities/block.jl")
-include("utilities/broadcast.jl")
 
 abstract type ProximalAlgorithm{I, T} end
 

@@ -1,15 +1,5 @@
 import Base: A_mul_B!, Ac_mul_B!, *, transpose, size
 
-# function A_mul_B!(y::Tuple, A::UniformScaling{T}, x::Tuple) where T
-#     if A.λ == one(T)
-#         blockcopy!(y, x)
-#     else
-#         blockaxpy!(y, 0.0, A.λ, x)
-#     end
-# end
-
-# Ac_mul_B!(y::Tuple, A::UniformScaling, x::Tuple) = A_mul_B!(y, A, x)
-
 struct Identity
     size::Tuple
 end

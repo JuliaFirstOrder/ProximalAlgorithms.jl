@@ -43,15 +43,16 @@ function ZeroFPRIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero()
     mq = size(Aq, 1)
     ms = size(As, 1)
     x = blockcopy(x0)
-    y = blocksimilar(x0)
-    xbar = blocksimilar(x0)
-    FPR_x = blocksimilar(x0)
+    y = blockzeros(x0)
+    xbar = blockzeros(x0)
+    FPR_x = blockzeros(x0)
     Aqx = blockzeros(mq)
     Asx = blockzeros(ms)
     gradfq_Aqx = blockzeros(mq)
     gradfs_Asx = blockzeros(ms)
     At_gradf_Ax = blockzeros(n)
-    ZeroFPRIterator{I, R, T}(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, verbose, alpha, sigma, 0.0, y, xbar, LBFGS(x, memory), FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, 0.0, 0.0, [], [], [])
+    d = blockzeros(x0)
+    ZeroFPRIterator{I, R, T}(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, verbose, alpha, sigma, 0.0, y, xbar, LBFGS(x, memory), FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, 0.0, 0.0, [], [], d)
 end
 
 ################################################################################
@@ -64,7 +65,7 @@ converged(sol::ZeroFPRIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.to
 verbose(sol::ZeroFPRIterator, it) = sol.verbose > 0
 
 function display(sol::ZeroFPRIterator, it)
-    println("$(it) $(sol.gamma) $(blockmaxabs(sol.FPR_x)/sol.gamma) $(blockvecnorm(sol.d)) $(sol.tau) $(sol.FBE_x)")
+    println("$(it) $(sol.gamma) $(blockmaxabs(sol.FPR_x)/sol.gamma) $(blockmaxabs(sol.d)) $(sol.tau) $(sol.FBE_x)")
 end
 
 ################################################################################
@@ -150,22 +151,21 @@ function iterate(sol::ZeroFPRIterator{I, R, T}, it) where {I, R, T}
     if it > 1
         update!(sol.H, sol.xbar, sol.xbar_prev, FPR_xbar, sol.FPR_xbar_prev)
     end
-    d = sol.H*FPR_xbar
-    sol.d = d
+    A_mul_B!(sol.d, sol.H, 0.0 .- FPR_xbar) # TODO: not nice
 
     # Perform line-search over the FBE
 
     tau = 1.0
 
-    Asd = sol.As*d
-    Aqd = sol.Aq*d
+    Asd = sol.As * sol.d
+    Aqd = sol.Aq * sol.d
 
     C = sol.sigma*sol.gamma*(1.0-sol.alpha)
 
     for it_tau = 1:10 # TODO: replace/complement with lower bound on tau
-        xnew = sol.xbar .+ tau.*d
-        Asxnew = Asxbar .+ tau.*Asd
-        Aqxnew = Aqxbar .+ tau.*Aqd
+        xnew = sol.xbar .+ tau .* sol.d
+        Asxnew = Asxbar .+ tau .* Asd
+        Aqxnew = Aqxbar .+ tau .* Aqd
         gradfs_Asxnew, fs_Asxnew = gradient(sol.fs, Asxnew)
         # TODO: can precompute most of next line before the iteration
         gradfq_Aqxnew, fq_Aqxnew = gradient(sol.fq, Aqxnew)

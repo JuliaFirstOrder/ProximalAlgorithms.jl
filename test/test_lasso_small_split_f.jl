@@ -51,3 +51,4 @@ x0 = ProximalAlgorithms.blockzeros(x_star)
 x0 = ProximalAlgorithms.blockzeros(x_star)
 @time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=opA, g=g, gamma=1.0/norm(A)^2, maxit=100)
 @test vecnorm(x - x_star, Inf) <= 1e-4
+@test it == 8

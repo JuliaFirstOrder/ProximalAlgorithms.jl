@@ -1,10 +1,18 @@
-const RealOrComplex = Union{R, Complex{R}} where {R <: Real}
-const BlockArray = Union{AbstractArray{C1, N} where N, Tuple{Vararg{AbstractArray{C2, N} where {C2 <: RealOrComplex, N}}}} where C1 <: RealOrComplex
+# Define block-arrays
+
+const RealOrComplex{R} = Union{R, Complex{R}}
+const BlockArray{R} = Union{
+	AbstractArray{C, N} where {C <: RealOrComplex{R}, N},
+	Tuple{Vararg{AbstractArray{C, N} where {C <: RealOrComplex{R}, N}}}
+}
 
 # Operations on block-arrays
 
 blocksize(x::Tuple) = blocksize.(x)
 blocksize(x::AbstractArray) = size(x)
+
+blockeltype(x::Tuple) = blockeltype.(x)
+blockeltype(x::AbstractArray) = eltype(x)
 
 blocklength(x::Tuple) = sum(blocklength.(x))
 blocklength(x::AbstractArray) = length(x)
@@ -39,3 +47,42 @@ blockzeros(a::AbstractArray) = zeros(a)
 
 blockaxpy!(z::Tuple, x, alpha::Real, y::Tuple) = blockaxpy!.(z, x, alpha, y)
 blockaxpy!(z::AbstractArray, x, alpha::Real, y::AbstractArray) = (z .= x .+ alpha.*y)
+
+# Define broadcast
+
+import Base: broadcast!
+
+function broadcast!(f::Any, dest::Tuple, op1::Tuple)
+   for k = eachindex(dest)
+       broadcast!(f, dest[k], op1[k])
+   end
+   return dest
+end
+
+function broadcast!(f::Any, dest::Tuple, op1::Tuple, op2::Tuple)
+   for k = eachindex(dest)
+       broadcast!(f, dest[k], op1[k], op2[k])
+   end
+   return dest
+end
+
+function broadcast!(f::Any, dest::Tuple, coef::Number, op2::Tuple)
+   for k = eachindex(dest)
+       broadcast!(f, dest[k], coef, op2[k])
+   end
+   return dest
+end
+
+function broadcast!(f::Any, dest::Tuple, op1::Tuple, coef::Number, op2::Tuple)
+   for k = eachindex(dest)
+       broadcast!(f, dest[k], op1[k], coef, op2[k])
+   end
+   return dest
+end
+
+function broadcast!(f::Any, dest::Tuple, op1::Tuple, coef::Number, op2::Tuple, op3::Tuple)
+   for k = eachindex(dest)
+       broadcast!(f, dest[k], op1[k], coef, op2[k], op3[k])
+   end
+   return dest
+end
