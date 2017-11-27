@@ -2,10 +2,10 @@ module ProximalAlgorithms
 
 using ProximalOperators
 using AbstractOperators
+using AbstractOperators.BlockArrays
 
 import Base: start, next, done, println
 
-include("utilities/block.jl")
 include("utilities/identity.jl")
 include("utilities/zero.jl")
 
