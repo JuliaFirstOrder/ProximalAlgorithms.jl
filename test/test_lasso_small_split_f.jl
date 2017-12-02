@@ -46,9 +46,16 @@ x0 = ProximalAlgorithms.blockzeros(x_star)
 @test vecnorm(x .- x_star, Inf) <= 1e-4
 @test it == 156
 
-# ZeroFPR
+# ZeroFPR/Nonadaptive
 
 x0 = ProximalAlgorithms.blockzeros(x_star)
-@time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=opA, g=g, gamma=1.0/norm(A)^2, maxit=100)
+@time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=opA, g=g, gamma=1.0/norm(A)^2)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 @test it == 8
+
+# ZeroFPR/Adaptive
+
+x0 = ProximalAlgorithms.blockzeros(x_star)
+@time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=opA, g=g, adaptive=true)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it == 10

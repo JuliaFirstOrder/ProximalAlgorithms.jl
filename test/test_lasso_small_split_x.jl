@@ -53,9 +53,9 @@ x0 = ProximalAlgorithms.blockzeros(x_star)
 @test ProximalAlgorithms.blockmaxabs(x .- x_star) <= 1e-4
 @test it == 156
 
-# ZeroFPR
+# ZeroFPR/Adaptive
 
 x0 = ProximalAlgorithms.blockzeros(x_star)
-@time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=opA, g=g, gamma=1.0/norm(A)^2, maxit=100)
+@time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=opA, g=g, adaptive=true)
 @test ProximalAlgorithms.blockmaxabs(x .- x_star) <= 1e-4
-@test it == 8
+@test it == 10
