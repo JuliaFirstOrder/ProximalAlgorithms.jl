@@ -201,5 +201,3 @@ function ZeroFPR(x0; kwargs...)
     (it, point) = run(sol)
     return (it, point, sol)
 end
-
-ZeroFPRSolver(; kwargs1...) = (x0; kwargs2...) -> ZeroFPR(x0; kwargs1..., wargs2...)

@@ -13,24 +13,32 @@ abstract type ProximalAlgorithm{I, T} end
 
 # The following methods give `ProximalAlgorithm` objects the iterable behavior.
 
-function start(solver::ProximalAlgorithm{I, T}) where {I, T}
+function start(solver::ProximalAlgorithm{I, T})::I where {I, T}
     initialize(solver)
     return zero(I)
 end
 
-function next(solver::ProximalAlgorithm{I, T}, it::I) where {I, T}
+function next(solver::ProximalAlgorithm{I, T}, it::I)::Tuple{T, I} where {I, T}
     point::T = iterate(solver, it)
     return (point, it + one(I))
 end
 
-function done(solver::ProximalAlgorithm{I, T}, it::I) where {I, T}
+function done(solver::ProximalAlgorithm{I, T}, it::I)::Bool where {I, T}
     return it >= maxit(solver) || converged(solver, it)
 end
 
 # Running a `ProximalAlgorithm` unrolls the iterations
 
-function run(solver::ProximalAlgorithm{I, T}) where {I, T}
+function run(solver::ProximalAlgorithm{I, T})::Tuple{I, T} where {I, T}
     local it, point
+    # NOTE: the following loop is translated into:
+    #
+    # it = start(solver)
+    # while !done(solver, it)
+    #   (point, it) = next(solver, it)
+    #   [...]
+    # end
+    #
     for (it, point) in enumerate(solver)
         if verbose(solver, it) display(solver, it) end
     end
@@ -47,7 +55,7 @@ include("algorithms/ZeroFPR.jl")
 
 # ...and then for example:
 
-# include("DouglasRachford.jl")
+include("algorithms/DouglasRachford.jl")
 # include("ChambollePock.jl")
 # include("DavisYin.jl")
 

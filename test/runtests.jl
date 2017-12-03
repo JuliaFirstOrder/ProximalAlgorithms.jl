@@ -4,7 +4,7 @@ using Base.Test
 @testset "ProximalAlgorithms" begin
 
 @testset "Utilities" begin
-    include("test_block.jl")
+    # include("test_block.jl")
 end
 
 @testset "Algorithms" begin

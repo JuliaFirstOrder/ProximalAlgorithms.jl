@@ -8,7 +8,7 @@
 # [2] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave Optimization," (2008)
 #
 
-mutable struct FBSIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I, T}
+mutable struct FBSIterator{I <: Integer, R <: Real, T <: BlockArray{R}} <: ProximalAlgorithm{I, T}
     x::T
     fs
     As
@@ -203,12 +203,10 @@ function iterate(sol::FBSIterator{I, R, T}, it) where {I, R, T}
 end
 
 ################################################################################
-# Solver interface(s)
+# Solver interface
 
 function FBS(x0; kwargs...)
     sol = FBSIterator(x0; kwargs...)
     (it, point) = run(sol)
     return (it, point, sol)
 end
-
-FBSSolver(; kwargs1...) = (x0; kwargs2...) -> FBS(x0; kwargs1..., wargs2...)

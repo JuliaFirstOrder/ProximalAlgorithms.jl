@@ -9,6 +9,7 @@ b = [1.0, 2.0, 3.0, 4.0]
 m, n = size(A)
 
 f = Translate(SqrNormL2(), -b)
+f2 = LeastSquares(A, b)
 lam = 0.1*vecnorm(A'*b, Inf)
 g = NormL1(lam)
 
@@ -55,3 +56,9 @@ x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 @test it == 10
+
+# Douglas-Rachford
+
+x0 = zeros(n)
+@time it, x, sol = ProximalAlgorithms.DRS(x0; f=f2, g=g, gamma=10.0/norm(A)^2)
+@test vecnorm(x - x_star, Inf) <= 1e-4

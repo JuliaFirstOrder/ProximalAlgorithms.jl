@@ -51,6 +51,3 @@ function Template(x0; kwargs...)
     (it, point) = run(sol)
     return (it, point, sol)
 end
-
-# The following is for *partially* defining the solver
-TemplateSolver(; kwargs1...) = (x0; kwargs2...) -> Template(x0; kwargs1..., kwargs2...)
