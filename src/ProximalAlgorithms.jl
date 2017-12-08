@@ -4,7 +4,7 @@ using ProximalOperators
 using AbstractOperators
 using AbstractOperators.BlockArrays
 
-import Base: start, next, done, println
+import Base: start, next, done
 
 include("utilities/identity.jl")
 include("utilities/zero.jl")
@@ -49,14 +49,17 @@ end
 # `initialize`, `iterate`, `maxit`, `converged`, `verbose`, `display`
 # work for each specific solver. This is done in the following included files.
 
-include("algorithms/Template.jl")
 include("algorithms/ForwardBackward.jl")
 include("algorithms/ZeroFPR.jl")
-
-# ...and then for example:
-
 include("algorithms/DouglasRachford.jl")
-# include("ChambollePock.jl")
-# include("DavisYin.jl")
+
+# include("algorithms/AsymmetricForwardBackwardAdjoint.jl")
+# include("algorithms/VuCondat.jl")
+# include("algorithms/ChambollePock.jl")
+# include("algorithms/DavisYin.jl")
+
+# The following template can be copy-pasted to implement new algorithms.
+
+include("algorithms/Template.jl")
 
 end # module
