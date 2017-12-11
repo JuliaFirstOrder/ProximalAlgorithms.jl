@@ -38,7 +38,7 @@ end
 ################################################################################
 # Constructor
 
-function ZeroFPRIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)), g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, memory=10, verbose=1, alpha=0.95, sigma=0.5) where {I, R, T}
+function ZeroFPRIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)), g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, memory=10, verbose=2, alpha=0.95, sigma=0.5) where {I, R, T}
     n = blocksize(x0)
     mq = size(Aq, 1)
     ms = size(As, 1)
@@ -62,10 +62,23 @@ maxit(sol::ZeroFPRIterator) = sol.maxit
 
 converged(sol::ZeroFPRIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
-verbose(sol::ZeroFPRIterator, it) = sol.verbose > 0
+verbose(sol::ZeroFPRIterator)     = sol.verbose > 0 
+verbose(sol::ZeroFPRIterator, it) = sol.verbose > 0 && (sol.verbose == 1 ? true : (it == 1 || it%100 == 0))
 
+function display(sol::ZeroFPRIterator)
+	@printf("%6s | %10s | %10s | %10s | %10s |\n ", "it", "gamma", "fpr", "tau", "FBE")
+	@printf("------|------------|------------|------------|------------|\n")
+end
 function display(sol::ZeroFPRIterator, it)
-    println("$(it) $(sol.gamma) $(blockmaxabs(sol.FPR_x)/sol.gamma) $(blockmaxabs(sol.d)) $(sol.tau) $(sol.FBE_x)")
+    @printf("%6d | %7.4e | %7.4e | %7.4e | %7.4e | \n", it, sol.gamma, blockmaxabs(sol.FPR_x)/sol.gamma, sol.tau, sol.FBE_x)
+end
+
+function Base.show(io::IO, sol::ZeroFPRIterator)
+	println(io, "ZeroFPR" )
+	println(io, "fpr        : $(blockmaxabs(sol.FPR_x))")
+	println(io, "gamma      : $(sol.gamma)")
+	println(io, "tau        : $(sol.tau)")
+	print(  io, "FBE        : $(sol.FBE_x)")
 end
 
 ################################################################################

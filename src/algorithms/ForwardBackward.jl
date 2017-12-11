@@ -42,7 +42,7 @@ end
 ################################################################################
 # Constructor
 
-function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)), g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, fast=false, verbose=1) where {I, R, T}
+function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)), g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, fast=false, verbose=2) where {I, R, T}
     n = blocksize(x0)
     mq = size(Aq, 1)
     ms = size(As, 1)
@@ -69,10 +69,22 @@ maxit(sol::FBSIterator) = sol.maxit
 
 converged(sol::FBSIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
-verbose(sol::FBSIterator, it) = sol.verbose > 0
+verbose(sol::FBSIterator)     = sol.verbose > 0 
+verbose(sol::FBSIterator, it) = sol.verbose > 0 && (sol.verbose == 1 ? true : (it == 1 || it%100 == 0))
+
+function display(sol::FBSIterator)
+	@printf("%6s | %10s | %10s |\n ", "it", "gamma", "fpr")
+	@printf("------|------------|------------|\n")
+end
 
 function display(sol::FBSIterator, it)
-    println("$(it) $(sol.gamma) $(blockmaxabs(sol.FPR_x)/sol.gamma)")
+	@printf("%6d | %7.4e | %7.4e | \n", it, sol.gamma, blockmaxabs(sol.FPR_x)/sol.gamma)
+end
+
+function Base.show(io::IO, sol::FBSIterator)
+	println(io, (sol.fast ? "Fast " : "")*"Forward-Backward Splitting" )
+	println(io, "fpr        : $(blockmaxabs(sol.FPR_x))")
+	println(io, "gamma      : $(sol.gamma)")
 end
 
 ################################################################################

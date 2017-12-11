@@ -20,6 +20,7 @@ x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fs=f, As=A, g=g, tol=1e-6, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 @test it == 1658
+println(sol)
 
 # Fast/Adaptive
 
@@ -27,6 +28,7 @@ x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fs=f, As=A, g=g, tol=1e-6, adaptive=true, fast=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 @test it == 473
+println(sol)
 
 # ZeroFPR/Adaptive
 
@@ -34,3 +36,4 @@ x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fs=f, As=A, g=g, tol=1e-6, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 @test it == 19
+println(sol)
