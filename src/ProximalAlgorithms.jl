@@ -39,9 +39,11 @@ function run(solver::ProximalAlgorithm{I, T})::Tuple{I, T} where {I, T}
     #   [...]
     # end
     #
+    if verbose(solver) display(solver) end
     for (it, point) in enumerate(solver)
         if verbose(solver, it) display(solver, it) end
     end
+    if verbose(solver) display(solver, it) end
     return (it, point)
 end
 

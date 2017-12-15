@@ -13,6 +13,7 @@ struct DRSIterator{I <: Integer, R <: Real, T <: BlockArray{R}} <: ProximalAlgor
     maxit::I
     tol::R
     verbose::I
+    verbose_freq::I
     y::T
     r::T
     z::T
@@ -22,13 +23,13 @@ end
 ################################################################################
 # Constructor(s)
 
-function DRSIterator(x0::BlockArray{R}; f=Zero(), g=Zero(), gamma::R=1.0, maxit::I=10000, tol::R=1e-4, verbose=1) where {I, R}
+function DRSIterator(x0::BlockArray{R}; f=Zero(), g=Zero(), gamma::R=1.0, maxit::I=10000, tol::R=1e-4, verbose=1, verbose_freq = 100) where {I, R}
     y = blockcopy(x0)
     r = blockcopy(x0)
     z = blockcopy(x0)
     FPR_x = blockcopy(x0)
     FPR_x .= Inf
-    return DRSIterator{I, R, typeof(x0)}(x0, f, g, gamma, maxit, tol, verbose, y, r, z, FPR_x)
+    return DRSIterator{I, R, typeof(x0)}(x0, f, g, gamma, maxit, tol, verbose, verbose_freq, y, r, z, FPR_x)
 end
 
 ################################################################################
@@ -38,9 +39,23 @@ maxit(sol::DRSIterator) = sol.maxit
 
 converged(sol::DRSIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
-verbose(sol::DRSIterator, it) = sol.verbose > 0
+verbose(sol::DRSIterator)     = sol.verbose > 0
+verbose(sol::DRSIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
 
-display(sol::DRSIterator, it) = println("$(it) $(blockmaxabs(sol.FPR_x)/sol.gamma)")
+function display(sol::DRSIterator)
+	@printf("%6s | %10s | %10s |\n ", "it", "gamma", "fpr")
+	@printf("------|------------|------------|\n")
+end
+
+function display(sol::DRSIterator, it)
+    @printf("%6d | %7.4e | %7.4e |\n", it, sol.gamma, blockmaxabs(sol.FPR_x)/sol.gamma)
+end
+
+function Base.show(io::IO, sol::DRSIterator)
+	println(io, "Douglas-Rachford Splitting" )
+	println(io, "fpr        : $(blockmaxabs(sol.FPR_x))")
+	print(  io, "gamma      : $(sol.gamma)")
+end
 
 ################################################################################
 # Initialization
