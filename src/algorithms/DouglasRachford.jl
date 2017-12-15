@@ -5,11 +5,10 @@
 # [1] Eckstein, Bertsekas "On the Douglas-Rachford Splitting Method and the Proximal Point Algorithm for Maximal Monotone Operators*", Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 #
 
-mutable struct DRSIterator{I <: Integer, R <: Real, T <: BlockArray{R}} <: ProximalAlgorithm{I, T}
+struct DRSIterator{I <: Integer, R <: Real, T <: BlockArray{R}} <: ProximalAlgorithm{I, T}
     x::T
     f
     g
-    cost::R
     gamma::R
     maxit::I
     tol::R
@@ -30,7 +29,7 @@ function DRSIterator(x0::BlockArray{R}; f=Zero(), g=Zero(), gamma::R=1.0, maxit:
     z = blockcopy(x0)
     FPR_x = blockcopy(x0)
     FPR_x .= Inf
-    return DRSIterator{I, R, typeof(x0)}(x0, f, g, R(Inf), gamma, maxit, tol, verbose, verbose_freq, y, r, z, FPR_x)
+    return DRSIterator{I, R, typeof(x0)}(x0, f, g, gamma, maxit, tol, verbose, verbose_freq, y, r, z, FPR_x)
 end
 
 ################################################################################
@@ -44,19 +43,18 @@ verbose(sol::DRSIterator)     = sol.verbose > 0
 verbose(sol::DRSIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
 
 function display(sol::DRSIterator)
-	@printf("%6s | %10s | %10s | %10s |\n ", "it", "gamma", "fpr","cost")
-	@printf("------|------------|------------|------------|\n")
+	@printf("%6s | %10s | %10s |\n ", "it", "gamma", "fpr")
+	@printf("------|------------|------------|\n")
 end
 
 function display(sol::DRSIterator, it)
-    @printf("%6d | %7.4e | %7.4e | %7.4e | \n", it, sol.gamma, blockmaxabs(sol.FPR_x)/sol.gamma, sol.cost)
+    @printf("%6d | %7.4e | %7.4e |\n", it, sol.gamma, blockmaxabs(sol.FPR_x)/sol.gamma)
 end
 
 function Base.show(io::IO, sol::DRSIterator)
 	println(io, "Douglas-Rachford Splitting" )
 	println(io, "fpr        : $(blockmaxabs(sol.FPR_x))")
-	println(io, "gamma      : $(sol.gamma)")
-	print(io,   "cost       : $(sol.cost)")
+	print(  io, "gamma      : $(sol.gamma)")
 end
 
 ################################################################################
@@ -70,9 +68,9 @@ end
 # Iteration
 
 function iterate(sol::DRSIterator{I, T}, it::I) where {I, T}
-    sol.cost = prox!(sol.y, sol.f, sol.x, sol.gamma)
+    prox!(sol.y, sol.f, sol.x, sol.gamma)
     sol.r .= 2.*sol.y .- sol.x
-    sol.cost += prox!(sol.z, sol.g, sol.r, sol.gamma)
+    prox!(sol.z, sol.g, sol.r, sol.gamma)
     sol.FPR_x .= sol.y .- sol.z
     sol.x .-= sol.FPR_x
     return sol.z
