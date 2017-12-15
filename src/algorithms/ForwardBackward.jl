@@ -15,12 +15,14 @@ mutable struct FBSIterator{I <: Integer, R <: Real, T <: BlockArray{R}} <: Proxi
     fq
     Aq
     g
+    cost::R
     gamma::R
     maxit::I
     tol::R
     adaptive::Bool
     fast::Bool
     verbose::I
+    verbose_freq::I
     theta::R # extrapolation parameter
     y # gradient step
     z # proximal-gradient step
@@ -42,7 +44,7 @@ end
 ################################################################################
 # Constructor
 
-function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)), g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, fast=false, verbose=2) where {I, R, T}
+function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)), g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, fast=false, verbose=1, verbose_freq = 100) where {I, R, T}
     n = blocksize(x0)
     mq = size(Aq, 1)
     ms = size(As, 1)
@@ -59,7 +61,7 @@ function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq
     Aqz_prev = blockzeros(mq)
     Asz_prev = blockzeros(ms)
     gradfq_Aqz_prev = blockzeros(mq)
-    FBSIterator{I, R, T}(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, fast, verbose, 1.0, y, z, z_prev, FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, Aqz_prev, Asz_prev, gradfq_Aqz_prev)
+    FBSIterator{I, R, T}(x, fs, As, fq, Aq, g, R(Inf), gamma, maxit, tol, adaptive, fast, verbose, verbose_freq, 1.0, y, z, z_prev, FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, Aqz_prev, Asz_prev, gradfq_Aqz_prev)
 end
 
 ################################################################################
@@ -70,21 +72,22 @@ maxit(sol::FBSIterator) = sol.maxit
 converged(sol::FBSIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
 verbose(sol::FBSIterator)     = sol.verbose > 0 
-verbose(sol::FBSIterator, it) = sol.verbose > 0 && (sol.verbose == 1 ? true : (it == 1 || it%100 == 0))
+verbose(sol::FBSIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
 
 function display(sol::FBSIterator)
-	@printf("%6s | %10s | %10s |\n ", "it", "gamma", "fpr")
-	@printf("------|------------|------------|\n")
+	@printf("%6s | %10s | %10s | %10s |\n ", "it", "gamma", "fpr", "cost")
+	@printf("------|------------|------------|------------|\n")
 end
 
 function display(sol::FBSIterator, it)
-	@printf("%6d | %7.4e | %7.4e | \n", it, sol.gamma, blockmaxabs(sol.FPR_x)/sol.gamma)
+	@printf("%6d | %7.4e | %7.4e | %7.4e | \n", it, sol.gamma, blockmaxabs(sol.FPR_x)/sol.gamma, sol.cost)
 end
 
 function Base.show(io::IO, sol::FBSIterator)
 	println(io, (sol.fast ? "Fast " : "")*"Forward-Backward Splitting" )
 	println(io, "fpr        : $(blockmaxabs(sol.FPR_x))")
 	println(io, "gamma      : $(sol.gamma)")
+	print(  io, "cost       : $(sol.cost)")
 end
 
 ################################################################################
@@ -117,8 +120,9 @@ function initialize(sol::FBSIterator)
         sol.gamma = 1.0/L
     end
 
+    sol.cost = sol.fq_Aqx+sol.fs_Asx
     blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
-    prox!(sol.z, sol.g, sol.y, sol.gamma)
+    sol.cost += prox!(sol.z, sol.g, sol.y, sol.gamma)
     blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.z)
 
 end
@@ -207,7 +211,8 @@ function iterate(sol::FBSIterator{I, R, T}, it) where {I, R, T}
         sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
     end
     blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
-    prox!(sol.z, sol.g, sol.y, sol.gamma)
+    sol.cost = sol.f_Ax
+    sol.cost += prox!(sol.z, sol.g, sol.y, sol.gamma)
     blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.z)
 
     return sol.z

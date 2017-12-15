@@ -13,6 +13,7 @@ mutable struct ZeroFPRIterator{I <: Integer, R <: Real, T <: BlockArray} <: Prox
     tol::R
     adaptive::Bool
     verbose::I
+    verbose_freq::I
     alpha::R
     sigma::R
     tau::R
@@ -38,7 +39,7 @@ end
 ################################################################################
 # Constructor
 
-function ZeroFPRIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)), g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, memory=10, verbose=2, alpha=0.95, sigma=0.5) where {I, R, T}
+function ZeroFPRIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)), g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, memory=10, verbose=1, verbose_freq=100, alpha=0.95, sigma=0.5) where {I, R, T}
     n = blocksize(x0)
     mq = size(Aq, 1)
     ms = size(As, 1)
@@ -52,7 +53,7 @@ function ZeroFPRIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero()
     gradfs_Asx = blockzeros(ms)
     At_gradf_Ax = blockzeros(n)
     d = blockzeros(x0)
-    ZeroFPRIterator{I, R, T}(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, verbose, alpha, sigma, 0.0, y, xbar, LBFGS(x, memory), FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, 0.0, 0.0, [], [], d)
+    ZeroFPRIterator{I, R, T}(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, verbose, verbose_freq, alpha, sigma, 0.0, y, xbar, LBFGS(x, memory), FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, 0.0, 0.0, [], [], d)
 end
 
 ################################################################################
@@ -63,7 +64,7 @@ maxit(sol::ZeroFPRIterator) = sol.maxit
 converged(sol::ZeroFPRIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
 verbose(sol::ZeroFPRIterator)     = sol.verbose > 0 
-verbose(sol::ZeroFPRIterator, it) = sol.verbose > 0 && (sol.verbose == 1 ? true : (it == 1 || it%100 == 0))
+verbose(sol::ZeroFPRIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
 
 function display(sol::ZeroFPRIterator)
 	@printf("%6s | %10s | %10s | %10s | %10s |\n ", "it", "gamma", "fpr", "tau", "FBE")
