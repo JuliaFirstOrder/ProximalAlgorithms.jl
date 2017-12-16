@@ -31,15 +31,14 @@ end
 
 function run(solver::ProximalAlgorithm{I, T})::Tuple{I, T} where {I, T}
     local it, point
-    # NOTE: the following loop is translated into:
-    #
-    # it = start(solver)
-    # while !done(solver, it)
-    #   (point, it) = next(solver, it)
-    #   [...]
-    # end
-    #
     if verbose(solver) display(solver) end
+    # NOTE: the following loop is translated into:
+    #   it = start(solver)
+    #   while !done(solver, it)
+    #       (point, it) = next(solver, it)
+    #       [...]
+    #   end
+    # See: https://docs.julialang.org/en/stable/manual/interfaces
     for (it, point) in enumerate(solver)
         if verbose(solver, it) display(solver, it) end
     end
@@ -47,9 +46,17 @@ function run(solver::ProximalAlgorithm{I, T})::Tuple{I, T} where {I, T}
     return (it, point)
 end
 
+# Functions `verbose` and `display` are used for inspecting the iterations.
+# Here we provide their default behavior (no output).
+
+verbose(sol::ProximalAlgorithm) = false
+verbose(sol::ProximalAlgorithm, it) = false
+function display(sol::ProximalAlgorithm) end
+function display(sol::ProximalAlgorithm, it) end
+
 # It remains to define what concrete ProximalAlgorithm types are and how
-# `initialize`, `iterate`, `maxit`, `converged`, `verbose`, `display`
-# work for each specific solver. This is done in the following included files.
+# `initialize`, `iterate`, `maxit`, `converged` work for each specific solver.
+# This is done in the following included files.
 
 include("algorithms/ForwardBackward.jl")
 include("algorithms/ZeroFPR.jl")

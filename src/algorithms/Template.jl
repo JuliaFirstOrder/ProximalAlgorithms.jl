@@ -20,10 +20,10 @@ maxit(sol::TemplateIterator) = sol.maxit
 
 converged(sol::TemplateIterator, it) = false
 
-verbose(sol::TemplateIterator)     = true
+verbose(sol::TemplateIterator) = true
 verbose(sol::TemplateIterator, it) = true
 
-display(sol::TemplateIterator)     = println("its  ")
+display(sol::TemplateIterator) = println("its  ")
 display(sol::TemplateIterator, it) = println("$(it) iterations performed")
 
 function Base.show(io::IO, sol::TemplateIterator)

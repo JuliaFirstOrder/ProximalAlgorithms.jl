@@ -70,7 +70,7 @@ maxit(sol::FBSIterator) = sol.maxit
 
 converged(sol::FBSIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
-verbose(sol::FBSIterator)     = sol.verbose > 0 
+verbose(sol::FBSIterator) = sol.verbose > 0 
 verbose(sol::FBSIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
 
 function display(sol::FBSIterator)
