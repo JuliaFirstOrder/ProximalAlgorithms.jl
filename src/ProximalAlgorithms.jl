@@ -1,6 +1,5 @@
 module ProximalAlgorithms
 
-using ProximalOperators
 using AbstractOperators
 using AbstractOperators.BlockArrays
 
