@@ -8,11 +8,11 @@ Proximal algorithms (also known as "splitting" algorithms) for nonsmooth optimiz
 
 ### Implemented Algorithms
 
-Algorithm                         | Code                                                    | Model          | Reference
-----------------------------------|---------------------------------------------------------|----------------|----------------------
-Douglas-Rachford splitting        | [DouglasRachford.jl](src/algorithms/DouglasRachford.jl) | `f(x) + g(x)`  | [[1]][eckstein_bertsekas_1989]
-(Fast) Forward-backward splitting | [ForwardBackward.jl](src/algorithms/ForwardBackward.jl) | `f(Lx) + g(x)` | [[2]][tseng_2008], [[3]][beck_teboulle_2009]
-ZeroFPR                           | [ZeroFPR.jl](src/algorithms/ZeroFPR.jl)                 | `f(Lx) + g(x)` | [[6]][themelis_2016]
+Algorithm                         | Function                                                        | Reference
+----------------------------------|-----------------------------------------------------------------|----------------------
+Douglas-Rachford splitting        | `DRS` ([DouglasRachford.jl](src/algorithms/DouglasRachford.jl)) | [[1]][eckstein_bertsekas_1989]
+(Fast) Forward-backward splitting | `FBS` ([ForwardBackward.jl](src/algorithms/ForwardBackward.jl)) | [[2]][tseng_2008], [[3]][beck_teboulle_2009]
+ZeroFPR                           | `ZeroFPR` ([ZeroFPR.jl](src/algorithms/ZeroFPR.jl))             | [[6]][themelis_2016]
 
 ### References
 
