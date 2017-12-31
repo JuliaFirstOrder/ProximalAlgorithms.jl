@@ -70,7 +70,7 @@ maxit(sol::FBSIterator) = sol.maxit
 
 converged(sol::FBSIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
-verbose(sol::FBSIterator) = sol.verbose > 0 
+verbose(sol::FBSIterator) = sol.verbose > 0
 verbose(sol::FBSIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
 
 function display(sol::FBSIterator)
@@ -217,6 +217,33 @@ end
 
 ################################################################################
 # Solver interface
+
+"""
+**Forward-backward splitting**
+
+    FBS(x0; kwargs...)
+
+Solves a problem of the form
+
+    minimize fs(As*x) + fq(Aq*x) + g(x)
+
+where `fs` is a smooth function, `fq` is a quadratic function, `g` is a
+proximable function and `As`, `Aq` are linear operators. Parameter `x0` is the
+initial point. Keyword arguments specify the problem and
+additional options as follows:
+* `fs`, smooth function (default: identically zero function)
+* `fq`, quadratic function (default: identically zero function)
+* `g`, proximable function (default: identically zero function)
+* `As`, linear operator (default: identity)
+* `Aq`, linear operator (default: identity)
+* `gamma`, stepsize (default: unspecified, determine automatically)
+* `maxit`, maximum number of iteration (default: `10000`)
+* `tol`, halting tolerance on the fixed-point residual (default: `1e-4`)
+* `adaptive`, adaptively adjust `gamma` (default: `false` if `gamma` is provided)
+* `fast`, enables accelerated method (default: `false`)
+* `verbose`, verbosity level (default: `1`)
+* `verbose_freq`, verbosity frequency for `verbose = 1` (default: `100`)
+"""
 
 function FBS(x0; kwargs...)
     sol = FBSIterator(x0; kwargs...)
