@@ -48,7 +48,6 @@ function AFBAIterator(x0::T, y0::T; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=id
     par= 4; #  scale parameter 
     nmL = norm(L);
     alpha=1.0;
-    println(" $betaQ, $betaR, $nmL ")    
     if gamma1<0 || gamma2<0
         if theta==2 #default stepsize for Vu-Condat
             if betaQ > par*nmL && betaR > par*nmL
@@ -152,9 +151,7 @@ end
 
 function AFBA(x0,y0; kwargs...)
     # Create iterable
-    # println(typeof(gamma1))
     sol = AFBAIterator(x0,y0; kwargs...)
-    println(typeof(sol.gamma1))
     # Run iterations
     (it, point) = run(sol)
     return (it, point, sol)
