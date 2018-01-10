@@ -31,7 +31,7 @@ end
 ################################################################################
 # Constructor(s)
 
-function AFBAIterator(x0::T, y0::T; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=identity(), theta=2, mu=1, lam=1, betaQ=0, betaR=0, gamma1=-1, gamma2=-1, maxit::I=10000, tol::R=1e-5, verbose=1, verbose_freq = 100) where {I, R, T}
+function AFBAIterator(x0::T, y0::T; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=Identity(blocksize(x0)), theta=2, mu=1, lam=1, betaQ=0, betaR=0, gamma1=-1, gamma2=-1, maxit::I=10000, tol::R=1e-5, verbose=1, verbose_freq = 100) where {I, R, T}
 # blockcopy can be found in AbstractOperators.jl/src/utilities/block.jl
     x = blockcopy(x0)
     xbar = blockcopy(x0)
@@ -46,7 +46,18 @@ function AFBAIterator(x0::T, y0::T; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=id
 
 ## default stepsizes
     par= 4; #  scale parameter 
-    nmL = norm(L);
+    #### fix for special cases such as when h\equiv 0, and all other special cases...
+
+    ### when h is absent, so is y...can get rid of y0? 
+
+    if typeof(L)==Identity
+        nmL=1
+    else
+        nmL = norm(L);
+    end
+    if typeof(h)==Zero
+        gamma1 = 1.99/betaQ
+    else 
     alpha=1.0;
     if gamma1<0 || gamma2<0
         if theta==2 #default stepsize for Vu-Condat
@@ -95,6 +106,7 @@ function AFBAIterator(x0::T, y0::T; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=id
             error("this choice of theta and mu is not supported!")
         end 
     end
+    end
     return AFBAIterator{I, R, T}(x0, y0, g, h, f, l, L, theta, mu, lam, betaQ, betaR, gamma1, gamma2, maxit, tol, verbose, verbose_freq, xbar, ybar, gradf, gradl, FPR_x,FPR_y)
 end
 
@@ -118,8 +130,13 @@ end
 
 function Base.show(io::IO, sol::AFBAIterator)
     println(io, "Asymmetric Forward-Backward-Adjoint Splitting" )
-    println(io, "fpr        : $(norm(sol.FPR_x)+norm(sol.FPR_y))")
-    print(  io, "gamma1,gamma2      : $(sol.gamma1), $(sol.gamma2)")
+    if sol.theta==2
+        println(io, "theta               : $(sol.theta)" )
+    else 
+        println(io, "theta, mu           : $(sol.theta), $(sol.mu)" )
+    end
+    println(io, "fpr                 : $(norm(sol.FPR_x)+norm(sol.FPR_y))")
+    print(  io, "gamma1, gamma2      : $(sol.gamma1), $(sol.gamma2)")
 end
 
 ################################################################################
@@ -133,16 +150,28 @@ end
 # Iteration
 
 function iterate(sol::AFBAIterator{I, R,T}, it::I) where {I, R, T}
-     # perform x-update step
-    gradient!(sol.gradf,sol.f, sol.x)
-    prox!(sol.xbar, sol.g, sol.x - sol.gamma1*sol.L'*sol.y-sol.gamma1*sol.gradf, sol.gamma1)
-    # perform y-update step
-    gradient!(sol.gradl,sol.l, sol.y)
-    prox!(sol.ybar, Conjugate(sol.h), sol.y + sol.gamma2*sol.L*(sol.theta*sol.xbar+(1-sol.theta)*sol.x)-sol.gamma2*sol.gradl, sol.gamma2)
-    sol.FPR_x .= sol.xbar .- sol.x   # fix this later
-    sol.FPR_y .= sol.ybar .- sol.y   # fix this later
-    sol.x .= sol.x .+ sol.lam .*(sol.FPR_x .- sol.mu*(2-sol.theta)*sol.gamma1*sol.L'*sol.FPR_y) 
-    sol.y .= sol.y .+ sol.lam.*(sol.FPR_y .+ (1-sol.mu)*(2-sol.theta)*sol.gamma2*sol.L*sol.FPR_x)
+
+    # considering when h \equiv 0
+    if typeof(sol.h)==Zero
+         # perform x-update step
+        gradient!(sol.gradf,sol.f, sol.x)
+        prox!(sol.xbar, sol.g, sol.x .-sol.gamma1*sol.gradf, sol.gamma1)
+        # perform y-update step
+        sol.FPR_x .= sol.xbar .- sol.x   # fix this later
+        sol.FPR_y .= 0   # fix this later
+        sol.x .= sol.x .+ sol.lam .*(sol.FPR_x) 
+    else
+      # perform x-update step
+        gradient!(sol.gradf,sol.f, sol.x)
+        prox!(sol.xbar, sol.g, sol.x .- sol.L'*(sol.gamma1*sol.y).-sol.gamma1*sol.gradf, sol.gamma1)
+        # perform y-update step
+        gradient!(sol.gradl,sol.l, sol.y)   ############fix  # l is basically l^*!! hence Zero() by default 
+        prox!(sol.ybar, Conjugate(sol.h), sol.y .+ sol.L*(sol.gamma2*(sol.theta*sol.xbar.+(1-sol.theta)*sol.x)).-sol.gamma2*sol.gradl, sol.gamma2) 
+        sol.FPR_x .= sol.xbar .- sol.x   # fix this later
+        sol.FPR_y .= sol.ybar .- sol.y   # fix this later
+        sol.x .= sol.x .+ sol.lam .*(sol.FPR_x .- sol.L'*(sol.mu*(2-sol.theta)*sol.gamma1*sol.FPR_y)) 
+        sol.y .= sol.y .+ sol.lam.*(sol.FPR_y .+ sol.L*((1-sol.mu)*(2-sol.theta)*sol.gamma2*sol.FPR_x))
+    end
     return sol.x
 end
 
