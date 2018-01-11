@@ -47,18 +47,12 @@ function AFBAIterator(x0::T, y0::T; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=Id
 ## default stepsizes
     par= 4; #  scale parameter 
     #### fix for special cases such as when h\equiv 0, and all other special cases...
-
-    ### when h is absent, so is y...can get rid of y0? 
-
-    if typeof(L)==Identity
-        nmL=1
-    else
-        nmL = norm(L);
-    end
+    ### when h is absent, so is y...
+    nmL=norm(L)
     if typeof(h)==Zero
         gamma1 = 1.99/betaQ
     else 
-    alpha=1.0;
+    alpha=1;
     if gamma1<0 || gamma2<0
         if theta==2 #default stepsize for Vu-Condat
             if betaQ > par*nmL && betaR > par*nmL
