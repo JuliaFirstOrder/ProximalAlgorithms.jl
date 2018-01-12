@@ -1,5 +1,9 @@
 ################################################################################
-# Template iterator
+# Primal-dual algorithms based on Asymmetric Forward-Backward-Adjoint 
+#
+# The iterator implements Algorithm 3 of [1] with constant stepsize (α_n=λ) for several prominant special cases.
+# [1] Latafat, Patrinos. "Asymmetric forward–backward–adjoint splitting for solving monotone inclusions involving three operators"  Computational Optimization and Applications, pages 1–37, 2017.
+
 
 struct AFBAIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I, T}
     x::T
@@ -43,8 +47,8 @@ function AFBAIterator(x0::T, y0::T; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=Id
     FPR_x .= Inf
     FPR_y = blockcopy(y0)
     FPR_y .= Inf
-
-## default stepsizes
+	
+	# default stepsizes
     par= 4; #  scale parameter 
     #### fix for special cases such as when h\equiv 0, and all other special cases...
     ### when h is absent, so is y...
@@ -108,7 +112,7 @@ end
 # Utility methods
 maxit(sol::AFBAIterator) = sol.maxit
 
-converged(sol::AFBAIterator, it) = norm(sol.FPR_x)+norm(sol.FPR_y) <= sol.tol
+converged(sol::AFBAIterator, it) = vecnorm(sol.FPR_x)+vecnorm(sol.FPR_y) <= sol.tol
 
 verbose(sol::AFBAIterator) = sol.verbose > 0
 verbose(sol::AFBAIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
@@ -119,7 +123,7 @@ function display(sol::AFBAIterator)
 end
 
 function display(sol::AFBAIterator, it)
-    @printf("%6d | %7.4e, %7.4e | %7.4e |\n", it, sol.gamma1, sol.gamma2, norm(sol.FPR_x)+norm(sol.FPR_y))
+    @printf("%6d | %7.4e, %7.4e | %7.4e |\n", it, sol.gamma1, sol.gamma2, vecnorm(sol.FPR_x)+vecnorm(sol.FPR_y))
 end
 
 function Base.show(io::IO, sol::AFBAIterator)
@@ -129,7 +133,7 @@ function Base.show(io::IO, sol::AFBAIterator)
     else 
         println(io, "theta, mu           : $(sol.theta), $(sol.mu)" )
     end
-    println(io, "fpr                 : $(norm(sol.FPR_x)+norm(sol.FPR_y))")
+    println(io, "fpr                 : $(vecnorm(sol.FPR_x)+vecnorm(sol.FPR_y))")
     print(  io, "gamma1, gamma2      : $(sol.gamma1), $(sol.gamma2)")
 end
 
@@ -145,27 +149,39 @@ end
 
 function iterate(sol::AFBAIterator{I, R,T}, it::I) where {I, R, T}
 
-    # considering when h \equiv 0
-    if typeof(sol.h)==Zero
+    if typeof(sol.h)==Zero # considering when h \equiv 0
          # perform x-update step
         gradient!(sol.gradf,sol.f, sol.x)
-        prox!(sol.xbar, sol.g, sol.x .-sol.gamma1*sol.gradf, sol.gamma1)
-        # perform y-update step
+        prox!(sol.xbar, sol.g, sol.x .-sol.gamma1 * sol.gradf, sol.gamma1)
         sol.FPR_x .= sol.xbar .- sol.x   # fix this later
         sol.FPR_y .= 0   # fix this later
-        sol.x .= sol.x .+ sol.lam .*(sol.FPR_x) 
-    else
-      # perform x-update step
+        sol.x .= sol.x .+ sol.lam *(sol.FPR_x) 
+    else # general case 
+		# perform xbar-update step
         gradient!(sol.gradf,sol.f, sol.x)
-        prox!(sol.xbar, sol.g, sol.x .- sol.L'*(sol.gamma1*sol.y).-sol.gamma1*sol.gradf, sol.gamma1)
+        temp_x = blockcopy(sol.x)
+        temp_y  = -sol.gamma1 * sol.y
+        Ac_mul_B!(temp_x, sol.L,temp_y)
+        temp_x .+=  sol.x .- sol.gamma1 * sol.gradf
+        prox!(sol.xbar, sol.g, temp_x, sol.gamma1)
+    	# perform ybar-update step 
+        gradient!(sol.gradl,sol.l, sol.y)   #fix  # l is basically l^*!! hence Zero() by default 
+        temp_x .= sol.gamma2 * ( (sol.theta .* sol.xbar) .+ ((1-sol.theta) * sol.x) )
+        A_mul_B!(temp_y, sol.L, temp_x)
+        temp_y .+=  sol.y .- sol.gamma2*sol.gradl
+        prox!(sol.ybar, Conjugate(sol.h), temp_y, sol.gamma2)
+        # the residues
+        sol.FPR_x .= sol.xbar .- sol.x   
+        sol.FPR_y .= sol.ybar .- sol.y   
+        # perform x-update step
+        temp_y .= sol.mu*(2-sol.theta)*sol.gamma1*sol.FPR_y
+		Ac_mul_B!(temp_x, sol.L, temp_y)
+        sol.x .+=  sol.lam *(sol.FPR_x .- temp_x)
         # perform y-update step
-        gradient!(sol.gradl,sol.l, sol.y)   ############fix  # l is basically l^*!! hence Zero() by default 
-        prox!(sol.ybar, Conjugate(sol.h), sol.y .+ sol.L*(sol.gamma2*(sol.theta*sol.xbar.+(1-sol.theta)*sol.x)).-sol.gamma2*sol.gradl, sol.gamma2) 
-        sol.FPR_x .= sol.xbar .- sol.x   # fix this later
-        sol.FPR_y .= sol.ybar .- sol.y   # fix this later
-        sol.x .= sol.x .+ sol.lam .*(sol.FPR_x .- sol.L'*(sol.mu*(2-sol.theta)*sol.gamma1*sol.FPR_y)) 
-        sol.y .= sol.y .+ sol.lam.*(sol.FPR_y .+ sol.L*((1-sol.mu)*(2-sol.theta)*sol.gamma2*sol.FPR_x))
-    end
+        temp_x .= (1-sol.mu)*(2-sol.theta)*sol.gamma2*sol.FPR_x
+		A_mul_B!(temp_y, sol.L, temp_x)
+        sol.y .+=  sol.lam *(sol.FPR_y .+ temp_y)
+     end
     return sol.x
 end
 
