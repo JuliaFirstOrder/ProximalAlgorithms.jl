@@ -1,13 +1,27 @@
 ################################################################################
-# Primal-dual algorithms based on Asymmetric Forward-Backward-Adjoint 
+# Primal-dual algorithms based on Asymmetric Forward-Backward-Adjoint that solve the following convex problem:
 #
-# The iterator implements Algorithm 3 of [1] with constant stepsize (α_n=λ) for several prominant special cases.
+#								minimize_x f(x) + g(x) + (h □ l)(Lx), 
+#
+# where f is smooth, g and h are possibly nonsmooth and l is strongly convex. The infimal convolution is denoted by '□', and L is a linear mapping.   
+#
+# Usage:	 it, x, sol = ProximalAlgorithms.AFBA(x0, y0; g, h, f, l, betaQ, betaR, gamma1, gamma2, theta, mu)   
+#
+# The iterator implements Algorithm 3 of [1] with constant stepsize (α_n=λ) for several prominant special cases:
+# 1) θ = 2 	 	==>   Corresponds to the Vu-Condat Algorithm [2,3].
+# 2) θ = 1, μ=1
+# 3) θ = 0, μ=1
+# 4) θ ∈ [0,∞), μ=0 
+#
+# See [1, Figure 1] for other special cases and relation to other algorithms.   
+#
 # [1] Latafat, Patrinos. "Asymmetric forward–backward–adjoint splitting for solving monotone inclusions involving three operators"  Computational Optimization and Applications, pages 1–37, 2017.
+# [2] Condat. "A primal–dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms" Journal of Optimization Theory and Applications 158.2 (2013): 460-479.
+# [3] Vũ. "A splitting algorithm for dual monotone inclusions involving cocoercive operators"" Advances in Computational Mathematics, 38(3), pp.667-681.
 
-
-struct AFBAIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I, T}
-    x::T
-    y::T
+struct AFBAIterator{I <: Integer, R <: Real, T1 <: BlockArray, T2 <: BlockArray} <: ProximalAlgorithm{I, T1}
+    x::T1
+    y::T2
     g
     h
     f
@@ -24,19 +38,20 @@ struct AFBAIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorit
     tol::R
     verbose::I
     verbose_freq::I
-    xbar::T
-    ybar::T
-    gradf::T
-    gradl::T
-    FPR_x::T
-    FPR_y::T
+    xbar::T1
+    ybar::T2
+    gradf::T1
+    gradl::T2
+    FPR_x::T1
+    FPR_y::T2
+    temp_x::T1
+    temp_y::T2
 end
 
 ################################################################################
 # Constructor(s)
 
-function AFBAIterator(x0::T, y0::T; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=Identity(blocksize(x0)), theta=2, mu=1, lam=1, betaQ=0, betaR=0, gamma1=-1, gamma2=-1, maxit::I=10000, tol::R=1e-5, verbose=1, verbose_freq = 100) where {I, R, T}
-# blockcopy can be found in AbstractOperators.jl/src/utilities/block.jl
+function AFBAIterator(x0::T1, y0::T2; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=Identity(blocksize(x0)), theta=1, mu=1, lam=1, betaQ=0, betaR=0, gamma1=-1, gamma2=-1, maxit::I=10000, tol::R=1e-5, verbose=1, verbose_freq = 100) where {I, R, T1, T2}
     x = blockcopy(x0)
     xbar = blockcopy(x0)
     y = blockcopy(y0)
@@ -47,14 +62,17 @@ function AFBAIterator(x0::T, y0::T; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=Id
     FPR_x .= Inf
     FPR_y = blockcopy(y0)
     FPR_y .= Inf
-	
+	temp_x = blockcopy(x0)
+	temp_y = blockcopy(y0)
 	# default stepsizes
-    par= 4; #  scale parameter 
-    #### fix for special cases such as when h\equiv 0, and all other special cases...
-    ### when h is absent, so is y...
+    par= 4; #  scale parameter for comparing Lipschitz constant and norm(L)
+    # TODO: fix for special cases such as when h\equiv 0, and other special cases...
     nmL=norm(L)
-    if typeof(h)==Zero
-        gamma1 = 1.99/betaQ
+    if typeof(h)==Zero 
+		FPR_y.=0 # no dual variable 
+		if gamma1<0 
+        	gamma1 = 1.99/betaQ # default stepsize
+        end
     else 
     alpha=1;
     if gamma1<0 || gamma2<0
@@ -80,11 +98,11 @@ function AFBAIterator(x0::T, y0::T; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=Id
             gamma2 = 0.99/(betaR/2+gamma1*nmL^2); 
         elseif theta==0 && mu==1 # default stepsize for theta=0, mu=1
             temp=3;
-            if betaQ > par*nmL && betaR > temp*par*nmL # denominator for Sigma involves 3alpha norm(L) in this case
+            if betaQ > par*nmL && betaR > temp*par*nmL # denominator for Sigma involves 3α norm(L) in this case
                 alpha = 1;
             elseif betaQ > par*nmL
                 alpha = 2*nmL/betaQ;
-            elseif  betaR > temp*par*nmL # denominator for Sigma involves 3alpha norm(L) in this case
+            elseif  betaR > temp*par*nmL # denominator for Sigma involves 3α norm(L) in this case
                 alpha = betaR/(temp*2*nmL);
             end    
             gamma1 = 1/(betaQ/2+nmL/alpha); 
@@ -93,9 +111,9 @@ function AFBAIterator(x0::T, y0::T; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=Id
             temp = theta^2-3*theta+3
             if betaQ > temp*par*nmL && betaR > par*nmL
                 alpha = 1;
-            elseif  betaR > par*nmL # denominator for Sigma involves 3alpha norm(L) in this case
+            elseif  betaR > par*nmL 
                 alpha = betaR/(2*nmL);
-            elseif betaQ > temp*par*nmL
+            elseif betaQ > temp*par*nmL # denominator for Sigma involves 3α norm(L) in this case
                 alpha = 2*nmL*temp/betaQ;
             end     
             gamma2 = 1/(betaR/2+ alpha*nmL);
@@ -105,7 +123,7 @@ function AFBAIterator(x0::T, y0::T; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=Id
         end 
     end
     end
-    return AFBAIterator{I, R, T}(x0, y0, g, h, f, l, L, theta, mu, lam, betaQ, betaR, gamma1, gamma2, maxit, tol, verbose, verbose_freq, xbar, ybar, gradf, gradl, FPR_x,FPR_y)
+    return AFBAIterator{I, R, T1, T2}(x0, y0, g, h, f, l, L, theta, mu, lam, betaQ, betaR, gamma1, gamma2, maxit, tol, verbose, verbose_freq, xbar, ybar, gradf, gradl, FPR_x,FPR_y, temp_x, temp_y)
 end
 
 ################################################################################
@@ -147,40 +165,42 @@ end
 ################################################################################
 # Iteration
 
-function iterate(sol::AFBAIterator{I, R,T}, it::I) where {I, R, T}
+function iterate(sol::AFBAIterator{I, R,T1, T2}, it::I) where {I, R, T1, T2}
 
     if typeof(sol.h)==Zero # considering when h \equiv 0
          # perform x-update step
         gradient!(sol.gradf,sol.f, sol.x)
         prox!(sol.xbar, sol.g, sol.x .-sol.gamma1 * sol.gradf, sol.gamma1)
-        sol.FPR_x .= sol.xbar .- sol.x   # fix this later
-        sol.FPR_y .= 0   # fix this later
+        sol.FPR_x .= sol.xbar .- sol.x  
         sol.x .= sol.x .+ sol.lam *(sol.FPR_x) 
     else # general case 
 		# perform xbar-update step
         gradient!(sol.gradf,sol.f, sol.x)
-        temp_x = blockcopy(sol.x)
-        temp_y  = -sol.gamma1 * sol.y
-        Ac_mul_B!(temp_x, sol.L,temp_y)
-        temp_x .+=  sol.x .- sol.gamma1 * sol.gradf
-        prox!(sol.xbar, sol.g, temp_x, sol.gamma1)
+        #sol.temp_y  .= -sol.gamma1 * sol.y
+        Ac_mul_B!(sol.temp_x, sol.L, sol.y)
+        sol.temp_x .+=  sol.gradf
+        sol.temp_x .*= -sol.gamma1 
+        sol.temp_x .+=  sol.x
+        prox!(sol.xbar, sol.g, sol.temp_x, sol.gamma1)
     	# perform ybar-update step 
         gradient!(sol.gradl,sol.l, sol.y)   #fix  # l is basically l^*!! hence Zero() by default 
-        temp_x .= sol.gamma2 * ( (sol.theta .* sol.xbar) .+ ((1-sol.theta) * sol.x) )
-        A_mul_B!(temp_y, sol.L, temp_x)
-        temp_y .+=  sol.y .- sol.gamma2*sol.gradl
-        prox!(sol.ybar, Conjugate(sol.h), temp_y, sol.gamma2)
+        sol.temp_x .=  (sol.theta * sol.xbar) .+ ((1-sol.theta) * sol.x) 
+        A_mul_B!(sol.temp_y, sol.L, sol.temp_x)
+        sol.temp_y .-= sol.gradl
+        sol.temp_y .*= sol.gamma2
+        sol.temp_y .+=  sol.y
+        prox!(sol.ybar, Conjugate(sol.h), sol.temp_y, sol.gamma2)
         # the residues
         sol.FPR_x .= sol.xbar .- sol.x   
         sol.FPR_y .= sol.ybar .- sol.y   
         # perform x-update step
-        temp_y .= sol.mu*(2-sol.theta)*sol.gamma1*sol.FPR_y
-		Ac_mul_B!(temp_x, sol.L, temp_y)
-        sol.x .+=  sol.lam *(sol.FPR_x .- temp_x)
+        sol.temp_y .= sol.mu*(2-sol.theta)*sol.gamma1*sol.FPR_y
+		Ac_mul_B!(sol.temp_x, sol.L, sol.temp_y)
+        sol.x .+=  sol.lam *(sol.FPR_x .- sol.temp_x)
         # perform y-update step
-        temp_x .= (1-sol.mu)*(2-sol.theta)*sol.gamma2*sol.FPR_x
-		A_mul_B!(temp_y, sol.L, temp_x)
-        sol.y .+=  sol.lam *(sol.FPR_y .+ temp_y)
+        sol.temp_x .= (1-sol.mu)*(2-sol.theta)*sol.gamma2*sol.FPR_x
+		A_mul_B!(sol.temp_y, sol.L, sol.temp_x)
+        sol.y .+=  sol.lam *(sol.FPR_y .+ sol.temp_y)
      end
     return sol.x
 end
