@@ -51,7 +51,7 @@ end
 ################################################################################
 # Constructor(s)
 
-function AFBAIterator(x0::T1, y0::T2; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=Identity(blocksize(x0)), theta=1, mu=1, lam=1, betaQ=0, betaR=0, gamma1=-1, gamma2=-1, maxit::I=10000, tol::R=1e-5, verbose=1, verbose_freq = 100) where {I, R, T1, T2}
+function AFBAIterator(x0::T1, y0::T2; g=Zero(), h=IndFree(), f=Zero(), l=Zero(), L=Identity(blocksize(x0)), theta=1, mu=1, lam=1, betaQ=0, betaR=0, gamma1=-1, gamma2=-1, maxit::I=10000, tol::R=1e-5, verbose=1, verbose_freq = 100) where {I, R, T1, T2}
     x = blockcopy(x0)
     xbar = blockcopy(x0)
     y = blockcopy(y0)
@@ -64,11 +64,18 @@ function AFBAIterator(x0::T1, y0::T2; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=
     FPR_y .= Inf
 	temp_x = blockcopy(x0)
 	temp_y = blockcopy(y0)
+    hconj = Conjugate(h) # Conjugate of h 
+    if isa(l, ProximalAlgorithms.Zero)
+        lconj = l
+    else 
+        lconj = Conjugate(l)
+    end
 	# default stepsizes
     par= 4; #  scale parameter for comparing Lipschitz constant and norm(L)
     # TODO: fix for special cases such as when h\equiv 0, and other special cases...
     nmL=norm(L)
-    if typeof(h)==Zero 
+    # if typeof(h)==Zero 
+    if typeof(h)==ProximalOperators.IndFree 
 		FPR_y.=0 # no dual variable 
 		if gamma1<0 
         	gamma1 = 1.99/betaQ # default stepsize
@@ -123,7 +130,7 @@ function AFBAIterator(x0::T1, y0::T2; g=Zero(), h=Zero(), f=Zero(), l=Zero(), L=
         end 
     end
     end
-    return AFBAIterator{I, R, T1, T2}(x0, y0, g, h, f, l, L, theta, mu, lam, betaQ, betaR, gamma1, gamma2, maxit, tol, verbose, verbose_freq, xbar, ybar, gradf, gradl, FPR_x,FPR_y, temp_x, temp_y)
+    return AFBAIterator{I, R, T1, T2}(x0, y0, g, hconj, f, lconj, L, theta, mu, lam, betaQ, betaR, gamma1, gamma2, maxit, tol, verbose, verbose_freq, xbar, ybar, gradf, gradl, FPR_x,FPR_y, temp_x, temp_y)
 end
 
 ################################################################################
@@ -167,7 +174,7 @@ end
 
 function iterate(sol::AFBAIterator{I, R,T1, T2}, it::I) where {I, R, T1, T2}
 
-    if typeof(sol.h)==Zero # considering when h \equiv 0
+    if  isa(sol.h, ProximalOperators.Conjugate{ProximalOperators.IndFree}) 
          # perform x-update step
         gradient!(sol.gradf,sol.f, sol.x)
         prox!(sol.xbar, sol.g, sol.x .-sol.gamma1 * sol.gradf, sol.gamma1)
@@ -183,13 +190,13 @@ function iterate(sol::AFBAIterator{I, R,T1, T2}, it::I) where {I, R, T1, T2}
         sol.temp_x .+=  sol.x
         prox!(sol.xbar, sol.g, sol.temp_x, sol.gamma1)
     	# perform ybar-update step 
-        gradient!(sol.gradl,sol.l, sol.y)   #fix  # l is basically l^*!! hence Zero() by default 
+        gradient!(sol.gradl,sol.l, sol.y)    # sol.l= l^*, hence Zero() by default 
         sol.temp_x .=  (sol.theta * sol.xbar) .+ ((1-sol.theta) * sol.x) 
         A_mul_B!(sol.temp_y, sol.L, sol.temp_x)
         sol.temp_y .-= sol.gradl
         sol.temp_y .*= sol.gamma2
         sol.temp_y .+=  sol.y
-        prox!(sol.ybar, Conjugate(sol.h), sol.temp_y, sol.gamma2)
+        prox!(sol.ybar, sol.h, sol.temp_y, sol.gamma2) # sol.h= h^* 
         # the residues
         sol.FPR_x .= sol.xbar .- sol.x   
         sol.FPR_y .= sol.ybar .- sol.y   
