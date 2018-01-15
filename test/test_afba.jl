@@ -24,23 +24,23 @@ x_star = [-3.877278911564627e-01, 0, 0, 2.174149659863943e-02, 6.168435374149660
 stuff = [
   Dict( "theta"      => 2,
         "mu"         => 0,
-        "it"         => (41,126,136),
+        "it"         => (48,125,93),
       ),
   Dict( "theta"      => 1,
         "mu"         => 1,
-        "it"         => (71,119,152),
+        "it"         => (72,122,9),
       ),
   Dict( "theta"      => 0,
         "mu"         => 1,    
-        "it"         => (87,326,141),
+        "it"         => (90,335,100),
       ),
   Dict( "theta"      => 0,
         "mu"         => 0,
-        "it"         => (67,136,257),
+        "it"         => (68,157,171),
       ),
   Dict( "theta"      => 1,
         "mu"         => 0,
-        "it"         => (70,120,323),
+        "it"         => (71,114,193),
       )
   ]
 
@@ -53,11 +53,10 @@ theta = stuff[i]["theta"]
 mu    = stuff[i]["mu"]
 itnum = stuff[i]["it"]
 
-x0 = randn(n)
-y0 = randn(m) 
+x0 = randn(n) 
 
 # h\equiv 0 (FBS)
-
+y0 = randn(n) 
 @time it, x, sol = ProximalAlgorithms.AFBA(x0,y0; g=g,f=f2, betaQ =norm(A'*A), theta=theta, mu=mu)   
 println("      nnz(x)    = $(norm(sol.x, 2))")
 @test vecnorm(x - x_star, Inf) <= 1e-4
@@ -65,13 +64,13 @@ println("      nnz(x)    = $(norm(sol.x, 2))")
 println(sol)
 
 # f=\equiv 0 (Chambolle-Pock)
+y0 = randn(m) 
 @time it, x, sol = ProximalAlgorithms.AFBA(x0,y0; g=g, h=f, L=A, theta=theta, mu=mu)  
 @test vecnorm(x - x_star, Inf) <= 1e-4
 @test it ==itnum[2]
 println(sol)
 
 # g\equiv 0
-x0 = randn(n)
 y0 = randn(n) # since L= Identity 
 @time it, x, sol = ProximalAlgorithms.AFBA(x0,y0; h=g,f=f2, betaQ =norm(A'*A),  theta=theta, mu=mu)  
 @test vecnorm(x - x_star, Inf) <= 1e-4
@@ -117,3 +116,5 @@ t2= length(find((abs.(deleteat!(temp,ind)) .<1e-8)==false))
 println(sol)
 
 end
+
+# TODO: add test including function l

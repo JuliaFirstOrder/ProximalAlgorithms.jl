@@ -7,3 +7,10 @@ g = Conjugate(IndFree()) # = IndZero
 prox_g_x, g_y = prox(g, x)
 @test iszero(prox_g_x)
 @test iszero(g_y)
+l = Conjugate(SqrNormL2())
+grad_l_x, l_x = gradient(l, x)
+@test isequal(grad_l_x, x)
+lam = 2
+l = Conjugate(SqrNormL2(lam))
+grad_l_x, l_x = gradient(l, x)
+@test isequal(grad_l_x, x/lam)

@@ -51,7 +51,7 @@ end
 ################################################################################
 # Constructor(s)
 
-function AFBAIterator(x0::T1, y0::T2; g=Zero(), h=IndFree(), f=Zero(), l=Zero(), L=Identity(blocksize(x0)), theta=1, mu=1, lam=1, betaQ=0, betaR=0, gamma1=-1, gamma2=-1, maxit::I=10000, tol::R=1e-5, verbose=1, verbose_freq = 100) where {I, R, T1, T2}
+function AFBAIterator(x0::T1, y0::T2; g=IndFree(), h=IndFree(), f=IndFree(), l=IndZero(), L=Identity(blocksize(x0)), theta=1, mu=1, lam=1, betaQ=0, betaR=0, gamma1=-1, gamma2=-1, maxit::I=10000, tol::R=1e-5, verbose=1, verbose_freq = 100) where {I, R, T1, T2}
     x = blockcopy(x0)
     xbar = blockcopy(x0)
     y = blockcopy(y0)
@@ -64,24 +64,18 @@ function AFBAIterator(x0::T1, y0::T2; g=Zero(), h=IndFree(), f=Zero(), l=Zero(),
     FPR_y .= Inf
 	temp_x = blockcopy(x0)
 	temp_y = blockcopy(y0)
-    hconj = Conjugate(h) # Conjugate of h 
-    if isa(l, ProximalAlgorithms.Zero)
-        lconj = l
-    else 
-        lconj = Conjugate(l)
-    end
+    hconj = Conjugate(h) 
+    lconj = Conjugate(l)
+
 	# default stepsizes
     par= 4; #  scale parameter for comparing Lipschitz constant and norm(L)
-    # TODO: fix for special cases such as when h\equiv 0, and other special cases...
     nmL=norm(L)
-    # if typeof(h)==Zero 
-    if typeof(h)==ProximalOperators.IndFree 
-		FPR_y.=0 # no dual variable 
-		if gamma1<0 
-        	gamma1 = 1.99/betaQ # default stepsize
-        end
-    else 
     alpha=1;
+    if isa(h,ProximalOperators.IndFree) &&  (gamma1<0 ||  gamma2<0) 
+    	alpha =1000/(betaQ+1e-5) # the speed is determined by gamma1 since bary=0
+		gamma1 = 1/(betaQ/2+nmL/alpha); 
+        gamma2 = 0.99/(betaR/2+nmL*alpha);
+    else 
     if gamma1<0 || gamma2<0
         if theta==2 #default stepsize for Vu-Condat
             if betaQ > par*nmL && betaR > par*nmL
@@ -173,24 +167,15 @@ end
 # Iteration
 
 function iterate(sol::AFBAIterator{I, R,T1, T2}, it::I) where {I, R, T1, T2}
-
-    if  isa(sol.h, ProximalOperators.Conjugate{ProximalOperators.IndFree}) 
-         # perform x-update step
-        gradient!(sol.gradf,sol.f, sol.x)
-        prox!(sol.xbar, sol.g, sol.x .-sol.gamma1 * sol.gradf, sol.gamma1)
-        sol.FPR_x .= sol.xbar .- sol.x  
-        sol.x .= sol.x .+ sol.lam *(sol.FPR_x) 
-    else # general case 
 		# perform xbar-update step
         gradient!(sol.gradf,sol.f, sol.x)
-        #sol.temp_y  .= -sol.gamma1 * sol.y
         Ac_mul_B!(sol.temp_x, sol.L, sol.y)
         sol.temp_x .+=  sol.gradf
         sol.temp_x .*= -sol.gamma1 
         sol.temp_x .+=  sol.x
         prox!(sol.xbar, sol.g, sol.temp_x, sol.gamma1)
     	# perform ybar-update step 
-        gradient!(sol.gradl,sol.l, sol.y)    # sol.l= l^*, hence Zero() by default 
+        gradient!(sol.gradl,sol.l, sol.y)    # sol.l= l^*
         sol.temp_x .=  (sol.theta * sol.xbar) .+ ((1-sol.theta) * sol.x) 
         A_mul_B!(sol.temp_y, sol.L, sol.temp_x)
         sol.temp_y .-= sol.gradl
@@ -208,7 +193,6 @@ function iterate(sol::AFBAIterator{I, R,T1, T2}, it::I) where {I, R, T1, T2}
         sol.temp_x .= (1-sol.mu)*(2-sol.theta)*sol.gamma2*sol.FPR_x
 		A_mul_B!(sol.temp_y, sol.L, sol.temp_x)
         sol.y .+=  sol.lam *(sol.FPR_y .+ sol.temp_y)
-     end
     return sol.x
 end
 
