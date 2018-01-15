@@ -1,5 +1,6 @@
 module ProximalAlgorithms
 
+using ProximalOperators
 using AbstractOperators
 using AbstractOperators.BlockArrays
 using ProximalOperators
@@ -63,7 +64,7 @@ include("algorithms/ForwardBackward.jl")
 include("algorithms/ZeroFPR.jl")
 include("algorithms/DouglasRachford.jl")
 
-# include("algorithms/AsymmetricForwardBackwardAdjoint.jl")
+include("algorithms/AsymmetricForwardBackwardAdjoint.jl")
 # include("algorithms/VuCondat.jl")
 # include("algorithms/ChambollePock.jl")
 # include("algorithms/DavisYin.jl")
