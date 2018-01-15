@@ -72,9 +72,11 @@ function AFBAIterator(x0::T1, y0::T2; g=IndFree(), h=IndFree(), f=IndFree(), l=I
     nmL=norm(L)
     alpha=1;
     if isa(h,ProximalOperators.IndFree) &&  (gamma1<0 ||  gamma2<0) 
+    	# mu=0 in this case is the only case where stepsizes matter
     	alpha =1000/(betaQ+1e-5) # the speed is determined by gamma1 since bary=0
-		gamma1 = 1/(betaQ/2+nmL/alpha); 
-        gamma2 = 0.99/(betaR/2+nmL*alpha);
+    	temp = theta^2-3*theta+3 
+		gamma1 = 0.99/(betaQ/2+ temp*nmL/alpha);  # in this case R=0
+        gamma2 = 1/(nmL*alpha);
     else 
     if gamma1<0 || gamma2<0
         if theta==2 #default stepsize for Vu-Condat
@@ -118,7 +120,7 @@ function AFBAIterator(x0::T1, y0::T2; g=IndFree(), h=IndFree(), f=IndFree(), l=I
                 alpha = 2*nmL*temp/betaQ;
             end     
             gamma2 = 1/(betaR/2+ alpha*nmL);
-            gamma1 = 0.9/(betaQ/2+ (temp-1)*gamma2*nmL^2+ nmL/alpha); 
+            gamma1 = 0.99/(betaQ/2+ (temp-1)*gamma2*nmL^2+ nmL/alpha); 
         else 
             error("this choice of theta and mu is not supported!")
         end 
