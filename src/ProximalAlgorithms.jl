@@ -3,11 +3,13 @@ module ProximalAlgorithms
 using ProximalOperators
 using AbstractOperators
 using AbstractOperators.BlockArrays
+using ProximalOperators
 
 import Base: start, next, done
 
 include("utilities/identity.jl")
 include("utilities/zero.jl")
+include("utilities/conjugate.jl")
 
 abstract type ProximalAlgorithm{I, T} end
 

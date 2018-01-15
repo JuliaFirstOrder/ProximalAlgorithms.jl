@@ -1,10 +1,13 @@
+using ProximalOperators
 using ProximalAlgorithms
+using AbstractOperators.BlockArrays
 using Base.Test
 
 @testset "ProximalAlgorithms" begin
 
 @testset "Utilities" begin
     include("test_block.jl")
+    include("test_conjugate.jl")
 end
 
 @testset "Algorithms" begin
