@@ -72,7 +72,7 @@ function AFBAIterator(x0::T1, y0::T2; g=IndFree(), h=IndFree(), f=IndFree(), l=I
     nmL=norm(L)
     alpha=1;
     if isa(h,ProximalOperators.IndFree) &&  (gamma1<0 ||  gamma2<0) 
-    	# mu=0 in this case is the only case where stepsizes matter
+    	# mu=0 is the only case where stepsizes matter
     	alpha =1000/(betaQ+1e-5) # the speed is determined by gamma1 since bary=0
     	temp = theta^2-3*theta+3 
 		gamma1 = 0.99/(betaQ/2+ temp*nmL/alpha);  # in this case R=0
