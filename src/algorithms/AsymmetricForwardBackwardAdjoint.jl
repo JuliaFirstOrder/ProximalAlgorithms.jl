@@ -48,20 +48,20 @@ function AFBAIterator(x0::T1, y0::T2; g=IndFree(), h=IndFree(), f=IndFree(), l=I
     FPR_x .= Inf
     FPR_y = blockcopy(y0)
     FPR_y .= Inf
-	temp_x = blockcopy(x0)
-	temp_y = blockcopy(y0)
+    temp_x = blockcopy(x0)
+    temp_y = blockcopy(y0)
     hconj = Conjugate(h)
     lconj = Conjugate(l)
 
-	# default stepsizes
+    # default stepsizes
     par = 4 #  scale parameter for comparing Lipschitz constant and norm(L)
     nmL = norm(L)
     alpha = 1
     if isa(h, ProximalOperators.IndFree) && (gamma1<0 || gamma2<0)
-    	# mu=0 is the only case where stepsizes matter
-    	alpha = 1000/(betaQ+1e-5) # the speed is determined by gamma1 since bary=0
-    	temp = theta^2-3*theta+3
-		gamma1 = 0.99/(betaQ/2+ temp*nmL/alpha) # in this case R=0
+        # mu=0 is the only case where stepsizes matter
+        alpha = 1000/(betaQ+1e-5) # the speed is determined by gamma1 since bary=0
+        temp = theta^2-3*theta+3
+        gamma1 = 0.99/(betaQ/2+ temp*nmL/alpha) # in this case R=0
         gamma2 = 1/(nmL*alpha)
     elseif gamma1<0 || gamma2<0
         if theta==2 # default stepsize for Vu-Condat
@@ -69,7 +69,7 @@ function AFBAIterator(x0::T1, y0::T2; g=IndFree(), h=IndFree(), f=IndFree(), l=I
                 alpha = 1
             elseif betaQ > par*nmL
                 alpha = 2*nmL/betaQ
-            elseif  betaR > par*nmL
+            elseif betaR > par*nmL
                 alpha = betaR/(2*nmL)
             end
             gamma1 = 1/(betaQ/2+nmL/alpha)
@@ -90,7 +90,7 @@ function AFBAIterator(x0::T1, y0::T2; g=IndFree(), h=IndFree(), f=IndFree(), l=I
                 alpha = 1
             elseif betaQ > par*nmL
                 alpha = 2*nmL/betaQ
-            elseif  betaR > temp*par*nmL # denominator for Sigma involves 3α norm(L) in this case
+            elseif betaR > temp*par*nmL # denominator for Sigma involves 3α norm(L) in this case
                 alpha = betaR/(temp*2*nmL)
             end
             gamma1 = 1/(betaQ/2+nmL/alpha)
@@ -99,7 +99,7 @@ function AFBAIterator(x0::T1, y0::T2; g=IndFree(), h=IndFree(), f=IndFree(), l=I
             temp = theta^2-3*theta+3
             if betaQ > temp*par*nmL && betaR > par*nmL
                 alpha = 1
-            elseif  betaR > par*nmL
+            elseif betaR > par*nmL
                 alpha = betaR/(2*nmL)
             elseif betaQ > temp*par*nmL # denominator for Sigma involves 3α norm(L) in this case
                 alpha = 2*nmL*temp/betaQ
@@ -153,14 +153,14 @@ end
 # Iteration
 
 function iterate(sol::AFBAIterator{I, R, T1, T2}, it::I) where {I, R, T1, T2}
-	# perform xbar-update step
+    # perform xbar-update step
     gradient!(sol.gradf, sol.f, sol.x)
     Ac_mul_B!(sol.temp_x, sol.L, sol.y)
     sol.temp_x .+= sol.gradf
     sol.temp_x .*= -sol.gamma1
     sol.temp_x .+= sol.x
     prox!(sol.xbar, sol.g, sol.temp_x, sol.gamma1)
-	# perform ybar-update step
+    # perform ybar-update step
     gradient!(sol.gradl, sol.lconj, sol.y)
     sol.temp_x .=  (sol.theta * sol.xbar) .+ ((1-sol.theta) * sol.x)
     A_mul_B!(sol.temp_y, sol.L, sol.temp_x)
@@ -173,11 +173,11 @@ function iterate(sol::AFBAIterator{I, R, T1, T2}, it::I) where {I, R, T1, T2}
     sol.FPR_y .= sol.ybar .- sol.y
     # perform x-update step
     sol.temp_y .= sol.mu*(2-sol.theta)*sol.gamma1*sol.FPR_y
-	Ac_mul_B!(sol.temp_x, sol.L, sol.temp_y)
+    Ac_mul_B!(sol.temp_x, sol.L, sol.temp_y)
     sol.x .+= sol.lam *(sol.FPR_x .- sol.temp_x)
     # perform y-update step
     sol.temp_x .= (1-sol.mu)*(2-sol.theta)*sol.gamma2*sol.FPR_x
-	A_mul_B!(sol.temp_y, sol.L, sol.temp_x)
+    A_mul_B!(sol.temp_y, sol.L, sol.temp_x)
     sol.y .+= sol.lam *(sol.FPR_y .+ sol.temp_y)
     return sol.x
 end
