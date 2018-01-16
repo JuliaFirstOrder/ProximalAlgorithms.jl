@@ -203,12 +203,12 @@ and dual iterates, respectively. Keyword arguments are as follows:
 * `h`: convex function (possibly nonsmooth, default: zero)
 * `l`: strongly convex function (possibly nonsmooth, default: indicator of {0})
 * `L`: linear operator (default: identity)
-* `betaQ`:
-* `betaR`:
-* `gamma1`:
-* `gamma2`:
-* `theta`:
-* `mu`:
+* `betaQ`: Lipschitz constant of gradient of f (default: zero)
+* `betaR`: Lipschitz constant of gradient of l conjugate (default: zero)
+* `gamma1`: stepsize corresponding to the primal updates (default: see [1] for each case)
+* `gamma2`: stepsize corresponding to the dual updates (default: see [1] for each case)
+* `theta`: nonnegative algorithm parameter (default: '1')
+* `mu`: algorithm parameter in the range [0,1] (default: '1')
 * `tol`: primal-dual termination tolerance (default: `1e-5`)
 * `maxit`: maximum number of iterations (default: `10000`)
 * `verbose`, verbosity level (default: `1`)
