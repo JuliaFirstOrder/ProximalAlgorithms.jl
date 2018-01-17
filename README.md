@@ -8,29 +8,44 @@ Proximal algorithms (also known as "splitting" algorithms) for nonsmooth optimiz
 
 ### Implemented Algorithms
 
-Algorithm                         | Function                                                        | Reference
-----------------------------------|-----------------------------------------------------------------|----------------------
-Douglas-Rachford splitting        | `DRS` ([DouglasRachford.jl](src/algorithms/DouglasRachford.jl)) | [[1]][eckstein_bertsekas_1989]
-(Fast) Forward-backward splitting | `FBS` ([ForwardBackward.jl](src/algorithms/ForwardBackward.jl)) | [[2]][tseng_2008], [[3]][beck_teboulle_2009]
-ZeroFPR                           | `ZeroFPR` ([ZeroFPR.jl](src/algorithms/ZeroFPR.jl))             | [[6]][themelis_2016]
+Algorithm                             | Function      | Reference
+--------------------------------------|---------------|-----------
+Asymmetric forward-backard-adjoint    | `AFBA` ([AsymmetricForwardBackwardAdjoint.jl](src/algorithms/AsymmetricForwardBackwardAdjoint.jl)) | [[10]][latafat_2017]
+Chambolle-Pock primal dual algorithm  | `ChambollePock` ([AsymmetricForwardBackwardAdjoint.jl](src/algorithms/AsymmetricForwardBackwardAdjoint.jl)) | [[4]][chambolle_2011]
+Douglas-Rachford splitting            | `DRS` ([DouglasRachford.jl](src/algorithms/DouglasRachford.jl)) | [[1]][eckstein_1989]
+(Fast) Forward-backward splitting     | `FBS` ([ForwardBackward.jl](src/algorithms/ForwardBackward.jl)) | [[2]][tseng_2008], [[3]][beck_2009]
+Vũ-Condat primal-dual algorithm       | `VuCondat` ([AsymmetricForwardBackwardAdjoint.jl](src/algorithms/AsymmetricForwardBackwardAdjoint.jl)) | [[6]][vu_2013], [[7]][condat_2013]
+ZeroFPR (L-BFGS)                      | `ZeroFPR` ([ZeroFPR.jl](src/algorithms/ZeroFPR.jl)) | [[9]][themelis_2016]
 
 ### References
 
-[[1]][eckstein_bertsekas_1989] Eckstein, Bertsekas, *On the Douglas-Rachford Splitting Method and the Proximal Point Algorithm for Maximal Monotone Operators*, Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
+[[1]][eckstein_1989] Eckstein, Bertsekas, *On the Douglas-Rachford Splitting Method and the Proximal Point Algorithm for Maximal Monotone Operators*, Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 
 [[2]][tseng_2008] Tseng, *On Accelerated Proximal Gradient Methods for Convex-Concave Optimization* (2008).
 
-[[3]][beck_teboulle_2009] Beck, Teboulle, *A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems*, SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183-202 (2009).
+[[3]][beck_2009] Beck, Teboulle, *A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems*, SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183-202 (2009).
 
-[[4]][boyd_2011] Boyd, Parikh, Chu, Peleato, Eckstein, *Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers*, Foundations and Trends in Machine Learning, vol. 3, no. 1, pp. 1-122 (2011).
+[[4]][chambolle_2011] Chambolle, Pock, *A First-Order Primal-Dual Algorithm for Convex Problems with Applications to Imaging*, Journal of Mathematical Imaging and Vision, vol. 40, no. 1, pp. 120-145 (2011).
 
-[[5]][parikh_2014] Parikh, Boyd, *Proximal Algorithms*, Foundations and Trends in Optimization, vol. 1, no. 3, pp. 127-239 (2014).
+[[5]][boyd_2011] Boyd, Parikh, Chu, Peleato, Eckstein, *Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers*, Foundations and Trends in Machine Learning, vol. 3, no. 1, pp. 1-122 (2011).
 
-[[6]][themelis_2016] Themelis, Stella, Patrinos, *Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms*, arXiv:1606.06256 (2016).
+[[6]][vu_2013] Vũ, *A splitting algorithm for dual monotone inclusions involving cocoercive operators*, Advances in Computational Mathematics, vol. 38, no. 3, pp. 667-681 (2013).
 
-[eckstein_bertsekas_1989]: https://link.springer.com/article/10.1007/BF01581204
+[[7]][condat_2013] Condat, *A primal–dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms*, Journal of Optimization Theory and Applications, vol. 158, no. 2, pp 460-479 (2013).
+
+[[8]][parikh_2014] Parikh, Boyd, *Proximal Algorithms*, Foundations and Trends in Optimization, vol. 1, no. 3, pp. 127-239 (2014).
+
+[[9]][themelis_2016] Themelis, Stella, Patrinos, *Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms*, arXiv:1606.06256 (2016).
+
+[[10]][latafat_2017] Latafat, Patrinos, *Asymmetric forward–backward–adjoint splitting for solving monotone inclusions involving three operators*, Computational Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
+
+[eckstein_1989]: https://link.springer.com/article/10.1007/BF01581204
 [tseng_2008]: http://www.mit.edu/~dimitrib/PTseng/papers/apgm.pdf
-[beck_teboulle_2009]: http://epubs.siam.org/doi/abs/10.1137/080716542
+[beck_2009]: http://epubs.siam.org/doi/abs/10.1137/080716542
+[chambolle_2011]: https://link.springer.com/article/10.1007/s10851-010-0251-1
 [boyd_2011]: http://www.nowpublishers.com/article/Details/MAL-016
 [parikh_2014]: http://www.nowpublishers.com/article/Details/OPT-003
 [themelis_2016]: https://arxiv.org/abs/1606.06256
+[latafat_2017]: https://link.springer.com/article/10.1007/s10589-017-9909-6
+[condat_2013]: https://link.springer.com/article/10.1007/s10957-012-0245-9
+[vu_2013]: https://link.springer.com/article/10.1007/s10444-011-9254-8
