@@ -10,7 +10,7 @@ Proximal algorithms (also known as "splitting" algorithms) for nonsmooth optimiz
 
 Algorithm                             | Function      | Reference
 --------------------------------------|---------------|-----------
-Asymmetric forward-backard-adjoint    | `AFBA` ([AsymmetricForwardBackwardAdjoint.jl](src/algorithms/AsymmetricForwardBackwardAdjoint.jl)) | [[10]][latafat_2017]
+Asymmetric forward-backward-adjoint    | `AFBA` ([AsymmetricForwardBackwardAdjoint.jl](src/algorithms/AsymmetricForwardBackwardAdjoint.jl)) | [[10]][latafat_2017]
 Chambolle-Pock primal dual algorithm  | `ChambollePock` ([AsymmetricForwardBackwardAdjoint.jl](src/algorithms/AsymmetricForwardBackwardAdjoint.jl)) | [[4]][chambolle_2011]
 Douglas-Rachford splitting            | `DRS` ([DouglasRachford.jl](src/algorithms/DouglasRachford.jl)) | [[1]][eckstein_1989]
 (Fast) Forward-backward splitting     | `FBS` ([ForwardBackward.jl](src/algorithms/ForwardBackward.jl)) | [[2]][tseng_2008], [[3]][beck_2009]
