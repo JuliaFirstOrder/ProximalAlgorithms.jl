@@ -1,7 +1,7 @@
 using ProximalOperators
 using ProximalAlgorithms
 
-### this test includes two tests 
+### this test includes two tests
 
 ## 1-testing combinations with two terms: Lasso
 
@@ -31,7 +31,7 @@ stuff = [
         "it"         => (70,122,9),
       ),
   Dict( "theta"      => 0,
-        "mu"         => 1,    
+        "mu"         => 1,
         "it"         => (83,335,100),
       ),
   Dict( "theta"      => 0,
@@ -53,66 +53,66 @@ theta = stuff[i]["theta"]
 mu    = stuff[i]["mu"]
 itnum = stuff[i]["it"]
 
-x0 = randn(n) 
+x0 = randn(n)
 
 # h\equiv 0 (FBS)
-y0 = randn(n) 
-@time it, x, sol = ProximalAlgorithms.AFBA(x0,y0; g=g,f=f2, betaQ =norm(A'*A), theta=theta, mu=mu)   
+y0 = randn(n)
+@time it, x, y, sol = ProximalAlgorithms.AFBA(x0, y0; g=g, f=f2, betaQ =norm(A'*A), theta=theta, mu=mu)
 println("      nnz(x)    = $(norm(sol.x, 2))")
 @test vecnorm(x - x_star, Inf) <= 1e-4
-@test it ==itnum[1] 
+@test it ==itnum[1]
 println(sol)
 
 # f=\equiv 0 (Chambolle-Pock)
-y0 = randn(m) 
-@time it, x, sol = ProximalAlgorithms.AFBA(x0,y0; g=g, h=f, L=A, theta=theta, mu=mu)  
+y0 = randn(m)
+@time it, x, y, sol = ProximalAlgorithms.AFBA(x0, y0; g=g, h=f, L=A, theta=theta, mu=mu)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 @test it ==itnum[2]
 println(sol)
 
 # g\equiv 0
-y0 = randn(n) # since L= Identity 
-@time it, x, sol = ProximalAlgorithms.AFBA(x0,y0; h=g,f=f2, betaQ =norm(A'*A),  theta=theta, mu=mu)  
+y0 = randn(n) # since L= Identity
+@time it, x, y, sol = ProximalAlgorithms.AFBA(x0, y0; h=g, f=f2, betaQ=norm(A'*A), theta=theta, mu=mu)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 @test it ==itnum[3]
 println(sol)
 
-end 
+end
 
 ## 2- testing with three terms: 1/2\|Ax-b\|^2+ λ\|x\|_1 + + λ_2*\|x\|^2
 
-lam2= 1; 
+lam2= 1;
 
 
 x0 = randn(n)
-y0 = randn(n) 
+y0 = randn(n)
 itnum= ((107,85),(36,34),(76,86),(140,139),(160,159)); # the number of iterations
 
 for i = 1:length(stuff)
 theta = stuff[i]["theta"]
 mu    = stuff[i]["mu"]
-@time it, x, sol = ProximalAlgorithms.AFBA(x0,y0; g=g,f=f2, h = SqrNormL2(lam2), betaQ =norm(A'*A), theta=theta, mu=mu)   
+@time it, x, y, sol = ProximalAlgorithms.AFBA(x0,y0; g=g,f=f2, h = SqrNormL2(lam2), betaQ =norm(A'*A), theta=theta, mu=mu)
 println("      nnz(x)    = $(norm(sol.x, 2))")
 
  # the optimality conditions
 temp = lam*sign.(x) + A'*(A*x-b) + lam2*x
 ind= find(x -> abs.(x)<1e-8,x)
-t1= length(find((temp[ind] .<= lam .* temp[ind] .>=-lam)==false)) 
-t2= length(find((abs.(deleteat!(temp,ind)) .<1e-8)==false)) 
-@test t1+t2 == 0 
-@test it ==itnum[i][1] 
+t1= length(find((temp[ind] .<= lam .* temp[ind] .>=-lam)==false))
+t2= length(find((abs.(deleteat!(temp,ind)) .<1e-8)==false))
+@test t1+t2 == 0
+@test it ==itnum[i][1]
 println(sol)
 
 
-@time it, x, sol = ProximalAlgorithms.AFBA(x0,y0; h=g,f=f2, g = SqrNormL2(lam2), betaQ =norm(A'*A), theta=theta, mu=mu)   
+@time it, x, y, sol = ProximalAlgorithms.AFBA(x0,y0; h=g,f=f2, g = SqrNormL2(lam2), betaQ =norm(A'*A), theta=theta, mu=mu)
 println("      nnz(x)    = $(norm(sol.x, 2))")
  # the optimality conditions
 temp = lam*sign.(x) + A'*(A*x-b) + lam2*x
 ind= find(x -> abs.(x)<1e-8,x)
-t1= length(find((temp[ind] .<= lam .* temp[ind] .>=-lam)==false)) 
-t2= length(find((abs.(deleteat!(temp,ind)) .<1e-8)==false)) 
-@test t1+t2 == 0 
-@test it ==itnum[i][2] 
+t1= length(find((temp[ind] .<= lam .* temp[ind] .>=-lam)==false))
+t2= length(find((abs.(deleteat!(temp,ind)) .<1e-8)==false))
+@test t1+t2 == 0
+@test it ==itnum[i][2]
 println(sol)
 
 end
