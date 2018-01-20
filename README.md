@@ -4,18 +4,19 @@
 [![Coverage Status](https://coveralls.io/repos/kul-forbes/ProximalAlgorithms.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/kul-forbes/ProximalAlgorithms.jl?branch=master)
 [![codecov.io](http://codecov.io/github/kul-forbes/ProximalAlgorithms.jl/coverage.svg?branch=master)](http://codecov.io/github/kul-forbes/ProximalAlgorithms.jl?branch=master)
 
-Proximal algorithms (also known as "splitting" algorithms) for nonsmooth optimization in Julia.
+Proximal algorithms (also known as "splitting" algorithms or methods) for nonsmooth optimization in Julia.
+This package can be used in combination with [ProximalOperators.jl](https://github.com/kul-forbes/ProximalOperators.jl) (providing first-order primitives, i.e. gradient and proximal mapping, for numerous cost functions) and [AbstractOperators.jl](https://github.com/kul-forbes/AbstractOperators.jl) (providing several linear and nonlinear operators) to formulate and solve a wide spectrum of nonsmooth optimization problems.
 
 ### Implemented Algorithms
 
 Algorithm                             | Function      | Reference
 --------------------------------------|---------------|-----------
-Asymmetric forward-backward-adjoint    | `AFBA` ([AsymmetricForwardBackwardAdjoint.jl](src/algorithms/AsymmetricForwardBackwardAdjoint.jl)) | [[10]][latafat_2017]
-Chambolle-Pock primal dual algorithm  | `ChambollePock` ([AsymmetricForwardBackwardAdjoint.jl](src/algorithms/AsymmetricForwardBackwardAdjoint.jl)) | [[4]][chambolle_2011]
-Douglas-Rachford splitting            | `DRS` ([DouglasRachford.jl](src/algorithms/DouglasRachford.jl)) | [[1]][eckstein_1989]
-(Fast) Forward-backward splitting     | `FBS` ([ForwardBackward.jl](src/algorithms/ForwardBackward.jl)) | [[2]][tseng_2008], [[3]][beck_2009]
-Vũ-Condat primal-dual algorithm       | `VuCondat` ([AsymmetricForwardBackwardAdjoint.jl](src/algorithms/AsymmetricForwardBackwardAdjoint.jl)) | [[6]][vu_2013], [[7]][condat_2013]
-ZeroFPR (L-BFGS)                      | `ZeroFPR` ([ZeroFPR.jl](src/algorithms/ZeroFPR.jl)) | [[9]][themelis_2016]
+Asymmetric forward-backward-adjoint algorithm | [`AFBA`](src/algorithms/AsymmetricForwardBackwardAdjoint.jl) | [[10]][latafat_2017]
+Chambolle-Pock primal dual algorithm  | [`ChambollePock`](src/algorithms/AsymmetricForwardBackwardAdjoint.jl) | [[4]][chambolle_2011]
+Douglas-Rachford splitting algorithm  | [`DRS`](src/algorithms/DouglasRachford.jl) | [[1]][eckstein_1989]
+Forward-backward splitting (i.e. proximal gradient) algorithm | [`FBS`](src/algorithms/ForwardBackward.jl) | [[2]][tseng_2008], [[3]][beck_2009]
+Vũ-Condat primal-dual algorithm       | [`VuCondat`](src/algorithms/AsymmetricForwardBackwardAdjoint.jl) | [[6]][vu_2013], [[7]][condat_2013]
+ZeroFPR (L-BFGS)                      | [`ZeroFPR`](src/algorithms/ZeroFPR.jl) | [[9]][themelis_2016]
 
 ### References
 
