@@ -8,6 +8,12 @@ Proximal algorithms (also known as "splitting" algorithms or methods) for nonsmo
 
 This package can be used in combination with [ProximalOperators.jl](https://github.com/kul-forbes/ProximalOperators.jl) (providing first-order primitives, i.e. gradient and proximal mapping, for numerous cost functions) and [AbstractOperators.jl](https://github.com/kul-forbes/AbstractOperators.jl) (providing several linear and nonlinear operators) to formulate and solve a wide spectrum of nonsmooth optimization problems.
 
+### Installation
+
+```julia
+julia> Pkg.add("ProximalAlgorithms")
+```
+
 ### Implemented Algorithms
 
 Algorithm                             | Function      | Reference
@@ -18,6 +24,10 @@ Douglas-Rachford splitting algorithm  | [`DRS`](src/algorithms/DouglasRachford.j
 Forward-backward splitting (i.e. proximal gradient) algorithm | [`FBS`](src/algorithms/ForwardBackward.jl) | [[2]][tseng_2008], [[3]][beck_2009]
 Vũ-Condat primal-dual algorithm       | [`VuCondat`](src/algorithms/AsymmetricForwardBackwardAdjoint.jl) | [[6]][vu_2013], [[7]][condat_2013]
 ZeroFPR (L-BFGS)                      | [`ZeroFPR`](src/algorithms/ZeroFPR.jl) | [[9]][themelis_2016]
+
+### Contributing
+
+Contributions are welcome in the form of [issues notification](https://github.com/kul-forbes/ProximalAlgorithms.jl/issues) or [pull requests](https://github.com/kul-forbes/ProximalAlgorithms.jl/pulls). We recommend looking at already implemented algorithms, or following the [template](src/template/Template.jl), to get inspiration on how to structure new ones.
 
 ### References
 

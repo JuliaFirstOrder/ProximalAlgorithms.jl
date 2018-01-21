@@ -1,6 +1,5 @@
 module ProximalAlgorithms
 
-using ProximalOperators
 using AbstractOperators
 using AbstractOperators.BlockArrays
 using ProximalOperators
@@ -71,6 +70,6 @@ include("algorithms/AsymmetricForwardBackwardAdjoint.jl")
 
 # The following template can be copy-pasted to implement new algorithms.
 
-include("algorithms/Template.jl")
+include("template/Template.jl")
 
 end # module
