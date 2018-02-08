@@ -18,12 +18,10 @@ lam = 1e-2*vecnorm(A'*b, Inf)
 g = NormL1(lam)
 
 # fast FBS/Nonadaptive
-
-println("\n FPG ProximalAlgorithms.jl \n")
 x0 = zeros(n)
 @time itFBS, xFBS, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, fast = true, tol = 1e-8)
 
-println("\n ZeroFPR ProximalAlgorithms.jl \n")
+# ZeroFPR/Nonadaptive
 x0 = zeros(n)
 @time itZ, xZ, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, tol = 1e-8)
 
