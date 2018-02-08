@@ -171,12 +171,12 @@ function iterate(sol::ZeroFPRIterator{I, R, T}, it) where {I, R, T}
 
     tau = 1.0
 
-    Asd = sol.As * sol.d
+    Asd = sol.As * sol.d 
     Aqd = sol.Aq * sol.d
 
     C = sol.sigma*sol.gamma*(1.0-sol.alpha)
 
-    for it_tau = 1:10 # TODO: replace/complement with lower bound on tau
+    for it_tau = 1:32 # TODO: replace/complement with lower bound on tau
         xnew = sol.xbar .+ tau .* sol.d
         Asxnew = Asxbar .+ tau .* Asd
         Aqxnew = Aqxbar .+ tau .* Aqd
@@ -194,6 +194,9 @@ function iterate(sol::ZeroFPRIterator{I, R, T}, it) where {I, R, T}
             sol.tau = tau
             sol.FBE_x = FBE_xnew
             sol.x = xnew
+	    sol.f_Ax = f_Axnew
+	    sol.At_gradf_Ax = At_gradf_Axnew 
+	    sol.g_xbar = g_xnewbar
             sol.FPR_x = FPR_xnew
             sol.xbar_prev = sol.xbar
             sol.FPR_xbar_prev = FPR_xbar
