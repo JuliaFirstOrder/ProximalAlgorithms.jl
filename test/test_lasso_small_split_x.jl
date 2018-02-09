@@ -64,3 +64,11 @@ x0 = ProximalAlgorithms.blockzeros(x_star)
 @test ProximalAlgorithms.blockmaxabs(x .- x_star) <= 1e-4
 #@test it == 10
 println(sol)
+
+# PANOC/Adaptive
+
+x0 = ProximalAlgorithms.blockzeros(x_star)
+@time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=opA, g=g, adaptive=true)
+@test ProximalAlgorithms.blockmaxabs(x .- x_star) <= 1e-4
+#@test it == 10
+println(sol)

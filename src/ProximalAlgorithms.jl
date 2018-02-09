@@ -61,6 +61,7 @@ function display(sol::ProximalAlgorithm, it) end
 
 include("algorithms/ForwardBackward.jl")
 include("algorithms/ZeroFPR.jl")
+include("algorithms/PANOC.jl")
 include("algorithms/DouglasRachford.jl")
 include("algorithms/AsymmetricForwardBackwardAdjoint.jl")
 

@@ -63,6 +63,22 @@ x0 = zeros(n)
 #@test it == 10
 println(sol)
 
+# PANOC/Nonadaptive
+
+x0 = zeros(n)
+@time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+#@test it == 8
+println(sol)
+
+# PANOC/Adaptive
+
+x0 = zeros(n)
+@time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, adaptive=true)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+#@test it == 10
+println(sol)
+
 # Douglas-Rachford
 
 x0 = zeros(n)

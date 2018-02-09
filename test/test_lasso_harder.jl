@@ -28,3 +28,9 @@ x0 = zeros(n)
 @test norm(xFBS-xZ) < 1e-8
 @test itZ < itFBS
 
+# PANOC/Nonadaptive
+x0 = zeros(n)
+@time itP, xP, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, tol = 1e-8)
+
+@test norm(xP-xZ) < 1e-8
+@test itP < itFBS
