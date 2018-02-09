@@ -64,7 +64,6 @@ x0 = ProximalAlgorithms.blockzeros(x_star)
 @time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=opA, g=g, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 #@test it == 10
-println(sol)
 
 # PANOC/Nonadaptive
 

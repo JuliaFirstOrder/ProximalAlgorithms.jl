@@ -61,7 +61,6 @@ x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 #@test it == 10
-println(sol)
 
 # PANOC/Nonadaptive
 
@@ -77,6 +76,7 @@ x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 #@test it == 10
+
 println(sol)
 
 # Douglas-Rachford
