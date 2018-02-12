@@ -8,7 +8,7 @@
 # [2] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave Optimization," (2008)
 #
 
-mutable struct FBSIterator{I <: Integer, R <: Real, T <: BlockArray{R}} <: ProximalAlgorithm{I, T}
+mutable struct FBSIterator{I <: Integer, R <: Real, T <: BlockArray{R}} <: ProximalAlgorithm{I}
     x::T
     fs
     As
@@ -91,7 +91,7 @@ end
 ################################################################################
 # Initialization
 
-function initialize(sol::FBSIterator)
+function initialize!(sol::FBSIterator)
 
     # compute first forward-backward step here
     A_mul_B!(sol.Aqx, sol.Aq, sol.x)
@@ -127,7 +127,7 @@ end
 ################################################################################
 # Iteration
 
-function iterate(sol::FBSIterator{I, R, T}, it) where {I, R, T}
+function iterate!(sol::FBSIterator{I, R, T}, it::I) where {I, R, T}
 
     Aqz = 0.0
     gradfq_Aqz = 0.0
@@ -211,7 +211,7 @@ function iterate(sol::FBSIterator{I, R, T}, it) where {I, R, T}
     prox!(sol.z, sol.g, sol.y, sol.gamma)
     blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.z)
 
-    return sol.z
+    return 
 
 end
 
@@ -247,6 +247,10 @@ additional options as follows:
 
 function FBS(x0; kwargs...)
     sol = FBSIterator(x0; kwargs...)
-    (it, point) = run(sol)
-    return (it, point, sol)
+    return FBS!(sol)
+end
+
+function FBS!(sol::FBSIterator)
+    it = run!(sol)
+    return (it, sol.z, sol)
 end

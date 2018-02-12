@@ -1,7 +1,7 @@
 ################################################################################
 # ZeroFPR iterator (with L-BFGS directions)
 
-mutable struct ZeroFPRIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I, T}
+mutable struct ZeroFPRIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I}
     x::T
     fs
     As
@@ -85,7 +85,7 @@ end
 ################################################################################
 # Initialization
 
-function initialize(sol::ZeroFPRIterator)
+function initialize!(sol::ZeroFPRIterator)
 
     # compute first forward-backward step here
     A_mul_B!(sol.Aqx, sol.Aq, sol.x)
@@ -121,7 +121,7 @@ end
 ################################################################################
 # Iteration
 
-function iterate(sol::ZeroFPRIterator{I, R, T}, it) where {I, R, T}
+function iterate!(sol::ZeroFPRIterator{I, R, T}, it::I) where {I, R, T}
 
     # These need to be performed anyway (to compute xbarbar later on)
     Aqxbar = sol.Aq*sol.xbar
@@ -207,7 +207,7 @@ function iterate(sol::ZeroFPRIterator{I, R, T}, it) where {I, R, T}
         tau = 0.5*tau
     end
 
-    return sol.xbar
+    return 
 
 end
 
@@ -216,6 +216,10 @@ end
 
 function ZeroFPR(x0; kwargs...)
     sol = ZeroFPRIterator(x0; kwargs...)
-    (it, point) = run(sol)
-    return (it, point, sol)
+    return ZeroFPR!(sol)
+end
+
+function ZeroFPR!(sol::ZeroFPRIterator)
+    it = run!(sol)
+    return (it, sol.xbar, sol)
 end

@@ -1,7 +1,7 @@
 ################################################################################
 # PANOC iterator (with L-BFGS directions)
 
-mutable struct PANOCIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I, T}
+mutable struct PANOCIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I}
     x::T
     fs
     As
@@ -85,7 +85,7 @@ end
 ################################################################################
 # Initialization
 
-function initialize(sol::PANOCIterator)
+function initialize!(sol::PANOCIterator)
 
     # compute first forward-backward step here
     A_mul_B!(sol.Aqx, sol.Aq, sol.x)
@@ -121,7 +121,7 @@ end
 ################################################################################
 # Iteration
 
-function iterate(sol::PANOCIterator{I, R, T}, it) where {I, R, T}
+function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
 
     # These need to be performed anyway (to compute xbarbar later on)
     Aqxbar = sol.Aq*sol.xbar
@@ -228,7 +228,7 @@ function iterate(sol::PANOCIterator{I, R, T}, it) where {I, R, T}
     sol.FPR_xbar_prev = FPR_xbar
     sol.xbar = xnewbar
 
-    return sol.xbar
+    return 
 
 end
 
@@ -237,6 +237,10 @@ end
 
 function PANOC(x0; kwargs...)
     sol = PANOCIterator(x0; kwargs...)
-    (it, point) = run(sol)
-    return (it, point, sol)
+    return PANOC!(sol)
+end
+
+function PANOC!(sol::PANOCIterator)
+    it = run!(sol)
+    return (it, sol.xbar, sol)
 end

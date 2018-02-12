@@ -5,7 +5,7 @@
 # [2] Condat. "A primal–dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms" Journal of Optimization Theory and Applications 158.2 (2013): 460-479.
 # [3] Vũ. "A splitting algorithm for dual monotone inclusions involving cocoercive operators"" Advances in Computational Mathematics, 38(3), pp.667-681.
 
-struct AFBAIterator{I <: Integer, R <: Real, T1 <: BlockArray, T2 <: BlockArray} <: ProximalAlgorithm{I, Tuple{T1, T2}}
+struct AFBAIterator{I <: Integer, R <: Real, T1 <: BlockArray, T2 <: BlockArray} <: ProximalAlgorithm{I}
     x::T1
     y::T2
     g
@@ -145,14 +145,14 @@ end
 ################################################################################
 # Initialization
 
-function initialize(sol::AFBAIterator)
+function initialize!(sol::AFBAIterator)
     return
 end
 
 ################################################################################
 # Iteration
 
-function iterate(sol::AFBAIterator{I, R, T1, T2}, it::I) where {I, R, T1, T2}
+function iterate!(sol::AFBAIterator{I, R, T1, T2}, it::I) where {I, R, T1, T2}
     # perform xbar-update step
     gradient!(sol.gradf, sol.f, sol.x)
     Ac_mul_B!(sol.temp_x, sol.L, sol.y)
@@ -179,7 +179,7 @@ function iterate(sol::AFBAIterator{I, R, T1, T2}, it::I) where {I, R, T1, T2}
     sol.temp_x .= (1-sol.mu)*(2-sol.theta)*sol.gamma2*sol.FPR_x
     A_mul_B!(sol.temp_y, sol.L, sol.temp_x)
     sol.y .+= sol.lam *(sol.FPR_y .+ sol.temp_y)
-    return sol.x, sol.y
+    return 
 end
 
 ################################################################################
@@ -231,10 +231,15 @@ See [1, Figure 1] for other special cases and relation to other algorithms.
 function AFBA(x0, y0; kwargs...)
     # Create iterable
     sol = AFBAIterator(x0, y0; kwargs...)
-    # Run iterations
-    (it, (primal, dual)) = run(sol)
-    return (it, primal, dual, sol)
+    return AFBA!(sol)
 end
+
+function AFBA!(sol::AFBAIterator)
+    # Run iterations
+    it = run!(sol)
+    return (it, sol.x, sol.y, sol)
+end
+
 
 """
 **Vũ-Condat primal-dual algorithm**
@@ -255,9 +260,7 @@ See documentation of `AFBA` for the list of keyword arguments.
 function VuCondat(x0, y0; kwargs...)
     # Create iterable
     sol = AFBAIterator(x0, y0; kwargs..., theta=2)
-    # Run iterations
-    (it, (primal, dual)) = run(sol)
-    return (it, primal, dual, sol)
+    return AFBA!(sol)
 end
 
 """
@@ -279,7 +282,5 @@ See documentation of `AFBA` for the list of keyword arguments.
 function ChambollePock(x0, y0; kwargs...)
     # Create iterable
     sol = AFBAIterator(x0, y0; kwargs..., f=IndFree(), theta=2)
-    # Run iterations
-    (it, (primal, dual)) = run(sol)
-    return (it, primal, dual, sol)
+    return AFBA!(sol)
 end
