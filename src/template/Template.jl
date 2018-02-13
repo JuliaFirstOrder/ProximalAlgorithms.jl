@@ -1,7 +1,7 @@
 ################################################################################
 # Template iterator
 
-struct TemplateIterator{I <: Integer, T <: BlockArray} <: ProximalAlgorithm{I}
+struct TemplateIterator{I <: Integer, T <: BlockArray} <: ProximalAlgorithm{I,T}
     x::T
     maxit::I
     # Put here problem description, other parameters, method memory,
@@ -59,6 +59,6 @@ end
 # in-place interface
 function Template!(sol::TemplateIterator)
     # Run iterations
-    it = run!(sol)
-    return (it, sol.x, sol)
+    it, point = run!(sol)
+    return (it, point, sol)
 end

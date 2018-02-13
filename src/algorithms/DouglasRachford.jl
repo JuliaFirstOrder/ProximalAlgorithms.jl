@@ -5,7 +5,7 @@
 # [1] Eckstein, Bertsekas "On the Douglas-Rachford Splitting Method and the Proximal Point Algorithm for Maximal Monotone Operators*", Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 #
 
-struct DRSIterator{I <: Integer, R <: Real, T <: BlockArray{R}} <: ProximalAlgorithm{I}
+struct DRSIterator{I <: Integer, R <: Real, T <: BlockArray{R}} <: ProximalAlgorithm{I,T}
     x::T
     f
     g
@@ -37,7 +37,7 @@ end
 
 maxit(sol::DRSIterator) = sol.maxit
 
-converged(sol::DRSIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
+converged(sol::DRSIterator, it) = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
 verbose(sol::DRSIterator) = sol.verbose > 0
 verbose(sol::DRSIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
@@ -73,6 +73,7 @@ function iterate!(sol::DRSIterator{I, T}, it::I) where {I, T}
     prox!(sol.z, sol.g, sol.r, sol.gamma)
     sol.FPR_x .= sol.y .- sol.z
     sol.x .-= sol.FPR_x
+    return sol.z
 end
 
 ################################################################################
@@ -84,6 +85,6 @@ function DRS(x0; kwargs...)
 end
 
 function DRS!(sol::DRSIterator)
-    it = run!(sol)
-    return (it, sol.z, sol)
+    it, point = run!(sol)
+    return (it, point, sol)
 end

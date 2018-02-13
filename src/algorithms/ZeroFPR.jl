@@ -1,7 +1,7 @@
 ################################################################################
 # ZeroFPR iterator (with L-BFGS directions)
 
-mutable struct ZeroFPRIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I}
+mutable struct ZeroFPRIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I,T}
     x::T
     fs
     As
@@ -61,7 +61,7 @@ end
 
 maxit(sol::ZeroFPRIterator) = sol.maxit
 
-converged(sol::ZeroFPRIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
+converged(sol::ZeroFPRIterator, it) = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
 verbose(sol::ZeroFPRIterator) = sol.verbose > 0 
 verbose(sol::ZeroFPRIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
@@ -207,7 +207,7 @@ function iterate!(sol::ZeroFPRIterator{I, R, T}, it::I) where {I, R, T}
         tau = 0.5*tau
     end
 
-    return 
+    return sol.xbar 
 
 end
 
@@ -220,6 +220,6 @@ function ZeroFPR(x0; kwargs...)
 end
 
 function ZeroFPR!(sol::ZeroFPRIterator)
-    it = run!(sol)
-    return (it, sol.xbar, sol)
+    it, point = run!(sol)
+    return (it, point, sol)
 end

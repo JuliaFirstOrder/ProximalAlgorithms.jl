@@ -1,7 +1,7 @@
 ################################################################################
 # PANOC iterator (with L-BFGS directions)
 
-mutable struct PANOCIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I}
+mutable struct PANOCIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I,T}
     x::T
     fs
     As
@@ -61,7 +61,7 @@ end
 
 maxit(sol::PANOCIterator) = sol.maxit
 
-converged(sol::PANOCIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
+converged(sol::PANOCIterator, it) = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
 verbose(sol::PANOCIterator) = sol.verbose > 0 
 verbose(sol::PANOCIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
@@ -228,7 +228,7 @@ function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
     sol.FPR_xbar_prev = FPR_xbar
     sol.xbar = xnewbar
 
-    return 
+    return sol.xbar 
 
 end
 
@@ -241,6 +241,6 @@ function PANOC(x0; kwargs...)
 end
 
 function PANOC!(sol::PANOCIterator)
-    it = run!(sol)
-    return (it, sol.xbar, sol)
+    it, point = run!(sol)
+    return (it, point, sol)
 end

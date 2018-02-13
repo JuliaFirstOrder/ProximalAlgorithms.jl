@@ -22,6 +22,7 @@ x0 = zeros(n)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 println(sol)
 
+#testing solver already at solution
 @time it, x, sol = ProximalAlgorithms.FBS!(sol)
 
 # Nonfast/Adaptive
@@ -52,6 +53,9 @@ x0 = zeros(n)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 println(sol)
 
+#testing solver already at solution
+@time it, x, sol = ProximalAlgorithms.ZeroFPR!(sol)
+
 # ZeroFPR/Adaptive
 
 x0 = zeros(n)
@@ -64,6 +68,9 @@ x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 println(sol)
+
+#testing solver already at solution
+@time it, x, sol = ProximalAlgorithms.PANOC!(sol)
 
 # PANOC/Adaptive
 
@@ -78,3 +85,6 @@ x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.DRS(x0; f=f2, g=g, gamma=10.0/norm(A)^2)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 println(sol)
+
+#testing solver already at solution
+@time it, x, sol = ProximalAlgorithms.DRS!(sol)

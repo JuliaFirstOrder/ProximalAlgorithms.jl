@@ -10,29 +10,28 @@ include("utilities/identity.jl")
 include("utilities/zero.jl")
 include("utilities/conjugate.jl")
 
-abstract type ProximalAlgorithm{I} end
+abstract type ProximalAlgorithm{I,T} end
 
 # The following methods give `ProximalAlgorithm` objects the iterable behavior.
 
-function start(solver::ProximalAlgorithm{I})::I where {I}
+function start(solver::ProximalAlgorithm{I,T})::I where {I,T}
     initialize!(solver)
     return zero(I)
 end
 
-function next(solver::ProximalAlgorithm{I}, it::I)::Tuple{Void, I} where {I}
-    iterate!(solver, it)
-    return (nothing, it + one(I))
+function next(solver::ProximalAlgorithm{I,T}, it::I)::Tuple{T, I} where {I,T}
+    point = iterate!(solver, it)
+    return (point, it + one(I))
 end
 
-function done(solver::ProximalAlgorithm{I}, it::I)::Bool where {I}
+function done(solver::ProximalAlgorithm{I,T}, it::I)::Bool where {I,T}
     return it >= maxit(solver) || converged(solver, it)
 end
 
 # Running a `ProximalAlgorithm` unrolls the iterations
 
-function run!(solver::ProximalAlgorithm{I})::I where {I}
-    local it = zero(I)
-    local point = nothing
+function run!(solver::ProximalAlgorithm{I,T})::Tuple{I,T} where {I,T}
+    local it, point
     if verbose(solver) display(solver) end
     # NOTE: the following loop is translated into:
     #   it = start(solver)
@@ -45,7 +44,7 @@ function run!(solver::ProximalAlgorithm{I})::I where {I}
         if verbose(solver, it) display(solver, it) end
     end
     if verbose(solver) display(solver, it) end
-    return it
+    return it, point
 end
 
 # Functions `verbose` and `display` are used for inspecting the iterations.

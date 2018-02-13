@@ -8,7 +8,7 @@
 # [2] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave Optimization," (2008)
 #
 
-mutable struct FBSIterator{I <: Integer, R <: Real, T <: BlockArray{R}} <: ProximalAlgorithm{I}
+mutable struct FBSIterator{I <: Integer, R <: Real, T <: BlockArray{R}} <: ProximalAlgorithm{I, T}
     x::T
     fs
     As
@@ -68,7 +68,7 @@ end
 
 maxit(sol::FBSIterator) = sol.maxit
 
-converged(sol::FBSIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
+converged(sol::FBSIterator, it) = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
 verbose(sol::FBSIterator) = sol.verbose > 0
 verbose(sol::FBSIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
@@ -211,7 +211,7 @@ function iterate!(sol::FBSIterator{I, R, T}, it::I) where {I, R, T}
     prox!(sol.z, sol.g, sol.y, sol.gamma)
     blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.z)
 
-    return 
+    return sol.z
 
 end
 
@@ -251,6 +251,6 @@ function FBS(x0; kwargs...)
 end
 
 function FBS!(sol::FBSIterator)
-    it = run!(sol)
-    return (it, sol.z, sol)
+    it, point = run!(sol)
+    return (it, point, sol)
 end
