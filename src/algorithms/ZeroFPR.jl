@@ -216,10 +216,6 @@ end
 
 function ZeroFPR(x0; kwargs...)
     sol = ZeroFPRIterator(x0; kwargs...)
-    return ZeroFPR!(sol)
-end
-
-function ZeroFPR!(sol::ZeroFPRIterator)
     it, point = run!(sol)
     return (it, point, sol)
 end

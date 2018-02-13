@@ -247,10 +247,6 @@ additional options as follows:
 
 function FBS(x0; kwargs...)
     sol = FBSIterator(x0; kwargs...)
-    return FBS!(sol)
-end
-
-function FBS!(sol::FBSIterator)
     it, point = run!(sol)
     return (it, point, sol)
 end

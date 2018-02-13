@@ -81,10 +81,6 @@ end
 
 function DRS(x0; kwargs...)
     sol = DRSIterator(x0; kwargs...)
-    return DRS!(sol)
-end
-
-function DRS!(sol::DRSIterator)
     it, point = run!(sol)
     return (it, point, sol)
 end

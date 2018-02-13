@@ -63,7 +63,7 @@ println("      nnz(x)    = $(norm(sol.x, 2))")
 @test it ==itnum[1]
 println(sol)
 
-@time it, x, y, sol = ProximalAlgorithms.AFBA!(sol)
+@time it, (x, y) = ProximalAlgorithms.run!(sol)
 
 # f=\equiv 0 (Chambolle-Pock)
 y0 = randn(m)

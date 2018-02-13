@@ -232,12 +232,6 @@ function AFBA(x0, y0; kwargs...)
     # Create iterable
     sol = AFBAIterator(x0, y0; kwargs...)
     # Run iterations
-    return AFBA!(sol)
-end
-
-# in-place interface
-function AFBA!(sol::AFBAIterator)
-    # Run iterations
     (it, (primal, dual)) = run!(sol)
     return (it, primal, dual, sol)
 end
@@ -263,7 +257,8 @@ function VuCondat(x0, y0; kwargs...)
     # Create iterable
     sol = AFBAIterator(x0, y0; kwargs..., theta=2)
     # Run iterations
-    return AFBA!(sol)
+    (it, (primal, dual)) = run!(sol)
+    return (it, primal, dual, sol)
 end
 
 """
@@ -286,5 +281,6 @@ function ChambollePock(x0, y0; kwargs...)
     # Create iterable
     sol = AFBAIterator(x0, y0; kwargs..., f=IndFree(), theta=2)
     # Run iterations
-    return AFBA!(sol)
+    (it, (primal, dual)) = run!(sol)
+    return (it, primal, dual, sol)
 end

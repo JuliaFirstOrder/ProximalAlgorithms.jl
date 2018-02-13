@@ -237,10 +237,6 @@ end
 
 function PANOC(x0; kwargs...)
     sol = PANOCIterator(x0; kwargs...)
-    return PANOC!(sol)
-end
-
-function PANOC!(sol::PANOCIterator)
     it, point = run!(sol)
     return (it, point, sol)
 end

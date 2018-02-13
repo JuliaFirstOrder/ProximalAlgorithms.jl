@@ -53,12 +53,7 @@ end
 function Template(x0; kwargs...)
     # Create iterable
     sol = TemplateIterator(x0; kwargs...)
-    return Template!(sol)
-end
-
-# in-place interface
-function Template!(sol::TemplateIterator)
     # Run iterations
     it, point = run!(sol)
-    return (it, point, sol)
+    return it, point, sol 
 end

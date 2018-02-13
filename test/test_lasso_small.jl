@@ -23,7 +23,7 @@ x0 = zeros(n)
 println(sol)
 
 #testing solver already at solution
-@time it, x, sol = ProximalAlgorithms.FBS!(sol)
+@time it, x = ProximalAlgorithms.run!(sol)
 
 # Nonfast/Adaptive
 
@@ -54,7 +54,7 @@ x0 = zeros(n)
 println(sol)
 
 #testing solver already at solution
-@time it, x, sol = ProximalAlgorithms.ZeroFPR!(sol)
+@time it, x = ProximalAlgorithms.run!(sol)
 
 # ZeroFPR/Adaptive
 
@@ -70,7 +70,7 @@ x0 = zeros(n)
 println(sol)
 
 #testing solver already at solution
-@time it, x, sol = ProximalAlgorithms.PANOC!(sol)
+@time it, x = ProximalAlgorithms.run!(sol)
 
 # PANOC/Adaptive
 
@@ -87,4 +87,4 @@ x0 = zeros(n)
 println(sol)
 
 #testing solver already at solution
-@time it, x, sol = ProximalAlgorithms.DRS!(sol)
+@time it, x = ProximalAlgorithms.run!(sol)
