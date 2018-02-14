@@ -15,7 +15,7 @@ g = NormL1(lam)
 
 x_star = [-3.877278911564627e-01, 0, 0, 2.174149659863943e-02, 6.168435374149660e-01]
 
-# Nonfast/Nonadaptive
+## Nonfast/Nonadaptive
 
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
@@ -72,7 +72,7 @@ println(sol)
 #testing solver already at solution
 @time it, x = ProximalAlgorithms.run!(sol)
 
-# PANOC/Adaptive
+## PANOC/Adaptive
 
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, adaptive=true)
