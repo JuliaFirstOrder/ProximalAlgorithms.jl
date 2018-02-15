@@ -124,31 +124,6 @@ function initialize!(sol::PANOCIterator)
     sol.FBE_x = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_x^2 + sol.g_xbar
 
 
-    if sol.adaptive
-	    Aqxbar = sol.Aq*sol.xbar
-	    gradfq_Aqxbar, fq_Aqxbar = gradient(sol.fq, Aqxbar)
-	    Asxbar = sol.As*sol.xbar
-	    gradfs_Asxbar, fs_Asxbar = gradient(sol.fs, Asxbar)
-	    f_Axbar = fs_Asxbar + fq_Aqxbar
-	    for it_gam = 1:100 # TODO: replace/complement with lower bound on gamma
-		    normFPR_x = blockvecnorm(sol.FPR_x)
-		    uppbnd = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_x^2
-		    if f_Axbar > uppbnd + 1e-6*abs(sol.f_Ax)
-			    sol.gamma = 0.5*sol.gamma
-			    blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
-			    sol.xbar, sol.g_xbar = prox(sol.g, sol.y, sol.gamma)
-			    blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.xbar)
-		    else
-			    break
-		    end
-            
-		    Aqxbar = sol.Aq*sol.xbar
-		    gradfq_Aqxbar, fq_Aqxbar = gradient(sol.fq, Aqxbar)
-		    Asxbar = sol.As*sol.xbar
-		    gradfs_Asxbar, fs_Asxbar = gradient(sol.fs, Asxbar)
-		    f_Axbar = fs_Asxbar + fq_Aqxbar
-	    end
-    end
 
 end
 
@@ -156,6 +131,29 @@ end
 # Iteration
 
 function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
+
+	if sol.adaptive
+		for it_gam = 1:100 # TODO: replace/complement with lower bound on gamma
+			Aqxbar = sol.Aq*sol.xbar
+			gradfq_Aqxbar, fq_Aqxbar = gradient(sol.fq, Aqxbar)
+			Asxbar = sol.As*sol.xbar
+			gradfs_Asxbar, fs_Asxbar = gradient(sol.fs, Asxbar)
+			f_Axbar = fs_Asxbar + fq_Aqxbar
+
+			uppbnd = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 
+				 0.5/sol.gamma*sol.normFPR_x^2
+			if f_Axbar > uppbnd + 1e-6*abs(sol.f_Ax)
+				sol.gamma = 0.5*sol.gamma
+				blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
+				sol.g_xbar = prox!(sol.xbar, sol.g, sol.y, sol.gamma)
+				blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.xbar)
+			else
+				break
+			end
+			sol.normFPR_x = blockvecnorm(sol.FPR_x)
+			sol.FBE_x = uppbnd + sol.g_xbar
+		end
+	end
 
 	xbar = sol.xbar
 	x = sol.x
@@ -208,32 +206,6 @@ function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
 		end
 		tau *= 0.5
     
-	end
-
-	if sol.adaptive
-		Aqxbar = sol.Aq*sol.xbar
-		gradfq_Aqxbar, fq_Aqxbar = gradient(sol.fq, Aqxbar)
-		Asxbar = sol.As*sol.xbar
-		gradfs_Asxbar, fs_Asxbar = gradient(sol.fs, Asxbar)
-		f_Axbar = fs_Asxbar + fq_Aqxbar
-		for it_gam = 1:100 # TODO: replace/complement with lower bound on gamma
-		    normFPR_x = blockvecnorm(sol.FPR_x)
-		    uppbnd = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_x^2
-		    if f_Axbar > uppbnd + 1e-6*abs(sol.f_Ax)
-			    sol.gamma = 0.5*sol.gamma
-			    blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
-			    sol.xbar, sol.g_xbar = prox(sol.g, sol.y, sol.gamma)
-			    blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.xbar)
-		    else
-			    break
-		    end
-		
-		    Aqxbar = sol.Aq*sol.xbar
-		    gradfq_Aqxbar, fq_Aqxbar = gradient(sol.fq, Aqxbar)
-		    Asxbar = sol.As*sol.xbar
-		    gradfs_Asxbar, fs_Asxbar = gradient(sol.fs, Asxbar)
-		    f_Axbar = fs_Asxbar + fq_Aqxbar
-		end
 	end
 
 	return sol.xbar 
