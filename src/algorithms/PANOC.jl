@@ -120,8 +120,8 @@ function initialize!(sol::PANOCIterator)
     sol.g_xbar = prox!(sol.xbar, sol.g, sol.y, sol.gamma)
     blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.xbar)
 
-    normFPR_x = blockvecnorm(sol.FPR_x)
-    sol.FBE_x = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_x^2 + sol.g_xbar
+    sol.normFPR_x = blockvecnorm(sol.FPR_x)
+    sol.FBE_x = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*sol.normFPR_x^2 + sol.g_xbar
 
 
 
@@ -147,16 +147,13 @@ function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
 				blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
 				sol.g_xbar = prox!(sol.xbar, sol.g, sol.y, sol.gamma)
 				blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.xbar)
+				sol.normFPR_x = blockvecnorm(sol.FPR_x)
 			else
+				sol.FBE_x = uppbnd + sol.g_xbar
 				break
 			end
-			sol.normFPR_x = blockvecnorm(sol.FPR_x)
-			sol.FBE_x = uppbnd + sol.g_xbar
 		end
 	end
-
-	xbar = sol.xbar
-	x = sol.x
 
 	if it > 1
 		update!(sol.H, sol.x, sol.x_prev, sol.FPR_x, sol.FPR_x_prev)
@@ -166,15 +163,13 @@ function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
 	sol.FPR_x_prev, sol.FPR_x = sol.FPR_x, sol.FPR_x_prev
 	blockset!(sol.x_prev, sol.x)
 
-	FBE_x = sol.FBE_x
-	normFPR_x = sol.normFPR_x
 	C = sol.sigma*sol.gamma*(1.0-sol.alpha)
 	maxit_tau = 10
 	tau = 1.0
     
 	for it_tau = 1:maxit_tau # TODO: replace/complement with lower bound on tau
 
-		xnew = (1-tau).*xbar .+ tau .* (x.+sol.d)
+		xnew = (1-tau).*sol.xbar .+ tau .* (sol.x.+sol.d)
 	   
 		# calculate new FBE in xnew
 
@@ -196,12 +191,13 @@ function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
 		FBE_xnew = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, FPR_xnew) + 
 		           0.5/sol.gamma*norm_FPRxnew^2 + g_xnewbar
 
-		if FBE_xnew <= FBE_x - (C/2)*normFPR_x^2 || it_tau == maxit_tau
+		if FBE_xnew <= sol.FBE_x - (C/2)*sol.normFPR_x^2 || it_tau == maxit_tau
 			sol.normFPR_x = norm_FPRxnew
 			sol.FPR_x = FPR_xnew
 			sol.FBE_x = FBE_xnew
 			sol.x, sol.xbar = xnew, xnewbar
 			sol.tau = tau
+			sol.g_xbar = g_xnewbar
 			break
 		end
 		tau *= 0.5
