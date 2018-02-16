@@ -20,16 +20,29 @@ x_star = [-3.877278911564627e-01, 0, 0, 2.174149659863943e-02, 6.168435374149660
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
 @test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 150
 println(sol)
 
-#testing solver already at solution
+@test object_id(x0) == object_id(sol.x)
+
+# test warm start
+x0 .= 0.0
+@time itws, xws = ProximalAlgorithms.run!(sol)
+@test vecnorm(xws - x_star, Inf) <= 1e-4
+@test itws == it
+
+# testing solver already at solution
 @time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1
+
+@test object_id(x0) == object_id(sol.x)
 
 # Nonfast/Adaptive
 
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 300
 println(sol)
 
 # Fast/Nonadaptive
@@ -37,13 +50,29 @@ println(sol)
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, fast=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 100
 println(sol)
+
+@test object_id(x0) == object_id(sol.x)
+
+# test warm start
+x0 .= 0.0
+@time itws, xws = ProximalAlgorithms.run!(sol)
+@test vecnorm(xws - x_star, Inf) <= 1e-4
+@test itws == it
+
+# testing solver already at solution
+@time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1
+
+@test object_id(x0) == object_id(sol.x)
 
 # Fast/Adaptive
 
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, adaptive=true, fast=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 200
 println(sol)
 
 # ZeroFPR/Nonadaptive
@@ -51,32 +80,56 @@ println(sol)
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
 @test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 15
 println(sol)
+
+@test object_id(x0) == object_id(sol.x)
+
+# test warm start
+x0 .= 0.0
+@time itws, xws = ProximalAlgorithms.run!(sol)
+@test vecnorm(xws - x_star, Inf) <= 1e-4
+@test itws == it
 
 #testing solver already at solution
 @time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1
 
 # ZeroFPR/Adaptive
 
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 15
 
 # PANOC/Nonadaptive
 
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
 @test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 20
 println(sol)
 
-#testing solver already at solution
+@test object_id(x0) == object_id(sol.x)
+
+# test warm start
+x0 .= 0.0
+@time itws, xws = ProximalAlgorithms.run!(sol)
+@test vecnorm(xws - x_star, Inf) <= 1e-4
+@test itws == it
+
+# testing solver already at solution
 @time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1
+
+@test object_id(x0) == object_id(sol.x)
 
 ## PANOC/Adaptive
 
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 20
 println(sol)
 
 # Douglas-Rachford
@@ -84,7 +137,9 @@ println(sol)
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.DRS(x0; f=f2, g=g, gamma=10.0/norm(A)^2)
 @test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 30
 println(sol)
 
 #testing solver already at solution
 @time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1

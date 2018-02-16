@@ -47,7 +47,7 @@ function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq
     n = blocksize(x0)
     mq = size(Aq, 1)
     ms = size(As, 1)
-    x = blockcopy(x0)
+    x = x0
     y = blockzeros(x0)
     z = blockzeros(x0)
     z_prev = blockzeros(x0)
@@ -68,7 +68,17 @@ end
 
 maxit(sol::FBSIterator) = sol.maxit
 
-converged(sol::FBSIterator, it) = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
+function converged(sol::FBSIterator, it) 
+	cnv = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
+	if cnv
+		blockset!(sol.x,sol.z)
+		if isodd(it) && !sol.fast
+			# make sure x0 is x to warm start correctly
+			sol.x, sol.z = sol.z, sol.x
+		end
+	end
+	return cnv
+end
 
 verbose(sol::FBSIterator) = sol.verbose > 0
 verbose(sol::FBSIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
@@ -92,6 +102,9 @@ end
 # Initialization
 
 function initialize!(sol::FBSIterator)
+
+    # reset parameters
+    sol.theta = 1.0
 
     # compute first forward-backward step here
     A_mul_B!(sol.Aqx, sol.Aq, sol.x)
