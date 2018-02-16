@@ -54,7 +54,7 @@ function ZeroFPRIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero()
     n = blocksize(x0)
     mq = size(Aq, 1)
     ms = size(As, 1)
-    x = x0
+    x = blockcopy(x0)
     y = blockzeros(x0)
     xbar = blockzeros(x0)
     xbarbar = blockzeros(x0)
@@ -102,17 +102,7 @@ end
 
 maxit(sol::ZeroFPRIterator) = sol.maxit
 
-function converged(sol::ZeroFPRIterator, it) 
-	cnv = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
-	if cnv
-		if isodd(it)
-			# make sure x0 is x to warm start correctly
-			sol.x, sol.xnew = sol.xnew, sol.x 
-		end
-		blockset!(sol.x,sol.xbar)
-	end
-	return cnv
-end
+converged(sol::ZeroFPRIterator, it) = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
 verbose(sol::ZeroFPRIterator) = sol.verbose > 0 
 verbose(sol::ZeroFPRIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))

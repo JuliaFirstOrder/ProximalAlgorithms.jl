@@ -23,19 +23,9 @@ x0 = zeros(n)
 @test it < 150
 println(sol)
 
-@test object_id(x0) == object_id(sol.x)
-
-# test warm start
-x0 .= 0.0
-@time itws, xws = ProximalAlgorithms.run!(sol)
-@test vecnorm(xws - x_star, Inf) <= 1e-4
-@test itws == it
-
 # testing solver already at solution
 @time it, x = ProximalAlgorithms.run!(sol)
 @test it == 1
-
-@test object_id(x0) == object_id(sol.x)
 
 # Nonfast/Adaptive
 
@@ -53,19 +43,9 @@ x0 = zeros(n)
 @test it < 100
 println(sol)
 
-@test object_id(x0) == object_id(sol.x)
-
-# test warm start
-x0 .= 0.0
-@time itws, xws = ProximalAlgorithms.run!(sol)
-@test vecnorm(xws - x_star, Inf) <= 1e-4
-@test itws == it
-
 # testing solver already at solution
 @time it, x = ProximalAlgorithms.run!(sol)
 @test it == 1
-
-@test object_id(x0) == object_id(sol.x)
 
 # Fast/Adaptive
 
@@ -82,14 +62,6 @@ x0 = zeros(n)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 @test it < 15
 println(sol)
-
-@test object_id(x0) == object_id(sol.x)
-
-# test warm start
-x0 .= 0.0
-@time itws, xws = ProximalAlgorithms.run!(sol)
-@test vecnorm(xws - x_star, Inf) <= 1e-4
-@test itws == it
 
 #testing solver already at solution
 @time it, x = ProximalAlgorithms.run!(sol)
@@ -110,19 +82,9 @@ x0 = zeros(n)
 @test it < 20
 println(sol)
 
-@test object_id(x0) == object_id(sol.x)
-
-# test warm start
-x0 .= 0.0
-@time itws, xws = ProximalAlgorithms.run!(sol)
-@test vecnorm(xws - x_star, Inf) <= 1e-4
-@test itws == it
-
 # testing solver already at solution
 @time it, x = ProximalAlgorithms.run!(sol)
 @test it == 1
-
-@test object_id(x0) == object_id(sol.x)
 
 ## PANOC/Adaptive
 

@@ -19,7 +19,7 @@ x_star = [0, 0, 2.114635341704963e-01, 0, 2.845881348733116e+00]
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fs=f, As=A, g=g, tol=1e-6, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
-#@test it == 1658
+@test it < 1700
 println(sol)
 
 # Fast/Adaptive
@@ -27,7 +27,7 @@ println(sol)
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fs=f, As=A, g=g, tol=1e-6, adaptive=true, fast=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
-#@test it == 473
+@test it < 500
 println(sol)
 
 # ZeroFPR/Adaptive
@@ -35,7 +35,7 @@ println(sol)
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fs=f, As=A, g=g, tol=1e-6, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
-#@test it == 19
+@test it < 25
 println(sol)
 
 # PANOC/Adaptive
@@ -43,5 +43,5 @@ println(sol)
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.PANOC(x0; fs=f, As=A, g=g, tol=1e-6, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
-#@test it == 19
+@test it < 35
 println(sol)

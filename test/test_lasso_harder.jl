@@ -19,18 +19,19 @@ g = NormL1(lam)
 
 # fast FBS/Nonadaptive
 x0 = zeros(n)
-@time itFBS, xFBS, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, fast = true, tol = 1e-8)
+@time it, xFBS, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, fast = true, tol = 1e-8)
+@test it < 1800
 
 # ZeroFPR/Nonadaptive
 x0 = zeros(n)
-@time itZ, xZ, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, tol = 1e-8)
+@time it, xZ, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, tol = 1e-8)
 
 @test norm(xFBS-xZ) < 1e-8
-@test itZ < itFBS
+@test it < 150
 
 # PANOC/Nonadaptive
 x0 = zeros(n)
-@time itP, xP, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, tol = 1e-8)
+@time it, xP, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, tol = 1e-8)
 
 @test norm(xP-xZ) < 1e-8
-@test itP < itFBS
+@test it < 300
