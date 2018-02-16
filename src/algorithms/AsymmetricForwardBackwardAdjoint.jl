@@ -216,7 +216,7 @@ Keyword arguments are as follows:
 * `verbose_freq`, verbosity frequency for `verbose = 1` (default: `100`)
 
 The iterator implements Algorithm 3 of [1] with constant stepsize (α_n=λ) for several prominant special cases:
-1) θ = 2 	 	==>   Corresponds to the Vu-Condat Algorithm [2,3].
+1) θ = 2          ==>   Corresponds to the Vu-Condat Algorithm [2,3].
 2) θ = 1, μ=1
 3) θ = 0, μ=1
 4) θ ∈ [0,∞), μ=0

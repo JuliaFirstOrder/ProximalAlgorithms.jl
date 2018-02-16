@@ -74,18 +74,18 @@ verbose(sol::FBSIterator) = sol.verbose > 0
 verbose(sol::FBSIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
 
 function display(sol::FBSIterator)
-	@printf("%6s | %10s | %10s |\n ", "it", "gamma", "fpr")
-	@printf("------|------------|------------|\n")
+    @printf("%6s | %10s | %10s |\n ", "it", "gamma", "fpr")
+    @printf("------|------------|------------|\n")
 end
 
 function display(sol::FBSIterator, it)
-	@printf("%6d | %7.4e | %7.4e |\n", it, sol.gamma, blockmaxabs(sol.FPR_x)/sol.gamma)
+    @printf("%6d | %7.4e | %7.4e |\n", it, sol.gamma, blockmaxabs(sol.FPR_x)/sol.gamma)
 end
 
 function Base.show(io::IO, sol::FBSIterator)
-	println(io, (sol.fast ? "Fast " : "")*"Forward-Backward Splitting" )
-	println(io, "fpr        : $(blockmaxabs(sol.FPR_x))")
-	print(  io, "gamma      : $(sol.gamma)")
+    println(io, (sol.fast ? "Fast " : "")*"Forward-Backward Splitting" )
+    println(io, "fpr        : $(blockmaxabs(sol.FPR_x))")
+    print(  io, "gamma      : $(sol.gamma)")
 end
 
 ################################################################################

@@ -43,8 +43,8 @@ verbose(sol::DRSIterator) = sol.verbose > 0
 verbose(sol::DRSIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
 
 function display(sol::DRSIterator)
-	@printf("%6s | %10s | %10s |\n ", "it", "gamma", "fpr")
-	@printf("------|------------|------------|\n")
+    @printf("%6s | %10s | %10s |\n ", "it", "gamma", "fpr")
+    @printf("------|------------|------------|\n")
 end
 
 function display(sol::DRSIterator, it)
@@ -52,9 +52,9 @@ function display(sol::DRSIterator, it)
 end
 
 function Base.show(io::IO, sol::DRSIterator)
-	println(io, "Douglas-Rachford Splitting" )
-	println(io, "fpr        : $(blockmaxabs(sol.FPR_x))")
-	print(  io, "gamma      : $(sol.gamma)")
+    println(io, "Douglas-Rachford Splitting" )
+    println(io, "fpr        : $(blockmaxabs(sol.FPR_x))")
+    print(  io, "gamma      : $(sol.gamma)")
 end
 
 ################################################################################

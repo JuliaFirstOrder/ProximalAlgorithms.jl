@@ -88,21 +88,21 @@ function PANOCIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), 
     Ast_gradfs_Asx = blockzeros(n)
     d = blockzeros(x0)
     PANOCIterator{I, R, T}(
-			   x, fs, As, 
-			   fq, Aq, g, 
-			   gamma, maxit, tol, 
-			   adaptive, verbose, 
-			   verbose_freq, alpha, sigma, 
-			   0.0, y, xbar, 
-			   LBFGS(x, memory), FPR_x, 
-			   Aqx, Asx, Aqxnew, Asxnew, Aqd, Asd, Aqfb, Asfb, gradfq_Aqx, gradfs_Asx, 
-			   Aqxbar, Asxbar, gradfq_Aqxbar, gradfs_Asxbar, 
-			   0.0, 0.0, 0.0, 
-			   At_gradf_Ax, Aqt_gradfq_Aqx, Ast_gradfs_Asx,
-			   0.0, 0.0, 
-			   0.0, x_prev, FPR_x_prev, 
-			   xnew, xnewbar, FPR_xnew,
-			   d, 0)
+               x, fs, As,
+               fq, Aq, g,
+               gamma, maxit, tol,
+               adaptive, verbose,
+               verbose_freq, alpha, sigma,
+               0.0, y, xbar,
+               LBFGS(x, memory), FPR_x,
+               Aqx, Asx, Aqxnew, Asxnew, Aqd, Asd, Aqfb, Asfb, gradfq_Aqx, gradfs_Asx,
+               Aqxbar, Asxbar, gradfq_Aqxbar, gradfs_Asxbar,
+               0.0, 0.0, 0.0,
+               At_gradf_Ax, Aqt_gradfq_Aqx, Ast_gradfs_Asx,
+               0.0, 0.0,
+               0.0, x_prev, FPR_x_prev,
+               xnew, xnewbar, FPR_xnew,
+               d, 0)
 end
 
 ################################################################################
@@ -112,23 +112,24 @@ maxit(sol::PANOCIterator) = sol.maxit
 
 converged(sol::PANOCIterator, it) = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
-verbose(sol::PANOCIterator) = sol.verbose > 0 
+verbose(sol::PANOCIterator) = sol.verbose > 0
 verbose(sol::PANOCIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
 
 function display(sol::PANOCIterator)
-	@printf("%6s | %10s | %10s | %10s | %10s |\n ", "it", "gamma", "fpr", "tau", "FBE")
-	@printf("------|------------|------------|------------|------------|\n")
+    @printf("%6s | %10s | %10s | %10s | %10s |\n ", "it", "gamma", "fpr", "tau", "FBE")
+    @printf("------|------------|------------|------------|------------|\n")
 end
+
 function display(sol::PANOCIterator, it)
     @printf("%6d | %7.4e | %7.4e | %7.4e | %7.4e | \n", it, sol.gamma, blockmaxabs(sol.FPR_x)/sol.gamma, sol.tau, sol.FBE_x)
 end
 
 function Base.show(io::IO, sol::PANOCIterator)
-	println(io, "PANOC" )
-	println(io, "fpr        : $(blockmaxabs(sol.FPR_x))")
-	println(io, "gamma      : $(sol.gamma)")
-	println(io, "tau        : $(sol.tau)")
-	print(  io, "FBE        : $(sol.FBE_x)")
+    println(io, "PANOC" )
+    println(io, "fpr        : $(blockmaxabs(sol.FPR_x))")
+    println(io, "gamma      : $(sol.gamma)")
+    println(io, "tau        : $(sol.tau)")
+    print(  io, "FBE        : $(sol.FBE_x)")
 end
 
 ################################################################################
@@ -173,8 +174,6 @@ function initialize!(sol::PANOCIterator)
     sol.normFPR_x = blockvecnorm(sol.FPR_x)
     sol.FBE_x = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*sol.normFPR_x^2 + sol.g_xbar
 
-
-
 end
 
 ################################################################################
@@ -182,136 +181,135 @@ end
 
 function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
 
-	if sol.adaptive
-		for it_gam = 1:100 # TODO: replace/complement with lower bound on gamma
-			A_mul_B!(sol.Aqxbar, sol.Aq, sol.xbar)
-			fq_Aqxbar = gradient!(sol.gradfq_Aqxbar, sol.fq, sol.Aqxbar)
-			A_mul_B!(sol.Asxbar, sol.As, sol.xbar)
-			fs_Asxbar = gradient!(sol.gradfs_Asxbar, sol.fs, sol.Asxbar)
-			f_Axbar = fs_Asxbar + fq_Aqxbar
+    if sol.adaptive
+        for it_gam = 1:100 # TODO: replace/complement with lower bound on gamma
+            A_mul_B!(sol.Aqxbar, sol.Aq, sol.xbar)
+            fq_Aqxbar = gradient!(sol.gradfq_Aqxbar, sol.fq, sol.Aqxbar)
+            A_mul_B!(sol.Asxbar, sol.As, sol.xbar)
+            fs_Asxbar = gradient!(sol.gradfs_Asxbar, sol.fs, sol.Asxbar)
+            f_Axbar = fs_Asxbar + fq_Aqxbar
 
-			uppbnd = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 
-				 0.5/sol.gamma*sol.normFPR_x^2
-			if f_Axbar > uppbnd + 1e-6*abs(sol.f_Ax)
-				sol.gamma = 0.5*sol.gamma
-				blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
-				sol.g_xbar = prox!(sol.xbar, sol.g, sol.y, sol.gamma)
-				blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.xbar)
-				sol.normFPR_x = blockvecnorm(sol.FPR_x)
-			else
-				sol.FBE_x = uppbnd + sol.g_xbar
-				break
-			end
-		end
-	end
+            uppbnd = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) +
+                 0.5/sol.gamma*sol.normFPR_x^2
+            if f_Axbar > uppbnd + 1e-6*abs(sol.f_Ax)
+                sol.gamma = 0.5*sol.gamma
+                blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
+                sol.g_xbar = prox!(sol.xbar, sol.g, sol.y, sol.gamma)
+                blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.xbar)
+                sol.normFPR_x = blockvecnorm(sol.FPR_x)
+            else
+                sol.FBE_x = uppbnd + sol.g_xbar
+                break
+            end
+        end
+    end
 
-	if it > 1
-		update!(sol.H, sol.x, sol.x_prev, sol.FPR_x, sol.FPR_x_prev)
-	end
-	A_mul_B!(sol.d, sol.H, 0.0 .- sol.FPR_x) # TODO: not nice
+    if it > 1
+        update!(sol.H, sol.x, sol.x_prev, sol.FPR_x, sol.FPR_x_prev)
+    end
+    A_mul_B!(sol.d, sol.H, 0.0 .- sol.FPR_x) # TODO: not nice
 
-	sol.FPR_x_prev, sol.FPR_x = sol.FPR_x, sol.FPR_x_prev
-	blockset!(sol.x_prev, sol.x)
+    sol.FPR_x_prev, sol.FPR_x = sol.FPR_x, sol.FPR_x_prev
+    blockset!(sol.x_prev, sol.x)
 
-	C = sol.sigma*sol.gamma*(1.0-sol.alpha)
-	maxit_tau = 10
+    C = sol.sigma*sol.gamma*(1.0-sol.alpha)
+    maxit_tau = 10
 
-	# tau = 1
-	sol.tau = one(R)
+    # tau = 1
+    sol.tau = one(R)
 
-	A_mul_B!( sol.Aqd, sol.Aq, sol.d)
-	A_mul_B!( sol.Asd, sol.As, sol.d)
+    A_mul_B!( sol.Aqd, sol.Aq, sol.d)
+    A_mul_B!( sol.Asd, sol.As, sol.d)
 
-	# xnew = x + tau*d
-	blockaxpy!(sol.xnew, sol.x, sol.tau, sol.d) 
-	# Aq*xnew = Aq*x + tau*Aq*d
-	blockaxpy!(sol.Aqxnew, sol.Aqx, sol.tau, sol.Aqd) 
-	# As*xnew = As*x + tau*As*d
-	blockaxpy!(sol.Asxnew, sol.Asx, sol.tau, sol.Asd) 
+    # xnew = x + tau*d
+    blockaxpy!(sol.xnew, sol.x, sol.tau, sol.d)
+    # Aq*xnew = Aq*x + tau*Aq*d
+    blockaxpy!(sol.Aqxnew, sol.Aqx, sol.tau, sol.Aqd)
+    # As*xnew = As*x + tau*As*d
+    blockaxpy!(sol.Asxnew, sol.Asx, sol.tau, sol.Asd)
 
-	# calculate new FBE in xnew
-	sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxnew)
-	sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asxnew)
+    # calculate new FBE in xnew
+    sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxnew)
+    sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asxnew)
 
-	Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
-	Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
+    Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+    Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
 
-	blockaxpy!(sol.At_gradf_Ax, sol.Aqt_gradfq_Aqx, 1.0, sol.Ast_gradfs_Asx)
-	sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
+    blockaxpy!(sol.At_gradf_Ax, sol.Aqt_gradfq_Aqx, 1.0, sol.Ast_gradfs_Asx)
+    sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
 
-	# gradient step
-	blockaxpy!(sol.y, sol.xnew, -sol.gamma, sol.At_gradf_Ax)
-	# prox step
-	sol.g_xbar = prox!(sol.xnewbar, sol.g, sol.y, sol.gamma)
-	
-	blockaxpy!(sol.FPR_xnew, sol.xnew, -1.0, sol.xnewbar)
-	norm_FPRxnew = blockvecnorm(sol.FPR_xnew)
-	
-	FBE_xnew = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_xnew) + 
-		           0.5/sol.gamma*norm_FPRxnew^2 + sol.g_xbar
+    # gradient step
+    blockaxpy!(sol.y, sol.xnew, -sol.gamma, sol.At_gradf_Ax)
+    # prox step
+    sol.g_xbar = prox!(sol.xnewbar, sol.g, sol.y, sol.gamma)
 
+    blockaxpy!(sol.FPR_xnew, sol.xnew, -1.0, sol.xnewbar)
+    norm_FPRxnew = blockvecnorm(sol.FPR_xnew)
 
-	A_mul_B!(sol.Aqfb, sol.Aq, sol.FPR_x_prev)
-	A_mul_B!(sol.Asfb, sol.As, sol.FPR_x_prev)
-		
-	if FBE_xnew > sol.FBE_x - (C/2)*sol.normFPR_x^2 
-		# start using convex combination of FB direction and d 
+    FBE_xnew = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_xnew) +
+                   0.5/sol.gamma*norm_FPRxnew^2 + sol.g_xbar
 
-		for it_tau = 1:maxit_tau # TODO: replace/complement with lower bound on tau
+    A_mul_B!(sol.Aqfb, sol.Aq, sol.FPR_x_prev)
+    A_mul_B!(sol.Asfb, sol.As, sol.FPR_x_prev)
 
-			# xnew = x + tau*d
-			blockaxpy!(sol.xnew, sol.x, sol.tau, sol.d) 
-			# xnew += x + (1-tau*d)*fb
-			blockaxpy!(sol.xnew, sol.xnew, sol.tau-1.0, sol.FPR_x_prev) 
+    if FBE_xnew > sol.FBE_x - (C/2)*sol.normFPR_x^2
+        # start using convex combination of FB direction and d
 
-			# Aq*xnew = Aq*x + tau*Aq*d
-			blockaxpy!(sol.Aqxnew, sol.Aqx, sol.tau, sol.Aqd) 
-			# Aq*xnew += Aq*x + (1-tau*d)*Aq*d_fb
-			blockaxpy!(sol.Aqxnew, sol.Aqxnew, sol.tau-1.0, sol.Aqfb) 
+        for it_tau = 1:maxit_tau # TODO: replace/complement with lower bound on tau
 
-			# As*xnew = As*x + tau*As*d
-			blockaxpy!(sol.Asxnew, sol.Asx, sol.tau, sol.Asd) 
-			# Aq*xnew += Aq*x + (1-tau*d)*Aq*d_fb
-			blockaxpy!(sol.Asxnew, sol.Asxnew, sol.tau-1.0, sol.Asfb) 
-			
-			# calculate new FBE in xnew
-			sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxnew)
-			sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asxnew)
+            # xnew = x + tau*d
+            blockaxpy!(sol.xnew, sol.x, sol.tau, sol.d)
+            # xnew = x + tau*d - (1-tau)*fb
+            blockaxpy!(sol.xnew, sol.xnew, sol.tau-1.0, sol.FPR_x_prev)
 
-			Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
-			Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
+            # Aq*xnew = Aq*x + tau*Aq*d
+            blockaxpy!(sol.Aqxnew, sol.Aqx, sol.tau, sol.Aqd)
+            # Aq*xnew = Aq*x + tau*Aq*d - (1-tau)*Aq*fb
+            blockaxpy!(sol.Aqxnew, sol.Aqxnew, sol.tau-1.0, sol.Aqfb)
 
-			blockaxpy!(sol.At_gradf_Ax, sol.Aqt_gradfq_Aqx, 1.0, sol.Ast_gradfs_Asx)
-			sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
+            # As*xnew = As*x + tau*As*d
+            blockaxpy!(sol.Asxnew, sol.Asx, sol.tau, sol.Asd)
+            # As*xnew = As*x + tau*As*d - (1-tau)*As*fb
+            blockaxpy!(sol.Asxnew, sol.Asxnew, sol.tau-1.0, sol.Asfb)
 
-			# gradient step
-			blockaxpy!(sol.y, sol.xnew, -sol.gamma, sol.At_gradf_Ax)
-			# prox step
-			sol.g_xbar = prox!(sol.xnewbar, sol.g, sol.y, sol.gamma)
-		    
-			blockaxpy!(sol.FPR_xnew, sol.xnew, -1.0, sol.xnewbar)
-			norm_FPRxnew = blockvecnorm(sol.FPR_xnew)
-		    
-			FBE_xnew = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_xnew) + 
-				   0.5/sol.gamma*norm_FPRxnew^2 + sol.g_xbar
+            # calculate new FBE in xnew
+            sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxnew)
+            sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asxnew)
 
-			if FBE_xnew <= sol.FBE_x - (C/2)*sol.normFPR_x^2 
-				break
-			end
-			sol.tau *= 0.5
+            Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+            Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
 
-		end
+            blockaxpy!(sol.At_gradf_Ax, sol.Aqt_gradfq_Aqx, 1.0, sol.Ast_gradfs_Asx)
+            sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
 
-	end
+            # gradient step
+            blockaxpy!(sol.y, sol.xnew, -sol.gamma, sol.At_gradf_Ax)
+            # prox step
+            sol.g_xbar = prox!(sol.xnewbar, sol.g, sol.y, sol.gamma)
 
-	sol.normFPR_x = norm_FPRxnew
-	sol.FPR_x, sol.FPR_xnew = sol.FPR_xnew, sol.FPR_x
-	sol.FBE_x = FBE_xnew
-	sol.x, sol.xbar, sol.xnew, sol.xnewbar = sol.xnew, sol.xnewbar, sol.x, sol.xbar
-	sol.Aqx, sol.Aqxnew = sol.Aqxnew, sol.Aqx
-	sol.Asx, sol.Asxnew = sol.Asxnew, sol.Asx
+            blockaxpy!(sol.FPR_xnew, sol.xnew, -1.0, sol.xnewbar)
+            norm_FPRxnew = blockvecnorm(sol.FPR_xnew)
 
-	return sol.xbar 
+            FBE_xnew = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_xnew) +
+                   0.5/sol.gamma*norm_FPRxnew^2 + sol.g_xbar
+
+            if FBE_xnew <= sol.FBE_x - (C/2)*sol.normFPR_x^2
+                break
+            end
+            sol.tau *= 0.5
+
+        end
+
+    end
+
+    sol.normFPR_x = norm_FPRxnew
+    sol.FPR_x, sol.FPR_xnew = sol.FPR_xnew, sol.FPR_x
+    sol.FBE_x = FBE_xnew
+    sol.x, sol.xbar, sol.xnew, sol.xnewbar = sol.xnew, sol.xnewbar, sol.x, sol.xbar
+    sol.Aqx, sol.Aqxnew = sol.Aqxnew, sol.Aqx
+    sol.Asx, sol.Asxnew = sol.Asxnew, sol.Asx
+
+    return sol.xbar
 
 end
 
