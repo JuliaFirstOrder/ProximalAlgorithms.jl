@@ -249,13 +249,15 @@ function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
     FBE_xnew = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_xnew) +
                    0.5/sol.gamma*norm_FPRxnew^2 + sol.g_xbar
 
-    A_mul_B!(sol.Aqfb, sol.Aq, sol.FPR_x_prev)
-    A_mul_B!(sol.Asfb, sol.As, sol.FPR_x_prev)
-
     if FBE_xnew > sol.FBE_x - (C/2)*sol.normFPR_x^2
         # start using convex combination of FB direction and d
 
+        A_mul_B!(sol.Aqfb, sol.Aq, sol.FPR_x_prev)
+        A_mul_B!(sol.Asfb, sol.As, sol.FPR_x_prev)
+
         for it_tau = 1:maxit_tau # TODO: replace/complement with lower bound on tau
+
+            sol.tau *= 0.5
 
             # xnew = x + tau*d
             blockaxpy!(sol.xnew, sol.x, sol.tau, sol.d)
@@ -296,7 +298,6 @@ function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
             if FBE_xnew <= sol.FBE_x - (C/2)*sol.normFPR_x^2
                 break
             end
-            sol.tau *= 0.5
 
         end
 
