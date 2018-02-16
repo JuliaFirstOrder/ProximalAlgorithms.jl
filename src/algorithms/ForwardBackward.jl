@@ -68,7 +68,7 @@ end
 
 maxit(sol::FBSIterator) = sol.maxit
 
-converged(sol::FBSIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
+converged(sol::FBSIterator, it)  = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
 verbose(sol::FBSIterator) = sol.verbose > 0
 verbose(sol::FBSIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
@@ -91,7 +91,10 @@ end
 ################################################################################
 # Initialization
 
-function initialize(sol::FBSIterator)
+function initialize!(sol::FBSIterator)
+
+    # reset parameters
+    sol.theta = 1.0
 
     # compute first forward-backward step here
     A_mul_B!(sol.Aqx, sol.Aq, sol.x)
@@ -127,7 +130,7 @@ end
 ################################################################################
 # Iteration
 
-function iterate(sol::FBSIterator{I, R, T}, it) where {I, R, T}
+function iterate!(sol::FBSIterator{I, R, T}, it::I) where {I, R, T}
 
     Aqz = 0.0
     gradfq_Aqz = 0.0
@@ -247,6 +250,6 @@ additional options as follows:
 
 function FBS(x0; kwargs...)
     sol = FBSIterator(x0; kwargs...)
-    (it, point) = run(sol)
+    it, point = run!(sol)
     return (it, point, sol)
 end

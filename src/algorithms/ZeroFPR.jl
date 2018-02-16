@@ -1,7 +1,7 @@
 ################################################################################
 # ZeroFPR iterator (with L-BFGS directions)
 
-mutable struct ZeroFPRIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I, T}
+mutable struct ZeroFPRIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I,T}
     x::T
     fs
     As
@@ -19,19 +19,30 @@ mutable struct ZeroFPRIterator{I <: Integer, R <: Real, T <: BlockArray} <: Prox
     tau::R
     y # gradient step
     xbar # proximal-gradient step
+    xbarbar # proximal-gradient step
+    xnew 
+    xnewbar 
     H # inverse Jacobian approximation
     FPR_x
     Aqx
     Asx
+    Aqxbar
+    Asxbar
+    Aqxnew
+    Asxnew
+    Aqd
+    Asd
     gradfq_Aqx
     gradfs_Asx
     fs_Asx
     fq_Aqx
     f_Ax
     At_gradf_Ax
+    Ast_gradfs_Asx
+    Aqt_gradfq_Aqx
     g_xbar
     FBE_x
-    xbar_prev
+    FPR_xbar
     FPR_xbar_prev
     d
 end
@@ -46,14 +57,44 @@ function ZeroFPRIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero()
     x = blockcopy(x0)
     y = blockzeros(x0)
     xbar = blockzeros(x0)
+    xbarbar = blockzeros(x0)
+    xnew = blockzeros(x0)
+    xnewbar = blockzeros(x0)
+    xbar = blockzeros(x0)
     FPR_x = blockzeros(x0)
+    FPR_xbar_prev = blockzeros(x0)
+    FPR_xbar = blockzeros(x0)
     Aqx = blockzeros(mq)
     Asx = blockzeros(ms)
+    Aqxbar = blockzeros(mq)
+    Asxbar = blockzeros(ms)
+    Aqxnew = blockzeros(mq)
+    Asxnew = blockzeros(ms)
+    Aqd = blockzeros(mq)
+    Asd = blockzeros(ms)
     gradfq_Aqx = blockzeros(mq)
     gradfs_Asx = blockzeros(ms)
     At_gradf_Ax = blockzeros(n)
+    Ast_gradfs_Asx = blockzeros(n)
+    Aqt_gradfq_Aqx = blockzeros(n)
     d = blockzeros(x0)
-    ZeroFPRIterator{I, R, T}(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, verbose, verbose_freq, alpha, sigma, 0.0, y, xbar, LBFGS(x, memory), FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, 0.0, 0.0, [], [], d)
+    H = LBFGS(x, memory)
+    ZeroFPRIterator{I, R, T}(x, 
+			     fs, As, 
+			     fq, Aq, g, 
+			     gamma, maxit, tol, adaptive, verbose, verbose_freq, 
+			     alpha, sigma, 0.0, y, 
+			     xbar, xbarbar, xnew, xnewbar, 
+			     H, FPR_x, 
+			     Aqx, Asx, 
+			     Aqxbar, Asxbar, 
+			     Aqxnew, Asxnew, 
+			     Aqd, Asd, 
+			     gradfq_Aqx, gradfs_Asx, 
+			     0.0, 0.0, 0.0, 
+			     At_gradf_Ax, Ast_gradfs_Asx, Aqt_gradfq_Aqx,
+			     0.0, 0.0, 
+			     FPR_xbar, FPR_xbar_prev, d)
 end
 
 ################################################################################
@@ -61,7 +102,7 @@ end
 
 maxit(sol::ZeroFPRIterator) = sol.maxit
 
-converged(sol::ZeroFPRIterator, it) = blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
+converged(sol::ZeroFPRIterator, it) = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
 verbose(sol::ZeroFPRIterator) = sol.verbose > 0 
 verbose(sol::ZeroFPRIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
@@ -85,7 +126,12 @@ end
 ################################################################################
 # Initialization
 
-function initialize(sol::ZeroFPRIterator)
+function initialize!(sol::ZeroFPRIterator)
+
+    # reset L-BFGS operator (would be nice to have this option)
+    # TODO add function reset!(::LBFGS) in AbstractOperators
+    sol.H.currmem, sol.H.curridx = 0, 0
+    sol.H.H = 1.0
 
     # compute first forward-backward step here
     A_mul_B!(sol.Aqx, sol.Aq, sol.x)
@@ -121,13 +167,13 @@ end
 ################################################################################
 # Iteration
 
-function iterate(sol::ZeroFPRIterator{I, R, T}, it) where {I, R, T}
+function iterate!(sol::ZeroFPRIterator{I, R, T}, it::I) where {I, R, T}
 
     # These need to be performed anyway (to compute xbarbar later on)
-    Aqxbar = sol.Aq*sol.xbar
-    gradfq_Aqxbar, fq_Aqxbar = gradient(sol.fq, Aqxbar)
-    Asxbar = sol.As*sol.xbar
-    gradfs_Asxbar, fs_Asxbar = gradient(sol.fs, Asxbar)
+    A_mul_B!(sol.Aqxbar, sol.Aq, sol.xbar)
+    fq_Aqxbar = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxbar)
+    A_mul_B!(sol.Asxbar, sol.As, sol.xbar)
+    fs_Asxbar = gradient!(sol.gradfs_Asx, sol.fs, sol.Asxbar)
     f_Axbar = fs_Asxbar + fq_Aqxbar
 
     if sol.adaptive
@@ -142,11 +188,11 @@ function iterate(sol::ZeroFPRIterator{I, R, T}, it) where {I, R, T}
             else
                 break
             end
-            Aqxbar = sol.Aq*sol.xbar
-            gradfq_Aqxbar, fq_Aqxbar = gradient(sol.fq, Aqxbar)
-            Asxbar = sol.As*sol.xbar
-            gradfs_Asxbar, fs_Asxbar = gradient(sol.fs, Asxbar)
-            f_Axbar = fs_Asxbar + fq_Aqxbar
+	    A_mul_B!(sol.Aqxbar, sol.Aq, sol.xbar)
+	    fq_Aqxbar = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxbar)
+	    A_mul_B!(sol.Asxbar, sol.As, sol.xbar)
+	    fs_Asxbar = gradient!(sol.gradfs_Asx, sol.fs, sol.Asxbar)
+	    f_Axbar = fs_Asxbar + fq_Aqxbar
         end
     end
 
@@ -156,58 +202,62 @@ function iterate(sol::ZeroFPRIterator{I, R, T}, it) where {I, R, T}
     FBE_x = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_x^2 + sol.g_xbar
 
     # Compute search direction
-
-    At_gradf_Axbar = sol.As'*gradfs_Asxbar .+ sol.Aq'*gradfq_Aqxbar
-    ybar = sol.xbar .- sol.gamma .* At_gradf_Axbar
-    xbarbar, g_xbarbar = prox(sol.g, ybar, sol.gamma)
-    FPR_xbar = sol.xbar .- xbarbar
+    Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
+    Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+    blockaxpy!(sol.At_gradf_Ax, sol.Ast_gradfs_Asx, 1.0, sol.Aqt_gradfq_Aqx)
+    blockaxpy!(sol.y, sol.xbar, -sol.gamma, sol.At_gradf_Ax)
+    g_xbarbar = prox!(sol.xbarbar, sol.g, sol.y, sol.gamma)
+    blockaxpy!(sol.FPR_xbar, sol.xbar, -1.0, sol.xbarbar)
 
     if it > 1
-        update!(sol.H, sol.xbar, sol.xbar_prev, FPR_xbar, sol.FPR_xbar_prev)
+        update!(sol.H, sol.xbar, sol.xnewbar, sol.FPR_xbar, sol.FPR_xbar_prev)
     end
-    A_mul_B!(sol.d, sol.H, 0.0 .- FPR_xbar) # TODO: not nice
+    A_mul_B!(sol.d, sol.H, 0.0 .- sol.FPR_xbar) # TODO: not nice
 
     # Perform line-search over the FBE
 
-    tau = 1.0
+    sol.tau = 1.0
 
-    Asd = sol.As * sol.d 
-    Aqd = sol.Aq * sol.d
+    A_mul_B!(sol.Asd, sol.As, sol.d)
+    A_mul_B!(sol.Aqd, sol.Aq, sol.d)
 
     C = sol.sigma*sol.gamma*(1.0-sol.alpha)
 
+    g_xnewbar = zero(R)
+    f_Axnew = zero(R)
+    FBE_xnew = zero(R)
+
     maxit_tau = 10
     for it_tau = 1:maxit_tau # TODO: replace/complement with lower bound on tau
-        xnew = sol.xbar .+ tau .* sol.d
-        Asxnew = Asxbar .+ tau .* Asd
-        Aqxnew = Aqxbar .+ tau .* Aqd
-        gradfs_Asxnew, fs_Asxnew = gradient(sol.fs, Asxnew)
+	blockaxpy!(sol.xnew, sol.xbar, sol.tau, sol.d)
+	blockaxpy!(sol.Asxnew, sol.Asxbar, sol.tau, sol.Asd)
+	blockaxpy!(sol.Aqxnew, sol.Aqxbar, sol.tau, sol.Aqd)
+        fs_Asxnew = gradient!(sol.gradfs_Asx, sol.fs, sol.Asxnew)
         # TODO: can precompute most of next line before the iteration
-        gradfq_Aqxnew, fq_Aqxnew = gradient(sol.fq, Aqxnew)
+        fq_Aqxnew = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxnew)
         f_Axnew = fs_Asxnew + fq_Aqxnew
-        At_gradf_Axnew = sol.As'*gradfs_Asxnew .+ sol.Aq'*gradfq_Aqxnew
-        ynew = xnew .- sol.gamma .* At_gradf_Axnew
-        xnewbar, g_xnewbar = prox(sol.g, ynew, sol.gamma)
-        FPR_xnew = xnew .- xnewbar
-        normFPR_xnew = blockvecnorm(FPR_xnew)
-        FBE_xnew = f_Axnew - blockvecdot(At_gradf_Axnew, FPR_xnew) + 0.5/sol.gamma*normFPR_xnew^2 + g_xnewbar
-        if FBE_xnew <= FBE_x - (C/2)*normFPR_x^2 || it_tau == maxit_tau
-            sol.tau = tau
-            sol.FBE_x = FBE_xnew
-            sol.x = xnew
-	    sol.f_Ax = f_Axnew
-	    sol.At_gradf_Ax = At_gradf_Axnew 
-	    sol.g_xbar = g_xnewbar
-            sol.FPR_x = FPR_xnew
-            sol.xbar_prev = sol.xbar
-            sol.FPR_xbar_prev = FPR_xbar
-            sol.xbar = xnewbar
+	Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
+	Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+	blockaxpy!(sol.At_gradf_Ax, sol.Ast_gradfs_Asx, 1.0, sol.Aqt_gradfq_Aqx)
+	blockaxpy!(sol.y, sol.xnew, -sol.gamma, sol.At_gradf_Ax)
+        g_xnewbar = prox!(sol.xnewbar, sol.g, sol.y, sol.gamma)
+	blockaxpy!(sol.FPR_x, sol.xnew, -1.0, sol.xnewbar)
+        normFPR_xnew = blockvecnorm(sol.FPR_x)
+        FBE_xnew = f_Axnew - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_xnew^2 + g_xnewbar
+        if FBE_xnew <= FBE_x - (C/2)*normFPR_x^2
             break
         end
-        tau = 0.5*tau
+        sol.tau = 0.5*sol.tau
     end
 
-    return sol.xbar
+    sol.FBE_x = FBE_xnew
+    sol.x, sol.xnew = sol.xnew, sol.x
+    sol.f_Ax = f_Axnew
+    sol.g_xbar = g_xnewbar
+    sol.FPR_xbar_prev, sol.FPR_xbar = sol.FPR_xbar, sol.FPR_xbar_prev
+    sol.xbar, sol.xnewbar = sol.xnewbar, sol.xbar #xnewbar becames xbar_prev
+
+    return sol.xbar 
 
 end
 
@@ -216,6 +266,6 @@ end
 
 function ZeroFPR(x0; kwargs...)
     sol = ZeroFPRIterator(x0; kwargs...)
-    (it, point) = run(sol)
+    it, point = run!(sol)
     return (it, point, sol)
 end

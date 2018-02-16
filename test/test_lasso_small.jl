@@ -15,20 +15,24 @@ g = NormL1(lam)
 
 x_star = [-3.877278911564627e-01, 0, 0, 2.174149659863943e-02, 6.168435374149660e-01]
 
-# Nonfast/Nonadaptive
+## Nonfast/Nonadaptive
 
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
 @test vecnorm(x - x_star, Inf) <= 1e-4
-#@test it == 140
+@test it < 150
 println(sol)
+
+# testing solver already at solution
+@time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1
 
 # Nonfast/Adaptive
 
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
-#@test it == 247
+@test it < 300
 println(sol)
 
 # Fast/Nonadaptive
@@ -36,15 +40,19 @@ println(sol)
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, fast=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
-#@test it == 94
+@test it < 100
 println(sol)
+
+# testing solver already at solution
+@time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1
 
 # Fast/Adaptive
 
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, adaptive=true, fast=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
-#@test it == 156
+@test it < 200
 println(sol)
 
 # ZeroFPR/Nonadaptive
@@ -52,15 +60,38 @@ println(sol)
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
 @test vecnorm(x - x_star, Inf) <= 1e-4
-#@test it == 8
+@test it < 15
 println(sol)
+
+#testing solver already at solution
+@time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1
 
 # ZeroFPR/Adaptive
 
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, adaptive=true)
 @test vecnorm(x - x_star, Inf) <= 1e-4
-#@test it == 10
+@test it < 15
+
+# PANOC/Nonadaptive
+
+x0 = zeros(n)
+@time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 20
+println(sol)
+
+# testing solver already at solution
+@time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1
+
+## PANOC/Adaptive
+
+x0 = zeros(n)
+@time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, adaptive=true)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 20
 println(sol)
 
 # Douglas-Rachford
@@ -68,4 +99,9 @@ println(sol)
 x0 = zeros(n)
 @time it, x, sol = ProximalAlgorithms.DRS(x0; f=f2, g=g, gamma=10.0/norm(A)^2)
 @test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 30
 println(sol)
+
+#testing solver already at solution
+@time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1

@@ -1,7 +1,7 @@
 ################################################################################
 # Template iterator
 
-struct TemplateIterator{I <: Integer, T <: BlockArray} <: ProximalAlgorithm{I, T}
+struct TemplateIterator{I <: Integer, T <: BlockArray} <: ProximalAlgorithm{I,T}
     x::T
     maxit::I
     # Put here problem description, other parameters, method memory,
@@ -33,7 +33,7 @@ end
 ################################################################################
 # Initialization
 
-function initialize(sol::TemplateIterator)
+function initialize!(sol::TemplateIterator)
     # One shouldn't really be printing anything here
     println("Initializing the iterations")
 end
@@ -41,7 +41,7 @@ end
 ################################################################################
 # Iteration
 
-function iterate(sol::TemplateIterator{I, T}, it::I) where {I, T}
+function iterate!(sol::TemplateIterator{I, T}, it::I) where {I, T}
     # One shouldn't really be printing anything here
     println("Performing one iteration")
     return sol.x
@@ -54,6 +54,6 @@ function Template(x0; kwargs...)
     # Create iterable
     sol = TemplateIterator(x0; kwargs...)
     # Run iterations
-    (it, point) = run(sol)
-    return (it, point, sol)
+    it, point = run!(sol)
+    return it, point, sol 
 end

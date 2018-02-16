@@ -117,7 +117,7 @@ end
 # Utility methods
 maxit(sol::AFBAIterator) = sol.maxit
 
-converged(sol::AFBAIterator, it) = vecnorm(sol.FPR_x)+vecnorm(sol.FPR_y) <= sol.tol
+converged(sol::AFBAIterator, it) = it > 0 && vecnorm(sol.FPR_x)+vecnorm(sol.FPR_y) <= sol.tol
 
 verbose(sol::AFBAIterator) = sol.verbose > 0
 verbose(sol::AFBAIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
@@ -145,14 +145,14 @@ end
 ################################################################################
 # Initialization
 
-function initialize(sol::AFBAIterator)
+function initialize!(sol::AFBAIterator)
     return
 end
 
 ################################################################################
 # Iteration
 
-function iterate(sol::AFBAIterator{I, R, T1, T2}, it::I) where {I, R, T1, T2}
+function iterate!(sol::AFBAIterator{I, R, T1, T2}, it::I) where {I, R, T1, T2}
     # perform xbar-update step
     gradient!(sol.gradf, sol.f, sol.x)
     Ac_mul_B!(sol.temp_x, sol.L, sol.y)
@@ -232,7 +232,7 @@ function AFBA(x0, y0; kwargs...)
     # Create iterable
     sol = AFBAIterator(x0, y0; kwargs...)
     # Run iterations
-    (it, (primal, dual)) = run(sol)
+    (it, (primal, dual)) = run!(sol)
     return (it, primal, dual, sol)
 end
 
@@ -246,6 +246,7 @@ Solves convex optimization problems of the form
     minimize f(x) + g(x) + (h □ l)(L x).
 
 where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly convex.
+
 Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
 Points `x0` and `y0` are the initial primal and dual iterates, respectively.
 
@@ -256,7 +257,7 @@ function VuCondat(x0, y0; kwargs...)
     # Create iterable
     sol = AFBAIterator(x0, y0; kwargs..., theta=2)
     # Run iterations
-    (it, (primal, dual)) = run(sol)
+    (it, (primal, dual)) = run!(sol)
     return (it, primal, dual, sol)
 end
 
@@ -280,6 +281,6 @@ function ChambollePock(x0, y0; kwargs...)
     # Create iterable
     sol = AFBAIterator(x0, y0; kwargs..., f=IndFree(), theta=2)
     # Run iterations
-    (it, (primal, dual)) = run(sol)
+    (it, (primal, dual)) = run!(sol)
     return (it, primal, dual, sol)
 end
