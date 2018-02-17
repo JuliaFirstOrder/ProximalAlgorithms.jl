@@ -29,15 +29,23 @@ mutable struct FBSIterator{I <: Integer, R <: Real, T <: BlockArray{R}} <: Proxi
     FPR_x
     Aqx
     Asx
+    Aqz
+    Asz
     gradfq_Aqx
     gradfs_Asx
+    Aqt_gradfq_Aqx
+    Ast_gradfs_Asx
     fs_Asx
     fq_Aqx
     f_Ax
     At_gradf_Ax
     Aqz_prev
     Asz_prev
+    gradfq_Aqz
+    gradfs_Asz
     gradfq_Aqz_prev
+    diff_gradfq_Aqx
+    diff_Aqx
 end
 
 ################################################################################
@@ -54,13 +62,32 @@ function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq
     FPR_x = blockzeros(x0)
     Aqx = blockzeros(mq)
     Asx = blockzeros(ms)
+    Aqz = blockzeros(mq)
+    Asz = blockzeros(ms)
     gradfq_Aqx = blockzeros(mq)
     gradfs_Asx = blockzeros(ms)
+    Aqt_gradfq_Aqx = blockzeros(x0)
+    Ast_gradfs_Asx = blockzeros(x0)
     At_gradf_Ax = blockzeros(n)
     Aqz_prev = blockzeros(mq)
     Asz_prev = blockzeros(ms)
+    gradfq_Aqz = blockzeros(mq)
+    gradfs_Asz = blockzeros(ms)
     gradfq_Aqz_prev = blockzeros(mq)
-    FBSIterator{I, R, T}(x, fs, As, fq, Aq, g, gamma, maxit, tol, adaptive, fast, verbose, verbose_freq, 1.0, y, z, z_prev, FPR_x, Aqx, Asx, gradfq_Aqx, gradfs_Asx, 0.0, 0.0, 0.0, At_gradf_Ax, Aqz_prev, Asz_prev, gradfq_Aqz_prev)
+    diff_gradfq_Aqx = blockzeros(mq)
+    diff_Aqx = blockzeros(mq)
+    FBSIterator{I, R, T}(x, 
+			 fs, As, fq, Aq, g, 
+			 gamma, maxit, tol, adaptive, fast, verbose, verbose_freq, 1.0, 
+			 y, z, z_prev, FPR_x, 
+			 Aqx, Asx, 
+			 Aqz, Asz, 
+			 gradfq_Aqx, gradfs_Asx, 
+			 Aqt_gradfq_Aqx, Ast_gradfs_Asx, 
+			 0.0, 0.0, 0.0, 
+			 At_gradf_Ax, Aqz_prev, 
+			 Asz_prev, 
+			 gradfq_Aqz, gradfs_Asz, gradfq_Aqz_prev, diff_gradfq_Aqx, diff_Aqx)
 end
 
 ################################################################################
@@ -101,7 +128,9 @@ function initialize!(sol::FBSIterator)
     sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqx)
     A_mul_B!(sol.Asx, sol.As, sol.x)
     sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asx)
-    blockaxpy!(sol.At_gradf_Ax, sol.As'*sol.gradfs_Asx, 1.0, sol.Aq'*sol.gradfq_Aqx)
+    Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
+    Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+    blockaxpy!(sol.At_gradf_Ax, sol.Ast_gradfs_Asx, 1.0, sol.Aqt_gradfq_Aqx)
     sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
 
     if sol.gamma <= 0.0 # estimate L in this case, and set gamma = 1/L
@@ -132,22 +161,17 @@ end
 
 function iterate!(sol::FBSIterator{I, R, T}, it::I) where {I, R, T}
 
-    Aqz = 0.0
-    gradfq_Aqz = 0.0
     fq_Aqz = 0.0
-    Asz = 0.0
-    gradfs_Asz = 0.0
     fs_Asz = 0.0
 
     if sol.adaptive
         for it_gam = 1:100 # TODO: replace/complement with lower bound on gamma
             normFPR_x = blockvecnorm(sol.FPR_x)
             uppbnd = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_x^2
-            # TODO: we can save allocations in the next four lines
-            Aqz = sol.Aq*sol.z
-            gradfq_Aqz, fq_Aqz = gradient(sol.fq, Aqz)
-            Asz = sol.As*sol.z
-            gradfs_Asz, fs_Asz = gradient(sol.fs, Asz)
+	    A_mul_B!(sol.Aqz, sol.Aq, sol.z)
+	    fq_Aqz = gradient!(sol.gradfq_Aqz, sol.fq, sol.Aqz)
+	    A_mul_B!(sol.Asz, sol.As, sol.z)
+            fs_Asz = gradient!(sol.gradfs_Asz, sol.fs, sol.Asz)
             f_Az = fs_Asz + fq_Aqz
             if f_Az > uppbnd + 1e-6*abs(sol.f_Ax)
                 sol.gamma = 0.5*sol.gamma
@@ -163,14 +187,15 @@ function iterate!(sol::FBSIterator{I, R, T}, it::I) where {I, R, T}
     if sol.fast == false
         sol.x, sol.z = sol.z, sol.x
         if sol.adaptive == true
-            sol.Aqx = Aqz
+            sol.Aqx, sol.Aqz = sol.Aqz, sol.Aqx
             sol.fq_Aqx = fq_Aqz
-            sol.gradfq_Aqx = gradfq_Aqz
-            sol.Asx = Asz
+            sol.gradfq_Aqx, sol.gradfq_Aqz = sol.gradfq_Aqz, sol.gradfq_Aqx
+            sol.Asx, sol.Asz = sol.Asz, sol.Asx
             sol.fs_Asx = fs_Asz
-            sol.gradfs_Asx = gradfs_Asz
-            # TODO: we can save allocations in the next line
-            blockaxpy!(sol.At_gradf_Ax, sol.As'*sol.gradfs_Asx, 1.0, sol.Aq'*sol.gradfq_Aqx)
+            sol.gradfs_Asx, sol.gradfs_Asz = sol.gradfs_Asz, sol.gradfs_Asx
+	    Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
+	    Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+	    blockaxpy!(sol.At_gradf_Ax, sol.Ast_gradfs_Asx, 1.0, sol.Aqt_gradfq_Aqx)
             sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
         end
     else
@@ -183,21 +208,28 @@ function iterate!(sol::FBSIterator{I, R, T}, it::I) where {I, R, T}
         sol.z, sol.z_prev = sol.z_prev, sol.z
         if sol.adaptive == true
             # extrapolate other extrapolable quantities
-            diff_Aqx = extr.*(Aqz .- sol.Aqz_prev)
-            sol.Aqx .= Aqz .+ diff_Aqx
-            diff_gradfq_Aqx = extr.*(gradfq_Aqz .- sol.gradfq_Aqz_prev)
-            sol.gradfq_Aqx .= gradfq_Aqz .+ diff_gradfq_Aqx
-            sol.fq_Aqx = fq_Aqz + blockvecdot(gradfq_Aqz, diff_Aqx) + 0.5*blockvecdot(diff_Aqx, diff_gradfq_Aqx)
-            sol.Asx .= Asz .+ extr.*(Asz .- sol.Asz_prev)
+            # diff_Aqx = (sol.Aqz .- sol.Aqz_prev)
+	    blockaxpy!(sol.diff_Aqx, sol.Aqz, -1.0, sol.Aqz_prev)
+            # sol.Aqx .= sol.Aqz .+ extr.*diff_Aqx
+	    blockaxpy!(sol.Aqx, sol.Aqz, extr, sol.diff_Aqx)
+            # diff_gradfq_Aqx = (sol.gradfq_Aqz .- sol.gradfq_Aqz_prev)
+	    blockaxpy!(sol.diff_gradfq_Aqx, sol.gradfq_Aqz, -1.0, sol.gradfq_Aqz_prev)
+            # sol.gradfq_Aqx .= sol.gradfq_Aqz .+ extr.*diff_gradfq_Aqx
+	    blockaxpy!(sol.gradfq_Aqx, sol.gradfq_Aqz, extr, sol.diff_gradfq_Aqx)
+            sol.fq_Aqx = fq_Aqz + extr*blockvecdot(sol.gradfq_Aqz, sol.diff_Aqx) + 0.5*extr^2*blockvecdot(sol.diff_Aqx, sol.diff_gradfq_Aqx)
+            # sol.Asx .= sol.Asz .+ extr.*(sol.Asz .- sol.Asz_prev)
+	    blockaxpy!(sol.Asx, sol.Asz, -1.0, sol.Asz_prev)
+	    blockaxpy!(sol.Asx, sol.Asz, extr, sol.Asx     )
             # store the z-quantities for future extrapolation
-            sol.Aqz_prev = Aqz
-            sol.gradfq_Aqz_prev = gradfq_Aqz
-            sol.Asz_prev = Asz
+            sol.Aqz_prev, sol.Aqz = sol.Aqz, sol.Aqz_prev
+            sol.gradfq_Aqz_prev, sol.gradfq_Aqz = sol.gradfq_Aqz, sol.gradfq_Aqz_prev
+            sol.Asz_prev, sol.Asz = sol.Asz, sol.Asz_prev
             # compute gradient of fs
             sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asx)
+	    Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
             # TODO: we can probably save the MATVEC by Aq' in the next line
-            # TODO: we can save allocations in the next line
-            blockaxpy!(sol.At_gradf_Ax, sol.As'*sol.gradfs_Asx, 1.0, sol.Aq'*sol.gradfq_Aqx)
+	    Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+	    blockaxpy!(sol.At_gradf_Ax, sol.Ast_gradfs_Asx, 1.0, sol.Aqt_gradfq_Aqx)
             sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
         end
     end
@@ -206,8 +238,9 @@ function iterate!(sol::FBSIterator{I, R, T}, it::I) where {I, R, T}
         sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqx)
         A_mul_B!(sol.Asx, sol.As, sol.x)
         sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asx)
-        # TODO: we can save allocations in the next line
-        blockaxpy!(sol.At_gradf_Ax, sol.As'*sol.gradfs_Asx, 1.0, sol.Aq'*sol.gradfq_Aqx)
+	Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
+	Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+	blockaxpy!(sol.At_gradf_Ax, sol.Ast_gradfs_Asx, 1.0, sol.Aqt_gradfq_Aqx)
         sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
     end
     blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
