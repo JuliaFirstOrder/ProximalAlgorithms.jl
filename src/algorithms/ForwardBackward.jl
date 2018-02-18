@@ -44,8 +44,6 @@ mutable struct FBSIterator{I <: Integer, R <: Real, T <: BlockArray{R}} <: Proxi
     gradfq_Aqz
     gradfs_Asz
     gradfq_Aqz_prev
-    diff_gradfq_Aqx
-    diff_Aqx
 end
 
 ################################################################################
@@ -74,8 +72,6 @@ function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq
     gradfq_Aqz = blockzeros(mq)
     gradfs_Asz = blockzeros(ms)
     gradfq_Aqz_prev = blockzeros(mq)
-    diff_gradfq_Aqx = blockzeros(mq)
-    diff_Aqx = blockzeros(mq)
     FBSIterator{I, R, T}(x,
              fs, As, fq, Aq, g,
              gamma, maxit, tol, adaptive, fast, verbose, verbose_freq, 1.0,
@@ -87,7 +83,7 @@ function FBSIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq
              0.0, 0.0, 0.0,
              At_gradf_Ax, Aqz_prev,
              Asz_prev,
-             gradfq_Aqz, gradfs_Asz, gradfq_Aqz_prev, diff_gradfq_Aqx, diff_Aqx)
+             gradfq_Aqz, gradfs_Asz, gradfq_Aqz_prev)
 end
 
 ################################################################################
@@ -209,14 +205,16 @@ function iterate!(sol::FBSIterator{I, R, T}, it::I) where {I, R, T}
         if sol.adaptive == true
             # extrapolate other extrapolable quantities
             # diff_Aqx = (sol.Aqz .- sol.Aqz_prev)
-            blockaxpy!(sol.diff_Aqx, sol.Aqz, -1.0, sol.Aqz_prev)
-            # sol.Aqx .= sol.Aqz .+ extr.*diff_Aqx
-            blockaxpy!(sol.Aqx, sol.Aqz, extr, sol.diff_Aqx)
             # diff_gradfq_Aqx = (sol.gradfq_Aqz .- sol.gradfq_Aqz_prev)
-            blockaxpy!(sol.diff_gradfq_Aqx, sol.gradfq_Aqz, -1.0, sol.gradfq_Aqz_prev)
+            blockaxpy!(sol.Aqx, sol.Aqz, -1.0, sol.Aqz_prev)
+            blockaxpy!(sol.gradfq_Aqx, sol.gradfq_Aqz, -1.0, sol.gradfq_Aqz_prev)
+            coeff_linear = blockvecdot(sol.gradfq_Aqz, sol.Aqx)
+            coeff_quadr = blockvecdot(sol.Aqx, sol.gradfq_Aqx)
+            sol.fq_Aqx = fq_Aqz + extr*coeff_linear + 0.5*coeff_quadr*extr^2
+            # sol.Aqx .= sol.Aqz .+ extr.*diff_Aqx
+            blockaxpy!(sol.Aqx, sol.Aqz, extr, sol.Aqx)
             # sol.gradfq_Aqx .= sol.gradfq_Aqz .+ extr.*diff_gradfq_Aqx
-            blockaxpy!(sol.gradfq_Aqx, sol.gradfq_Aqz, extr, sol.diff_gradfq_Aqx)
-            sol.fq_Aqx = fq_Aqz + extr*blockvecdot(sol.gradfq_Aqz, sol.diff_Aqx) + 0.5*extr^2*blockvecdot(sol.diff_Aqx, sol.diff_gradfq_Aqx)
+            blockaxpy!(sol.gradfq_Aqx, sol.gradfq_Aqz, extr, sol.gradfq_Aqx)
             # sol.Asx .= sol.Asz .+ extr.*(sol.Asz .- sol.Asz_prev)
             blockaxpy!(sol.Asx, sol.Asz, -1.0, sol.Asz_prev)
             blockaxpy!(sol.Asx, sol.Asz, extr, sol.Asx     )
