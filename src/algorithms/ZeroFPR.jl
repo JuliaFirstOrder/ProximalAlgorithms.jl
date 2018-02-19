@@ -1,13 +1,13 @@
 ################################################################################
 # ZeroFPR iterator (with L-BFGS directions)
 
-mutable struct ZeroFPRIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I,T}
-    x::T
-    fs
-    As
-    fq
-    Aq
-    g
+mutable struct ZeroFPRIterator{I <: Integer, R <: Real, D, CS, FS, AS, CQ, FQ, AQ, G, HH} <: ProximalAlgorithm{I,D}
+    x::D
+    fs::FS
+    As::AS
+    fq::FQ
+    Aq::AQ
+    g::G
     gamma::R
     maxit::I
     tol::R
@@ -17,43 +17,45 @@ mutable struct ZeroFPRIterator{I <: Integer, R <: Real, T <: BlockArray} <: Prox
     alpha::R
     sigma::R
     tau::R
-    y # gradient step
-    xbar # proximal-gradient step
-    xbarbar # proximal-gradient step
-    xnew
-    xnewbar
-    H # inverse Jacobian approximation
-    FPR_x
-    Aqx
-    Asx
-    Aqxbar
-    Asxbar
-    Aqxnew
-    Asxnew
-    Aqd
-    Asd
-    gradfq_Aqx
-    gradfs_Asx
-    fs_Asx
-    fq_Aqx
-    f_Ax
-    At_gradf_Ax
-    Ast_gradfs_Asx
-    Aqt_gradfq_Aqx
-    g_xbar
-    FBE_x
-    FPR_xbar
-    FPR_xbar_prev
-    d
+    y::D # gradient step
+    xbar::D # proximal-gradient step
+    xbarbar::D # proximal-gradient step
+    xnew::D
+    xnewbar::D
+    H::HH # inverse Jacobian approximation
+    FPR_x::D
+    Aqx::CQ
+    Asx::CS
+    Aqxbar::CQ
+    Asxbar::CS
+    Aqxnew::CQ
+    Asxnew::CS
+    Aqd::CQ
+    Asd::CS
+    gradfq_Aqx::CQ
+    gradfs_Asx::CS
+    fs_Asx::R
+    fq_Aqx::R
+    f_Ax::R
+    At_gradf_Ax::D
+    Ast_gradfs_Asx::D
+    Aqt_gradfq_Aqx::D
+    g_xbar::R
+    FBE_x::R
+    FPR_xbar::D
+    FPR_xbar_prev::D
+    d::D
 end
 
 ################################################################################
 # Constructor
 
-function ZeroFPRIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)), g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, memory=10, verbose=1, verbose_freq=100, alpha=0.95, sigma=0.5) where {I, R, T}
-    n = blocksize(x0)
-    mq = size(Aq, 1)
-    ms = size(As, 1)
+function ZeroFPRIterator(x0::D; 
+                         fs::FS=Zero(), As::AS=Identity(blocksize(x0)), 
+                         fq::FQ=Zero(), Aq::AQ=Identity(blocksize(x0)), 
+                         g::G=Zero(), 
+                         gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive::Bool=false, memory::I=10, 
+                         verbose::I=1, verbose_freq::I=100, alpha::R=0.95, sigma::R=0.5) where {I, R, D, FS, AS, FQ, AQ, G}
     x = blockcopy(x0)
     y = blockzeros(x0)
     xbar = blockzeros(x0)
@@ -64,26 +66,29 @@ function ZeroFPRIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero()
     FPR_x = blockzeros(x0)
     FPR_xbar_prev = blockzeros(x0)
     FPR_xbar = blockzeros(x0)
-    Aqx = blockzeros(mq)
-    Asx = blockzeros(ms)
-    Aqxbar = blockzeros(mq)
-    Asxbar = blockzeros(ms)
-    Aqxnew = blockzeros(mq)
-    Asxnew = blockzeros(ms)
-    Aqd = blockzeros(mq)
-    Asd = blockzeros(ms)
-    gradfq_Aqx = blockzeros(mq)
-    gradfs_Asx = blockzeros(ms)
-    At_gradf_Ax = blockzeros(n)
-    Ast_gradfs_Asx = blockzeros(n)
-    Aqt_gradfq_Aqx = blockzeros(n)
+    Aqx = Aq*x
+    Asx = As*x
+    Aqxbar = blockzeros(Aqx)
+    Asxbar = blockzeros(Asx)
+    Aqxnew = blockzeros(Aqx)
+    Asxnew = blockzeros(Asx)
+    Aqd = blockzeros(Aqx)
+    Asd = blockzeros(Asx)
+    gradfq_Aqx = blockzeros(Aqx)
+    gradfs_Asx = blockzeros(Asx)
+    At_gradf_Ax = blockzeros(x0)
+    Ast_gradfs_Asx = blockzeros(x0)
+    Aqt_gradfq_Aqx = blockzeros(x0)
     d = blockzeros(x0)
     H = LBFGS(x, memory)
-    ZeroFPRIterator{I, R, T}(x,
+    CQ = typeof(Aqx)
+    CS = typeof(Asx)
+    HH = typeof(H)
+    ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}(x,
                  fs, As,
                  fq, Aq, g,
                  gamma, maxit, tol, adaptive, verbose, verbose_freq,
-                 alpha, sigma, 0.0, y,
+                 alpha, sigma, one(R), y,
                  xbar, xbarbar, xnew, xnewbar,
                  H, FPR_x,
                  Aqx, Asx,
@@ -91,18 +96,18 @@ function ZeroFPRIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero()
                  Aqxnew, Asxnew,
                  Aqd, Asd,
                  gradfq_Aqx, gradfs_Asx,
-                 0.0, 0.0, 0.0,
+                 zero(R), zero(R), zero(R),
                  At_gradf_Ax, Ast_gradfs_Asx, Aqt_gradfq_Aqx,
-                 0.0, 0.0,
+                 zero(R), zero(R),
                  FPR_xbar, FPR_xbar_prev, d)
 end
 
 ################################################################################
 # Utility methods
 
-maxit(sol::ZeroFPRIterator) = sol.maxit
+maxit(sol::ZeroFPRIterator{I}) where {I} = sol.maxit
 
-converged(sol::ZeroFPRIterator, it) = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
+converged(sol::ZeroFPRIterator{I,R,D}, it::I) where {I,R,D} = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
 verbose(sol::ZeroFPRIterator) = sol.verbose > 0
 verbose(sol::ZeroFPRIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
@@ -126,7 +131,7 @@ end
 ################################################################################
 # Initialization
 
-function initialize!(sol::ZeroFPRIterator)
+function initialize!(sol::ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}) where {I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}
 
     # reset L-BFGS operator (would be nice to have this option)
     # TODO add function reset!(::LBFGS) in AbstractOperators
@@ -167,7 +172,7 @@ end
 ################################################################################
 # Iteration
 
-function iterate!(sol::ZeroFPRIterator{I, R, T}, it::I) where {I, R, T}
+function iterate!(sol::ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it::I) where {I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}
 
     # These need to be performed anyway (to compute xbarbar later on)
     A_mul_B!(sol.Aqxbar, sol.Aq, sol.xbar)
@@ -179,7 +184,7 @@ function iterate!(sol::ZeroFPRIterator{I, R, T}, it::I) where {I, R, T}
     if sol.adaptive
         for it_gam = 1:100 # TODO: replace/complement with lower bound on gamma
             normFPR_x = blockvecnorm(sol.FPR_x)
-            uppbnd = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_x^2
+            uppbnd = sol.f_Ax - real(blockvecdot(sol.At_gradf_Ax, sol.FPR_x)) + 0.5/sol.gamma*normFPR_x^2
             if f_Axbar > uppbnd + 1e-6*abs(sol.f_Ax)
                 sol.gamma = 0.5*sol.gamma
                 blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
@@ -199,7 +204,7 @@ function iterate!(sol::ZeroFPRIterator{I, R, T}, it::I) where {I, R, T}
     # Compute value of FBE at x
 
     normFPR_x = blockvecnorm(sol.FPR_x)
-    FBE_x = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_x^2 + sol.g_xbar
+    FBE_x = sol.f_Ax - real(blockvecdot(sol.At_gradf_Ax, sol.FPR_x)) + 0.5/sol.gamma*normFPR_x^2 + sol.g_xbar
 
     # Compute search direction
     Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
@@ -243,7 +248,7 @@ function iterate!(sol::ZeroFPRIterator{I, R, T}, it::I) where {I, R, T}
         g_xnewbar = prox!(sol.xnewbar, sol.g, sol.y, sol.gamma)
         blockaxpy!(sol.FPR_x, sol.xnew, -1.0, sol.xnewbar)
         normFPR_xnew = blockvecnorm(sol.FPR_x)
-        FBE_xnew = f_Axnew - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*normFPR_xnew^2 + g_xnewbar
+        FBE_xnew = f_Axnew - real(blockvecdot(sol.At_gradf_Ax, sol.FPR_x)) + 0.5/sol.gamma*normFPR_xnew^2 + g_xnewbar
         if FBE_xnew <= FBE_x - (C/2)*normFPR_x^2
             break
         end

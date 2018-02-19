@@ -45,3 +45,4 @@ x0 = zeros(n)
 @test vecnorm(x - x_star, Inf) <= 1e-4
 @test it < 35
 println(sol)
+
