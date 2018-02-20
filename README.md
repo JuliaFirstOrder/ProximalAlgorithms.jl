@@ -24,6 +24,7 @@ Douglas-Rachford splitting algorithm  | [`DRS`](src/algorithms/DouglasRachford.j
 Forward-backward splitting (i.e. proximal gradient) algorithm | [`FBS`](src/algorithms/ForwardBackward.jl) | [[2]][tseng_2008], [[3]][beck_2009]
 Vũ-Condat primal-dual algorithm       | [`VuCondat`](src/algorithms/AsymmetricForwardBackwardAdjoint.jl) | [[6]][vu_2013], [[7]][condat_2013]
 ZeroFPR (L-BFGS)                      | [`ZeroFPR`](src/algorithms/ZeroFPR.jl) | [[9]][themelis_2016]
+PANOC (L-BFGS)                        | [`PANOC`](src/algorithms/PANOC.jl) | [[11]][stella_2017]
 
 ### Contributing
 
@@ -51,6 +52,8 @@ Contributions are welcome in the form of [issues notification](https://github.co
 
 [[10]][latafat_2017] Latafat, Patrinos, *Asymmetric forward–backward–adjoint splitting for solving monotone inclusions involving three operators*, Computational Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
 
+[[11]][stella_2017] Stella, Themelis, Sopasakis, Patrinos, *A simple and efficient algorithm for nonlinear model predictive control*, 56th IEEE Conference on Decision and Control (2017).
+
 [eckstein_1989]: https://link.springer.com/article/10.1007/BF01581204
 [tseng_2008]: http://www.mit.edu/~dimitrib/PTseng/papers/apgm.pdf
 [beck_2009]: http://epubs.siam.org/doi/abs/10.1137/080716542
@@ -59,5 +62,6 @@ Contributions are welcome in the form of [issues notification](https://github.co
 [parikh_2014]: http://www.nowpublishers.com/article/Details/OPT-003
 [themelis_2016]: https://arxiv.org/abs/1606.06256
 [latafat_2017]: https://link.springer.com/article/10.1007/s10589-017-9909-6
+[stella_2017]: https://doi.org/10.1109/CDC.2017.8263933
 [condat_2013]: https://link.springer.com/article/10.1007/s10957-012-0245-9
 [vu_2013]: https://link.springer.com/article/10.1007/s10444-011-9254-8

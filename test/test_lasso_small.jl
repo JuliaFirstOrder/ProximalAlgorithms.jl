@@ -105,3 +105,155 @@ println(sol)
 #testing solver already at solution
 @time it, x = ProximalAlgorithms.run!(sol)
 @test it == 1
+
+#####################
+# Complex Variables #
+#####################
+
+srand(123)
+m, n = 10,5
+
+A = randn(m,n)+im*randn(m,n)
+b = randn(m)+im*randn(m)
+
+f = Translate(SqrNormL2(), -b)
+f2 = LeastSquares(A, b)
+lam = 0.01*vecnorm(A'*b, Inf)
+g = NormL1(lam)
+
+x0 = zeros(n)+im*zeros(n)
+it, x_star, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, verbose = 0)
+
+## Nonfast/Nonadaptive
+
+x0 = zeros(n)+im*zeros(n)
+@time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 200
+println(sol)
+
+# testing solver already at solution
+@time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1
+
+# Nonfast/Adaptive
+
+x0 = zeros(n)+im*zeros(n)
+@time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, adaptive=true)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 250
+println(sol)
+
+# Fast/Nonadaptive
+
+x0 = zeros(n)+im*zeros(n)
+@time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, fast=true)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 120
+println(sol)
+
+# testing solver already at solution
+@time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1
+
+# Fast/Adaptive
+
+x0 = zeros(n)+im*zeros(n)
+@time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, adaptive=true, fast=true)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 120
+println(sol)
+
+# ZeroFPR/Nonadaptive
+
+x0 = zeros(n)+im*zeros(n)
+@time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 15
+println(sol)
+
+#testing solver already at solution
+@time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1
+
+# ZeroFPR/Adaptive
+
+x0 = zeros(n)+im*zeros(n)
+@time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, adaptive=true)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 15
+
+# PANOC/Nonadaptive
+
+x0 = zeros(n)+im*zeros(n)
+@time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 20
+println(sol)
+
+# testing solver already at solution
+@time it, x = ProximalAlgorithms.run!(sol)
+@test it == 1
+
+## PANOC/Adaptive
+
+x0 = zeros(n)+im*zeros(n)
+@time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, adaptive=true)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 20
+println(sol)
+
+#############################################
+# Real Variables  mapped to Complex Numbers #
+#############################################
+
+using AbstractOperators
+
+srand(123)
+n = 2^6
+A = DFT(n)[1:div(n,2)]      # overcomplete dictionary 
+
+x = sprandn(n,0.5)
+b = fft(x)[1:div(n,2)]
+
+#f = Translate(LogisticLoss(ones(n)), -b)
+f = Translate(SqrNormL2(), -b)
+lam = 0.01*norm(A'*b,Inf)
+g = NormL1(lam)
+
+x0 = zeros(n)
+it, x_star, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, verbose = 0, tol = 1e-8)
+
+# Nonfast/Adaptive
+
+x0 = zeros(n)
+@time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, tol=1e-6, adaptive=true)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 50
+println(sol)
+
+# Fast/Adaptive
+
+x0 = zeros(n)
+@time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, tol=1e-6, adaptive=true, fast=true)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 50
+println(sol)
+
+# ZeroFPR/Adaptive
+
+x0 = zeros(n)
+@time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, tol=1e-6, adaptive=true)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 15
+println(sol)
+
+# PANOC/Adaptive
+
+x0 = zeros(n)
+@time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, tol=1e-6, adaptive=true)
+@test vecnorm(x - x_star, Inf) <= 1e-4
+@test it < 20
+println(sol)
+
+

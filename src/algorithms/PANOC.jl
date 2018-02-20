@@ -1,13 +1,13 @@
 ################################################################################
 # PANOC iterator (with L-BFGS directions)
 
-mutable struct PANOCIterator{I <: Integer, R <: Real, T <: BlockArray} <: ProximalAlgorithm{I,T}
-    x::T
-    fs
-    As
-    fq
-    Aq
-    g
+mutable struct PANOCIterator{I <: Integer, R <: Real, D, CS, FS, AS, CQ, FQ, AQ, G, HH} <: ProximalAlgorithm{I,D}
+    x::D
+    fs::FS
+    As::AS
+    fq::FQ
+    Aq::AQ
+    g::G
     gamma::R
     maxit::I
     tol::R
@@ -17,49 +17,52 @@ mutable struct PANOCIterator{I <: Integer, R <: Real, T <: BlockArray} <: Proxim
     alpha::R
     sigma::R
     tau::R
-    y # gradient step
-    xbar # proximal-gradient step
-    H # inverse Jacobian approximation
-    FPR_x
-    Aqx
-    Asx
-    Aqxnew
-    Asxnew
-    Aqd
-    Asd
-    Aqfb
-    Asfb
-    gradfq_Aqx
-    gradfs_Asx
-    Aqxbar
-    Asxbar
-    gradfq_Aqxbar
-    gradfs_Asxbar
-    fs_Asx
-    fq_Aqx
-    f_Ax
-    At_gradf_Ax
-    Aqt_gradfq_Aqx
-    Ast_gradfs_Asx
-    g_xbar
-    FBE_x
-    FBE_x_prev
-    x_prev
-    FPR_x_prev
-    xnew
-    xnewbar
-    FPR_xnew
-    d
-    normFPR_x
+    y::D # gradient step
+    xbar::D # proximal-gradient step
+    H::HH # inverse Jacobian approximation
+    FPR_x::D
+    Aqx::CQ
+    Asx::CS
+    Aqxnew::CQ
+    Asxnew::CS
+    Aqd::CQ
+    Asd::CS
+    Aqfb::CQ
+    Asfb::CS
+    gradfq_Aqx::CQ
+    gradfs_Asx::CS
+    Aqxbar::CQ
+    Asxbar::CS
+    gradfq_Aqxbar::CQ
+    gradfs_Asxbar::CS
+    fs_Asx::R
+    fq_Aqx::R
+    f_Ax::R
+    At_gradf_Ax::D
+    Aqt_gradfq_Aqx::D
+    Ast_gradfs_Asx::D
+    g_xbar::R
+    FBE_x::R
+    FBE_x_prev::R
+    x_prev::D
+    FPR_x_prev::D
+    xnew::D
+    xnewbar::D
+    FPR_xnew::D
+    d::D
+    normFPR_x::R
 end
 
 ################################################################################
 # Constructor
 
-function PANOCIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), Aq=Identity(blocksize(x0)), g=Zero(), gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive=false, memory=10, verbose=1, verbose_freq=100, alpha=0.95, sigma=0.5) where {I, R, T}
-    n = blocksize(x0)
-    mq = size(Aq, 1)
-    ms = size(As, 1)
+function PANOCIterator(x0::D; 
+                       fs::FS=Zero(), As::AS=Identity(blocksize(x0)), 
+                       fq::FQ=Zero(), Aq::AQ=Identity(blocksize(x0)), 
+                       g::G=Zero(), 
+                       gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive::Bool=false, 
+                       memory::I=10, verbose::I=1, verbose_freq::I=100, 
+                       alpha::R=0.95, sigma::R=0.5) where {I, R, D, FS, AS, FQ, AQ, G}
     x       = blockcopy(x0)
     xbar    = blockzeros(x0)
     x_prev  = blockzeros(x0)
@@ -69,48 +72,52 @@ function PANOCIterator(x0::T; fs=Zero(), As=Identity(blocksize(x0)), fq=Zero(), 
     FPR_x = blockzeros(x0)
     FPR_x_prev = blockzeros(x0)
     FPR_xnew = blockzeros(x0)
-    Aqx = blockzeros(mq)
-    Asx = blockzeros(ms)
-    Aqxnew = blockzeros(mq)
-    Asxnew = blockzeros(ms)
-    Aqd = blockzeros(mq)
-    Asd = blockzeros(ms)
-    Aqfb = blockzeros(mq)
-    Asfb = blockzeros(ms)
-    gradfq_Aqx = blockzeros(mq)
-    gradfs_Asx = blockzeros(ms)
-    Aqxbar = blockzeros(mq)
-    Asxbar = blockzeros(ms)
-    gradfq_Aqxbar = blockzeros(mq)
-    gradfs_Asxbar = blockzeros(ms)
-    At_gradf_Ax = blockzeros(n)
-    Aqt_gradfq_Aqx = blockzeros(n)
-    Ast_gradfs_Asx = blockzeros(n)
+    Aqx = Aq*x
+    Asx = As*x
+    Aqxnew = blockzeros(Aqx)
+    Asxnew = blockzeros(Asx)
+    Aqd = blockzeros(Aqx)
+    Asd = blockzeros(Asx)
+    Aqfb = blockzeros(Aqx)
+    Asfb = blockzeros(Asx)
+    gradfq_Aqx = blockzeros(Aqx)
+    gradfs_Asx = blockzeros(Asx)
+    Aqxbar = blockzeros(Aqx)
+    Asxbar = blockzeros(Asx)
+    gradfq_Aqxbar = blockzeros(Aqx)
+    gradfs_Asxbar = blockzeros(Asx)
+    At_gradf_Ax = blockzeros(x0)
+    Aqt_gradfq_Aqx = blockzeros(x0)
+    Ast_gradfs_Asx = blockzeros(x0)
     d = blockzeros(x0)
-    PANOCIterator{I, R, T}(
+    H = LBFGS(x, memory)
+    CQ = typeof(Aqx)
+    CS = typeof(Asx)
+    HH = typeof(H)
+    PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}(
                x, fs, As,
                fq, Aq, g,
                gamma, maxit, tol,
                adaptive, verbose,
                verbose_freq, alpha, sigma,
-               0.0, y, xbar,
-               LBFGS(x, memory), FPR_x,
+               one(R), y, xbar,
+               H, FPR_x,
                Aqx, Asx, Aqxnew, Asxnew, Aqd, Asd, Aqfb, Asfb, gradfq_Aqx, gradfs_Asx,
                Aqxbar, Asxbar, gradfq_Aqxbar, gradfs_Asxbar,
-               0.0, 0.0, 0.0,
+               zero(R), zero(R), zero(R),
                At_gradf_Ax, Aqt_gradfq_Aqx, Ast_gradfs_Asx,
-               0.0, 0.0,
-               0.0, x_prev, FPR_x_prev,
+               zero(R), zero(R),
+               zero(R), x_prev, FPR_x_prev,
                xnew, xnewbar, FPR_xnew,
-               d, 0)
+               d, zero(R))
 end
 
 ################################################################################
 # Utility methods
 
-maxit(sol::PANOCIterator) = sol.maxit
+maxit(sol::PANOCIterator{I}) where {I} = sol.maxit
 
-converged(sol::PANOCIterator, it) = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
+converged(sol::PANOCIterator{I,R,D}, it::I)  where {I,R,D}= it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
 
 verbose(sol::PANOCIterator) = sol.verbose > 0
 verbose(sol::PANOCIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
@@ -135,7 +142,7 @@ end
 ################################################################################
 # Initialization
 
-function initialize!(sol::PANOCIterator)
+function initialize!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}) where {I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}
 
     # reset L-BFGS operator (would be nice to have this option)
     # TODO add function reset!(::LBFGS) in AbstractOperators
@@ -172,14 +179,14 @@ function initialize!(sol::PANOCIterator)
     blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.xbar)
 
     sol.normFPR_x = blockvecnorm(sol.FPR_x)
-    sol.FBE_x = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) + 0.5/sol.gamma*sol.normFPR_x^2 + sol.g_xbar
+    sol.FBE_x = sol.f_Ax - real(blockvecdot(sol.At_gradf_Ax, sol.FPR_x)) + 0.5/sol.gamma*sol.normFPR_x^2 + sol.g_xbar
 
 end
 
 ################################################################################
 # Iteration
 
-function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
+function iterate!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it::I) where {I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}
 
     if sol.adaptive
         for it_gam = 1:100 # TODO: replace/complement with lower bound on gamma
@@ -189,7 +196,7 @@ function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
             fs_Asxbar = gradient!(sol.gradfs_Asxbar, sol.fs, sol.Asxbar)
             f_Axbar = fs_Asxbar + fq_Aqxbar
 
-            uppbnd = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_x) +
+            uppbnd = sol.f_Ax - real(blockvecdot(sol.At_gradf_Ax, sol.FPR_x)) +
                  0.5/sol.gamma*sol.normFPR_x^2
             if f_Axbar > uppbnd + 1e-6*abs(sol.f_Ax)
                 sol.gamma = 0.5*sol.gamma
@@ -246,7 +253,7 @@ function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
     blockaxpy!(sol.FPR_xnew, sol.xnew, -1.0, sol.xnewbar)
     norm_FPRxnew = blockvecnorm(sol.FPR_xnew)
 
-    FBE_xnew = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_xnew) +
+    FBE_xnew = sol.f_Ax - real(blockvecdot(sol.At_gradf_Ax, sol.FPR_xnew)) +
                    0.5/sol.gamma*norm_FPRxnew^2 + sol.g_xbar
 
     if FBE_xnew > sol.FBE_x - (C/2)*sol.normFPR_x^2
@@ -292,7 +299,7 @@ function iterate!(sol::PANOCIterator{I, R, T}, it::I) where {I, R, T}
             blockaxpy!(sol.FPR_xnew, sol.xnew, -1.0, sol.xnewbar)
             norm_FPRxnew = blockvecnorm(sol.FPR_xnew)
 
-            FBE_xnew = sol.f_Ax - blockvecdot(sol.At_gradf_Ax, sol.FPR_xnew) +
+            FBE_xnew = sol.f_Ax - real(blockvecdot(sol.At_gradf_Ax, sol.FPR_xnew)) +
                    0.5/sol.gamma*norm_FPRxnew^2 + sol.g_xbar
 
             if FBE_xnew <= sol.FBE_x - (C/2)*sol.normFPR_x^2
