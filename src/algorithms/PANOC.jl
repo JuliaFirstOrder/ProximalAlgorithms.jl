@@ -15,7 +15,7 @@ mutable struct PANOCIterator{I <: Integer, R <: Real, D, CS, FS, AS, CQ, FQ, AQ,
     verbose::I
     verbose_freq::I
     alpha::R
-    sigma::R
+    beta::R
     tau::R
     y::D # gradient step
     xbar::D # proximal-gradient step
@@ -62,7 +62,7 @@ function PANOCIterator(x0::D;
                        g::G=Zero(), 
                        gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive::Bool=false, 
                        memory::I=10, verbose::I=1, verbose_freq::I=100, 
-                       alpha::R=0.95, sigma::R=0.5) where {I, R, D, FS, AS, FQ, AQ, G}
+                       alpha::R=0.95, beta::R=0.5) where {I, R, D, FS, AS, FQ, AQ, G}
     x       = blockcopy(x0)
     xbar    = blockzeros(x0)
     x_prev  = blockzeros(x0)
@@ -99,7 +99,7 @@ function PANOCIterator(x0::D;
                fq, Aq, g,
                gamma, maxit, tol,
                adaptive, verbose,
-               verbose_freq, alpha, sigma,
+               verbose_freq, alpha, beta,
                one(R), y, xbar,
                H, FPR_x,
                Aqx, Asx, Aqxnew, Asxnew, Aqd, Asd, Aqfb, Asfb, gradfq_Aqx, gradfs_Asx,
@@ -219,7 +219,7 @@ function iterate!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it
     sol.FPR_x_prev, sol.FPR_x = sol.FPR_x, sol.FPR_x_prev
     blockset!(sol.x_prev, sol.x)
 
-    C = sol.sigma*sol.gamma*(1.0-sol.alpha)
+    sigma = 0.5*sol.beta/sol.gamma*(1.0-sol.alpha)
     maxit_tau = 10
 
     # tau = 1
@@ -256,7 +256,7 @@ function iterate!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it
     FBE_xnew = sol.f_Ax - real(blockvecdot(sol.At_gradf_Ax, sol.FPR_xnew)) +
                    0.5/sol.gamma*norm_FPRxnew^2 + sol.g_xbar
 
-    if FBE_xnew > sol.FBE_x - (C/2)*sol.normFPR_x^2
+    if FBE_xnew > sol.FBE_x - sigma*sol.normFPR_x^2
         # start using convex combination of FB direction and d
 
         A_mul_B!(sol.Aqfb, sol.Aq, sol.FPR_x_prev)
@@ -302,7 +302,7 @@ function iterate!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it
             FBE_xnew = sol.f_Ax - real(blockvecdot(sol.At_gradf_Ax, sol.FPR_xnew)) +
                    0.5/sol.gamma*norm_FPRxnew^2 + sol.g_xbar
 
-            if FBE_xnew <= sol.FBE_x - (C/2)*sol.normFPR_x^2
+            if FBE_xnew <= sol.FBE_x - sigma*sol.normFPR_x^2
                 break
             end
 

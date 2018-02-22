@@ -1,40 +1,39 @@
 using ProximalOperators
+using AbstractOperators
 
 srand(123)
-m, n = 10,100
 
-A = randn(m,n)
-U,S,V = svd(A)
-#create ill conditioned matrix 
-S[floor(Int,0.5*min(m,n)):end] .= 0.
-A = U*diagm(S)*V'
+n = 2000
+h = readdlm("h.txt")
+A = Conv(Float64,(n,),h[:])
+m = size(A,1)
+#A = hcat([[zeros(i);h;zeros(n-1-i)] for i = 0:n-1]...) # Equivalent Full Matrix
 
-x_star = sprandn(n,0.5)
+x_star = full(sprandn(n,0.5))
 b = A*x_star+20*randn(m)
 
 f = Translate(SqrNormL2(), -b)
-f2 = LeastSquares(A, b)
-lam = 1e-2*vecnorm(A'*b, Inf)
+lam = 1e-1*vecnorm(A'*b, Inf)
 g = NormL1(lam)
 
-# fast FBS/Nonadaptive
+## fast FBS/Adaptive
 x0 = zeros(n)
-@time it, xFBS, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, fast = true, tol = 1e-8)
-@test it < 1800
+@time it, xFBS, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, fast = true, tol = 1e-8)
+@test it < 1000
 
-# ZeroFPR/Nonadaptive
+# ZeroFPR/Adaptive
 x0 = zeros(n)
-@time it, xZ, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, tol = 1e-8)
+@time it, xZ, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, tol = 1e-8)
 
-@test norm(xFBS-xZ) < 1e-8
-@test it < 150
+@test norm(xFBS-xZ) < 1e-3
+@test it < 70
 
-# PANOC/Nonadaptive
+# PANOC/Adaptive
 x0 = zeros(n)
-@time it, xP, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, gamma=1.0/norm(A)^2, tol = 1e-8)
+@time it, xP, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, tol = 1e-8)
 
-@test norm(xP-xZ) < 1e-8
-@test it < 300
+@test norm(xP-xZ) < 1e-3
+@test it < 140
 
 #####################
 # Complex Variables #

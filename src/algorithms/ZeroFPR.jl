@@ -15,7 +15,7 @@ mutable struct ZeroFPRIterator{I <: Integer, R <: Real, D, CS, FS, AS, CQ, FQ, A
     verbose::I
     verbose_freq::I
     alpha::R
-    sigma::R
+    beta::R
     tau::R
     y::D # gradient step
     xbar::D # proximal-gradient step
@@ -55,7 +55,7 @@ function ZeroFPRIterator(x0::D;
                          fq::FQ=Zero(), Aq::AQ=Identity(blocksize(x0)), 
                          g::G=Zero(), 
                          gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive::Bool=false, memory::I=10, 
-                         verbose::I=1, verbose_freq::I=100, alpha::R=0.95, sigma::R=0.5) where {I, R, D, FS, AS, FQ, AQ, G}
+                         verbose::I=1, verbose_freq::I=100, alpha::R=0.95, beta::R=0.5) where {I, R, D, FS, AS, FQ, AQ, G}
     x = blockcopy(x0)
     y = blockzeros(x0)
     xbar = blockzeros(x0)
@@ -88,7 +88,7 @@ function ZeroFPRIterator(x0::D;
                  fs, As,
                  fq, Aq, g,
                  gamma, maxit, tol, adaptive, verbose, verbose_freq,
-                 alpha, sigma, one(R), y,
+                 alpha, beta, one(R), y,
                  xbar, xbarbar, xnew, xnewbar,
                  H, FPR_x,
                  Aqx, Asx,
@@ -226,7 +226,7 @@ function iterate!(sol::ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, 
     A_mul_B!(sol.Asd, sol.As, sol.d)
     A_mul_B!(sol.Aqd, sol.Aq, sol.d)
 
-    C = sol.sigma*sol.gamma*(1.0-sol.alpha)
+    sigma = 0.5*sol.beta/sol.gamma*(1.0-sol.alpha)
 
     g_xnewbar = zero(R)
     f_Axnew = zero(R)
@@ -249,7 +249,7 @@ function iterate!(sol::ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, 
         blockaxpy!(sol.FPR_x, sol.xnew, -1.0, sol.xnewbar)
         normFPR_xnew = blockvecnorm(sol.FPR_x)
         FBE_xnew = f_Axnew - real(blockvecdot(sol.At_gradf_Ax, sol.FPR_x)) + 0.5/sol.gamma*normFPR_xnew^2 + g_xnewbar
-        if FBE_xnew <= FBE_x - (C/2)*normFPR_x^2
+        if FBE_xnew <= FBE_x - sigma*normFPR_x^2
             break
         end
         sol.tau = 0.5*sol.tau
