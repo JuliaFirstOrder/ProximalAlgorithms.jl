@@ -64,18 +64,18 @@ x0 = zeros(n)+im*zeros(n)
 @time it, x, sol = ProximalAlgorithms.FBS(x0; fq=f, Aq=A, g=g, fast = true, tol = 1e-6, maxit = 30000)
 
 @test norm(x-x_star) < 1e-4
-@test it < 23000
+@test it < 25000
 
 # ZeroFPR/Adaptive
 x0 = zeros(n)+im*zeros(n)
 @time it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, tol = 1e-6)
 
 @test norm(x-x_star) < 1e-4
-@test it < 400
+@test it < 700
 
 # PANOC/Adaptive
 x0 = zeros(n)+im*zeros(n)
 @time it, x, sol = ProximalAlgorithms.PANOC(x0; fq=f, Aq=A, g=g, tol = 1e-6)
 
 @test norm(x-x_star) < 1e-4
-@test it < 1200
+@test it < 1500
