@@ -1,12 +1,18 @@
 using ProximalOperators
 using ProximalAlgorithms
+using AbstractOperators
 using AbstractOperators.BlockArrays
-using Base.Test
+using LinearAlgebra
+using SparseArrays
+using FFTW
+using Random
+using Test
+using DelimitedFiles
 
 @testset "ProximalAlgorithms" begin
 
 @testset "Utilities" begin
-    include("test_block.jl")
+    include("test_block.jl")  # remove?
     include("test_conjugate.jl")
 end
 

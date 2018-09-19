@@ -1,5 +1,4 @@
-import ProximalOperators: gradient!, prox!, prox
-import Base: gradient
+import ProximalOperators: gradient, gradient!, prox!, prox
 
 struct Zero end
 

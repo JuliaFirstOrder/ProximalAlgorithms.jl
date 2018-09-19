@@ -150,9 +150,9 @@ function initialize!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH})
     sol.H.H = 1.0
 
     # compute first forward-backward step here
-    A_mul_B!(sol.Aqx, sol.Aq, sol.x)
+    mul!(sol.Aqx, sol.Aq, sol.x)
     sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqx)
-    A_mul_B!(sol.Asx, sol.As, sol.x)
+    mul!(sol.Asx, sol.As, sol.x)
     sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asx)
     blockaxpy!(sol.At_gradf_Ax, sol.As'*sol.gradfs_Asx, 1.0, sol.Aq'*sol.gradfq_Aqx)
     sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
@@ -190,9 +190,9 @@ function iterate!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it
 
     if sol.adaptive
         for it_gam = 1:100 # TODO: replace/complement with lower bound on gamma
-            A_mul_B!(sol.Aqxbar, sol.Aq, sol.xbar)
+            mul!(sol.Aqxbar, sol.Aq, sol.xbar)
             fq_Aqxbar = gradient!(sol.gradfq_Aqxbar, sol.fq, sol.Aqxbar)
-            A_mul_B!(sol.Asxbar, sol.As, sol.xbar)
+            mul!(sol.Asxbar, sol.As, sol.xbar)
             fs_Asxbar = gradient!(sol.gradfs_Asxbar, sol.fs, sol.Asxbar)
             f_Axbar = fs_Asxbar + fq_Aqxbar
 
@@ -214,7 +214,7 @@ function iterate!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it
     if it > 1
         update!(sol.H, sol.x, sol.x_prev, sol.FPR_x, sol.FPR_x_prev)
     end
-    A_mul_B!(sol.d, sol.H, 0.0 .- sol.FPR_x) # TODO: not nice
+    mul!(sol.d, sol.H, 0.0 .- sol.FPR_x) # TODO: not nice
 
     sol.FPR_x_prev, sol.FPR_x = sol.FPR_x, sol.FPR_x_prev
     blockset!(sol.x_prev, sol.x)
@@ -225,8 +225,8 @@ function iterate!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it
     # tau = 1
     sol.tau = one(R)
 
-    A_mul_B!( sol.Aqd, sol.Aq, sol.d)
-    A_mul_B!( sol.Asd, sol.As, sol.d)
+    mul!( sol.Aqd, sol.Aq, sol.d)
+    mul!( sol.Asd, sol.As, sol.d)
 
     # xnew = x + tau*d
     blockaxpy!(sol.xnew, sol.x, sol.tau, sol.d)
@@ -239,8 +239,8 @@ function iterate!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it
     sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxnew)
     sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asxnew)
 
-    Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
-    Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
+    mul!(sol.Aqt_gradfq_Aqx, sol.Aq', sol.gradfq_Aqx)
+    mul!(sol.Ast_gradfs_Asx, sol.As', sol.gradfs_Asx)
 
     blockaxpy!(sol.At_gradf_Ax, sol.Aqt_gradfq_Aqx, 1.0, sol.Ast_gradfs_Asx)
     sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
@@ -259,8 +259,8 @@ function iterate!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it
     if FBE_xnew > sol.FBE_x - sigma*sol.normFPR_x^2
         # start using convex combination of FB direction and d
 
-        A_mul_B!(sol.Aqfb, sol.Aq, sol.FPR_x_prev)
-        A_mul_B!(sol.Asfb, sol.As, sol.FPR_x_prev)
+        mul!(sol.Aqfb, sol.Aq, sol.FPR_x_prev)
+        mul!(sol.Asfb, sol.As, sol.FPR_x_prev)
 
         for it_tau = 1:maxit_tau # TODO: replace/complement with lower bound on tau
 
@@ -285,8 +285,8 @@ function iterate!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it
             sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxnew)
             sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asxnew)
 
-            Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
-            Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
+            mul!(sol.Aqt_gradfq_Aqx, sol.Aq', sol.gradfq_Aqx)
+            mul!(sol.Ast_gradfs_Asx, sol.As', sol.gradfs_Asx)
 
             blockaxpy!(sol.At_gradf_Ax, sol.Aqt_gradfq_Aqx, 1.0, sol.Ast_gradfs_Asx)
             sol.f_Ax = sol.fs_Asx + sol.fq_Aqx

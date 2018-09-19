@@ -3,6 +3,8 @@ module ProximalAlgorithms
 using AbstractOperators
 using AbstractOperators.BlockArrays
 using ProximalOperators
+using LinearAlgebra
+using Printf
 
 import Base: start, next, done
 

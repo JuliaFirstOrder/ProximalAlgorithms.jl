@@ -139,9 +139,9 @@ function initialize!(sol::ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH
     sol.H.H = 1.0
 
     # compute first forward-backward step here
-    A_mul_B!(sol.Aqx, sol.Aq, sol.x)
+    mul!(sol.Aqx, sol.Aq, sol.x)
     sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqx)
-    A_mul_B!(sol.Asx, sol.As, sol.x)
+    mul!(sol.Asx, sol.As, sol.x)
     sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asx)
     blockaxpy!(sol.At_gradf_Ax, sol.As'*sol.gradfs_Asx, 1.0, sol.Aq'*sol.gradfq_Aqx)
     sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
@@ -175,9 +175,9 @@ end
 function iterate!(sol::ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it::I) where {I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}
 
     # These need to be performed anyway (to compute xbarbar later on)
-    A_mul_B!(sol.Aqxbar, sol.Aq, sol.xbar)
+    mul!(sol.Aqxbar, sol.Aq, sol.xbar)
     fq_Aqxbar = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxbar)
-    A_mul_B!(sol.Asxbar, sol.As, sol.xbar)
+    mul!(sol.Asxbar, sol.As, sol.xbar)
     fs_Asxbar = gradient!(sol.gradfs_Asx, sol.fs, sol.Asxbar)
     f_Axbar = fs_Asxbar + fq_Aqxbar
 
@@ -193,9 +193,9 @@ function iterate!(sol::ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, 
             else
                 break
             end
-            A_mul_B!(sol.Aqxbar, sol.Aq, sol.xbar)
+            mul!(sol.Aqxbar, sol.Aq, sol.xbar)
             fq_Aqxbar = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxbar)
-            A_mul_B!(sol.Asxbar, sol.As, sol.xbar)
+            mul!(sol.Asxbar, sol.As, sol.xbar)
             fs_Asxbar = gradient!(sol.gradfs_Asx, sol.fs, sol.Asxbar)
             f_Axbar = fs_Asxbar + fq_Aqxbar
         end
@@ -207,8 +207,8 @@ function iterate!(sol::ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, 
     FBE_x = sol.f_Ax - real(blockvecdot(sol.At_gradf_Ax, sol.FPR_x)) + 0.5/sol.gamma*normFPR_x^2 + sol.g_xbar
 
     # Compute search direction
-    Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
-    Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+    mul!(sol.Ast_gradfs_Asx, sol.As', sol.gradfs_Asx)
+    mul!(sol.Aqt_gradfq_Aqx, sol.Aq', sol.gradfq_Aqx)
     blockaxpy!(sol.At_gradf_Ax, sol.Ast_gradfs_Asx, 1.0, sol.Aqt_gradfq_Aqx)
     blockaxpy!(sol.y, sol.xbar, -sol.gamma, sol.At_gradf_Ax)
     g_xbarbar = prox!(sol.xbarbar, sol.g, sol.y, sol.gamma)
@@ -217,14 +217,14 @@ function iterate!(sol::ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, 
     if it > 1
         update!(sol.H, sol.xbar, sol.xnewbar, sol.FPR_xbar, sol.FPR_xbar_prev)
     end
-    A_mul_B!(sol.d, sol.H, 0.0 .- sol.FPR_xbar) # TODO: not nice
+    mul!(sol.d, sol.H, 0.0 .- sol.FPR_xbar) # TODO: not nice
 
     # Perform line-search over the FBE
 
     sol.tau = 1.0
 
-    A_mul_B!(sol.Asd, sol.As, sol.d)
-    A_mul_B!(sol.Aqd, sol.Aq, sol.d)
+    mul!(sol.Asd, sol.As, sol.d)
+    mul!(sol.Aqd, sol.Aq, sol.d)
 
     sigma = 0.5*sol.beta/sol.gamma*(1.0-sol.alpha)
 
@@ -241,8 +241,8 @@ function iterate!(sol::ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, 
         # TODO: can precompute most of next line before the iteration
         fq_Aqxnew = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxnew)
         f_Axnew = fs_Asxnew + fq_Aqxnew
-        Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
-        Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+        mul!(sol.Ast_gradfs_Asx, sol.As', sol.gradfs_Asx)
+        mul!(sol.Aqt_gradfq_Aqx, sol.Aq', sol.gradfq_Aqx)
         blockaxpy!(sol.At_gradf_Ax, sol.Ast_gradfs_Asx, 1.0, sol.Aqt_gradfq_Aqx)
         blockaxpy!(sol.y, sol.xnew, -sol.gamma, sol.At_gradf_Ax)
         g_xnewbar = prox!(sol.xnewbar, sol.g, sol.y, sol.gamma)
