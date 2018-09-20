@@ -61,7 +61,7 @@ end
 # Initialization
 
 function initialize!(sol::DRSIterator)
-    return
+    return sol.z
 end
 
 ################################################################################

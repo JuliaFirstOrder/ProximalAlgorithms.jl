@@ -36,6 +36,7 @@ end
 function initialize!(sol::TemplateIterator)
     # One shouldn't really be printing anything here
     println("Initializing the iterations")
+    return sol.x
 end
 
 ################################################################################

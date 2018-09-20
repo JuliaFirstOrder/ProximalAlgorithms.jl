@@ -162,7 +162,8 @@ function initialize!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH})
         # 1) if adaptive = false and only fq is present then L is "accurate"
         # 2) otherwise L is "inaccurate" and set adaptive = true
         # TODO: implement case 1), now 2) is always performed
-        xeps = sol.x .+ sqrt(eps())
+        # xeps = sol.x .+ sqrt(eps())
+        xeps = (x -> x .+ sqrt(eps())).(sol.x)
         Aqxeps = sol.Aq*xeps
         gradfq_Aqxeps, = gradient(sol.fq, Aqxeps)
         Asxeps = sol.As*xeps
@@ -180,6 +181,8 @@ function initialize!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH})
 
     sol.normFPR_x = blockvecnorm(sol.FPR_x)
     sol.FBE_x = sol.f_Ax - real(blockvecdot(sol.At_gradf_Ax, sol.FPR_x)) + 0.5/sol.gamma*sol.normFPR_x^2 + sol.g_xbar
+
+    return sol.xbar
 
 end
 
@@ -214,7 +217,7 @@ function iterate!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it
     if it > 1
         update!(sol.H, sol.x, sol.x_prev, sol.FPR_x, sol.FPR_x_prev)
     end
-    mul!(sol.d, sol.H, 0.0 .- sol.FPR_x) # TODO: not nice
+    mul!(sol.d, sol.H, ( x -> .-x ).(sol.FPR_x)) # TODO: not nice
 
     sol.FPR_x_prev, sol.FPR_x = sol.FPR_x, sol.FPR_x_prev
     blockset!(sol.x_prev, sol.x)

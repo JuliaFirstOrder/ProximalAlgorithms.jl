@@ -151,7 +151,8 @@ function initialize!(sol::ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH
         # 1) if adaptive = false and only fq is present then L is "accurate"
         # 2) otherwise L is "inaccurate" and set adaptive = true
         # TODO: implement case 1), now 2) is always performed
-        xeps = sol.x .+ sqrt(eps())
+        # xeps = sol.x .+ sqrt(eps())
+        xeps = (x -> x .+ sqrt(eps())).(sol.x)
         Aqxeps = sol.Aq*xeps
         gradfq_Aqxeps, = gradient(sol.fq, Aqxeps)
         Asxeps = sol.As*xeps
@@ -166,6 +167,8 @@ function initialize!(sol::ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH
     blockaxpy!(sol.y, sol.x, -sol.gamma, sol.At_gradf_Ax)
     sol.g_xbar = prox!(sol.xbar, sol.g, sol.y, sol.gamma)
     blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.xbar)
+
+    return sol.xbar
 
 end
 
@@ -217,7 +220,7 @@ function iterate!(sol::ZeroFPRIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, 
     if it > 1
         update!(sol.H, sol.xbar, sol.xnewbar, sol.FPR_xbar, sol.FPR_xbar_prev)
     end
-    mul!(sol.d, sol.H, 0.0 .- sol.FPR_xbar) # TODO: not nice
+    mul!(sol.d, sol.H, ( x -> .-x ).(sol.FPR_xbar)) # TODO: not nice
 
     # Perform line-search over the FBE
 

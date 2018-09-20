@@ -146,7 +146,7 @@ end
 # Initialization
 
 function initialize!(sol::AFBAIterator)
-    return
+    return sol.x, sol.y
 end
 
 ################################################################################

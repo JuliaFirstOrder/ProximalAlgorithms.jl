@@ -6,7 +6,7 @@ using ProximalOperators
 using LinearAlgebra
 using Printf
 
-import Base: start, next, done
+import Base: iterate
 
 include("utilities/identity.jl")
 include("utilities/zero.jl")
@@ -16,14 +16,18 @@ abstract type ProximalAlgorithm{I,T} end
 
 # The following methods give `ProximalAlgorithm` objects the iterable behavior.
 
-function start(solver::ProximalAlgorithm{I,T})::I where {I,T}
-    initialize!(solver)
-    return zero(I)
+function iterate(solver::ProximalAlgorithm{I,T}) where {I,T}
+    point = initialize!(solver)
+    return (point, one(I))
 end
 
-function next(solver::ProximalAlgorithm{I,T}, it::I)::Tuple{T, I} where {I,T}
-    point = iterate!(solver, it)
-    return (point, it + one(I))
+function iterate(solver::ProximalAlgorithm{I,T}, it::I) where {I,T}
+    if done(solver, it) 
+        return nothing
+    else
+        point = iterate!(solver, it)
+        return (point, it + one(I))
+    end
 end
 
 function done(solver::ProximalAlgorithm{I,T}, it::I)::Bool where {I,T}
@@ -42,8 +46,9 @@ function run!(solver::ProximalAlgorithm{I,T})::Tuple{I,T} where {I,T}
     #       [...]
     #   end
     # See: https://docs.julialang.org/en/stable/manual/interfaces
-    for (it, point) in enumerate(solver)
-        if verbose(solver, it) display(solver, it) end
+    for (it_, point_) in enumerate(solver)
+        if verbose(solver, it_) display(solver, it_) end
+        it, point = it_, point_
     end
     if verbose(solver) display(solver, it) end
     return it, point
