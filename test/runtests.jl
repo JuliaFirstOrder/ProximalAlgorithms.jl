@@ -12,7 +12,7 @@ using DelimitedFiles
 @testset "ProximalAlgorithms" begin
 
 @testset "Utilities" begin
-    include("test_block.jl")  # remove?
+#    include("test_block.jl")  # remove?
     include("test_conjugate.jl")
 end
 
