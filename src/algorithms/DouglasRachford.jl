@@ -61,7 +61,7 @@ end
 # Initialization
 
 function initialize!(sol::DRSIterator)
-    return
+    return sol.z
 end
 
 ################################################################################
@@ -69,7 +69,7 @@ end
 
 function iterate!(sol::DRSIterator{I, T}, it::I) where {I, T}
     prox!(sol.y, sol.f, sol.x, sol.gamma)
-    sol.r .= 2.*sol.y .- sol.x
+    sol.r .= 2 .*sol.y .- sol.x
     prox!(sol.z, sol.g, sol.r, sol.gamma)
     sol.FPR_x .= sol.y .- sol.z
     sol.x .-= sol.FPR_x

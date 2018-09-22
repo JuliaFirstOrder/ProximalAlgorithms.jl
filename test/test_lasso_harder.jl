@@ -1,7 +1,4 @@
-using ProximalOperators
-using AbstractOperators
-
-srand(123)
+Random.seed!(123)
 
 n = 2000
 h = readdlm("h.txt")
@@ -9,11 +6,11 @@ A = Conv(Float64,(n,),h[:])
 m = size(A,1)
 #A = hcat([[zeros(i);h;zeros(n-1-i)] for i = 0:n-1]...) # Equivalent Full Matrix
 
-x_star = full(sprandn(n,0.5))
+x_star = Vector(sprandn(n,0.5))
 b = A*x_star+20*randn(m)
 
 f = Translate(SqrNormL2(), -b)
-lam = 1e-1*vecnorm(A'*b, Inf)
+lam = 1e-1*norm(A'*b, Inf)
 g = NormL1(lam)
 
 ## fast FBS/Adaptive
@@ -39,21 +36,21 @@ x0 = zeros(n)
 # Complex Variables #
 #####################
 
-srand(123)
+Random.seed!(123)
 m, n = 10,100
 
 A = randn(m,n)+im*randn(m,n)
 U,S,V = svd(A)
 #create ill conditioned matrix 
 S[floor(Int,0.5*min(m,n)):end] .= 0.
-A = U*diagm(S)*V'
+A = U*diagm(0 => S)*V'
 
 x_star = sprandn(n,0.5).+im.*sprandn(n,0.5)
 b = A*x_star+20*(randn(m).+im*randn(m))
 
 f = Translate(SqrNormL2(), -b)
 f2 = LeastSquares(A, b)
-lam = 1e-2*vecnorm(A'*b, Inf)
+lam = 1e-2*norm(A'*b, Inf)
 g = NormL1(lam)
 
 x0 = zeros(n)+im*zeros(n)

@@ -125,12 +125,12 @@ function initialize!(sol::FBSIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G}) where
     sol.theta = 1.0
 
     # compute first forward-backward step here
-    A_mul_B!(sol.Aqx, sol.Aq, sol.x)
+    mul!(sol.Aqx, sol.Aq, sol.x)
     sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqx)
-    A_mul_B!(sol.Asx, sol.As, sol.x)
+    mul!(sol.Asx, sol.As, sol.x)
     sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asx)
-    Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
-    Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+    mul!(sol.Ast_gradfs_Asx, sol.As', sol.gradfs_Asx)
+    mul!(sol.Aqt_gradfq_Aqx, sol.Aq', sol.gradfq_Aqx)
     blockaxpy!(sol.At_gradf_Ax, sol.Ast_gradfs_Asx, 1.0, sol.Aqt_gradfq_Aqx)
     sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
 
@@ -139,7 +139,8 @@ function initialize!(sol::FBSIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G}) where
         # 1) if adaptive = false and only fq is present then L is "accurate"
         # 2) otherwise L is "inaccurate" and set adaptive = true
         # TODO: implement case 1), now 2) is always performed
-        xeps = sol.x .+ sqrt(eps())
+        # xeps = sol.x .+ sqrt(eps())
+        xeps = (x -> x .+ sqrt(eps())).(sol.x)
         Aqxeps = sol.Aq*xeps
         gradfq_Aqxeps, = gradient(sol.fq, Aqxeps)
         Asxeps = sol.As*xeps
@@ -155,6 +156,7 @@ function initialize!(sol::FBSIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G}) where
     prox!(sol.z, sol.g, sol.y, sol.gamma)
     blockaxpy!(sol.FPR_x, sol.x, -1.0, sol.z)
 
+    return sol.z
 end
 
 ################################################################################
@@ -169,9 +171,9 @@ function iterate!(sol::FBSIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G}, it::I) w
         for it_gam = 1:100 # TODO: replace/complement with lower bound on gamma
             normFPR_x = blockvecnorm(sol.FPR_x)
             uppbnd = sol.f_Ax - real(blockvecdot(sol.At_gradf_Ax, sol.FPR_x)) + 0.5/sol.gamma*normFPR_x^2
-            A_mul_B!(sol.Aqz, sol.Aq, sol.z)
+            mul!(sol.Aqz, sol.Aq, sol.z)
             fq_Aqz = gradient!(sol.gradfq_Aqz, sol.fq, sol.Aqz)
-            A_mul_B!(sol.Asz, sol.As, sol.z)
+            mul!(sol.Asz, sol.As, sol.z)
             fs_Asz = gradient!(sol.gradfs_Asz, sol.fs, sol.Asz)
             f_Az = fs_Asz + fq_Aqz
             if f_Az > uppbnd + 1e-6*abs(sol.f_Ax)
@@ -194,8 +196,8 @@ function iterate!(sol::FBSIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G}, it::I) w
             sol.Asx, sol.Asz = sol.Asz, sol.Asx
             sol.fs_Asx = fs_Asz
             sol.gradfs_Asx, sol.gradfs_Asz = sol.gradfs_Asz, sol.gradfs_Asx
-            Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
-            Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+            mul!(sol.Ast_gradfs_Asx, sol.As', sol.gradfs_Asx)
+            mul!(sol.Aqt_gradfq_Aqx, sol.Aq', sol.gradfq_Aqx)
             blockaxpy!(sol.At_gradf_Ax, sol.Ast_gradfs_Asx, 1.0, sol.Aqt_gradfq_Aqx)
             sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
         end
@@ -205,7 +207,10 @@ function iterate!(sol::FBSIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G}, it::I) w
         extr = (sol.theta - 1.0)/theta1
         sol.theta = theta1
         # perform extrapolation
-        sol.x .= sol.z .+ extr.*(sol.z .- sol.z_prev)
+        #sol.x .= sol.z .+ extr.*(sol.z .- sol.z_prev)
+        blockaxpy!(sol.x, sol.z, -1, sol.z_prev)
+        blockaxpy!(sol.x, sol.z, extr, sol.x)
+
         sol.z, sol.z_prev = sol.z_prev, sol.z
         if sol.adaptive == true
             # extrapolate other extrapolable quantities
@@ -229,20 +234,20 @@ function iterate!(sol::FBSIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G}, it::I) w
             sol.Asz_prev, sol.Asz = sol.Asz, sol.Asz_prev
             # compute gradient of fs
             sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asx)
-            Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
+            mul!(sol.Ast_gradfs_Asx, sol.As', sol.gradfs_Asx)
             # TODO: we can probably save the MATVEC by Aq' in the next line
-            Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+            mul!(sol.Aqt_gradfq_Aqx, sol.Aq', sol.gradfq_Aqx)
             blockaxpy!(sol.At_gradf_Ax, sol.Ast_gradfs_Asx, 1.0, sol.Aqt_gradfq_Aqx)
             sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
         end
     end
     if sol.adaptive == false
-        A_mul_B!(sol.Aqx, sol.Aq, sol.x)
+        mul!(sol.Aqx, sol.Aq, sol.x)
         sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqx)
-        A_mul_B!(sol.Asx, sol.As, sol.x)
+        mul!(sol.Asx, sol.As, sol.x)
         sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asx)
-        Ac_mul_B!(sol.Ast_gradfs_Asx, sol.As, sol.gradfs_Asx)
-        Ac_mul_B!(sol.Aqt_gradfq_Aqx, sol.Aq, sol.gradfq_Aqx)
+        mul!(sol.Ast_gradfs_Asx, sol.As', sol.gradfs_Asx)
+        mul!(sol.Aqt_gradfq_Aqx, sol.Aq', sol.gradfq_Aqx)
         blockaxpy!(sol.At_gradf_Ax, sol.Ast_gradfs_Asx, 1.0, sol.Aqt_gradfq_Aqx)
         sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
     end
@@ -283,7 +288,6 @@ additional options as follows:
 * `verbose`, verbosity level (default: `1`)
 * `verbose_freq`, verbosity frequency for `verbose = 1` (default: `100`)
 """
-
 function FBS(x0; kwargs...)
     sol = FBSIterator(x0; kwargs...)
     it, point = run!(sol)

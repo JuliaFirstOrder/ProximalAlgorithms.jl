@@ -17,7 +17,7 @@
 #   X'(c - A'y) = 0     [complementarity slackness]
 #
 
-srand(0) # set random seed
+Random.seed!(0)
 
 n = 100 # primal dimension
 m = 80 # dual dimension (i.e. number of linear equalities)
@@ -41,9 +41,7 @@ using ProximalAlgorithms
 x0 = zeros(n)
 y0 = zeros(m)
 
-tic()
 it_afba, x_afba, y_afba, solver_afba = ProximalAlgorithms.AFBA(x0, y0; f=f, g=g, h=h, L=A, tol=1e-8, maxit=10000)
-toc()
 
 # Check and print solution quality measures
 # (for some reason the returned dual iterate is the negative of the dual LP variable y)

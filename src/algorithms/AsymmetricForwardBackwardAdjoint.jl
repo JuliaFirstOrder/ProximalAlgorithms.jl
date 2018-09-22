@@ -54,8 +54,8 @@ function AFBAIterator(x0::T1, y0::T2; g=IndFree(), h=IndFree(), f=IndFree(), l=I
     lconj = Conjugate(l)
 
     # default stepsizes
-    par = 4 #  scale parameter for comparing Lipschitz constant and norm(L)
-    nmL = norm(L)
+    par = 4 #  scale parameter for comparing Lipschitz constant and opnorm(L)
+    nmL = opnorm(L)
     alpha = 1
     if isa(h, ProximalOperators.IndFree) && (gamma1<0 || gamma2<0)
         # mu=0 is the only case where stepsizes matter
@@ -86,11 +86,11 @@ function AFBAIterator(x0::T1, y0::T2; g=IndFree(), h=IndFree(), f=IndFree(), l=I
             gamma2 = 0.99/(betaR/2+gamma1*nmL^2)
         elseif theta==0 && mu==1 # default stepsize for theta=0, mu=1
             temp=3
-            if betaQ > par*nmL && betaR > temp*par*nmL # denominator for Sigma involves 3α norm(L) in this case
+            if betaQ > par*nmL && betaR > temp*par*nmL # denominator for Sigma involves 3α opnorm(L) in this case
                 alpha = 1
             elseif betaQ > par*nmL
                 alpha = 2*nmL/betaQ
-            elseif betaR > temp*par*nmL # denominator for Sigma involves 3α norm(L) in this case
+            elseif betaR > temp*par*nmL # denominator for Sigma involves 3α opnorm(L) in this case
                 alpha = betaR/(temp*2*nmL)
             end
             gamma1 = 1/(betaQ/2+nmL/alpha)
@@ -101,7 +101,7 @@ function AFBAIterator(x0::T1, y0::T2; g=IndFree(), h=IndFree(), f=IndFree(), l=I
                 alpha = 1
             elseif betaR > par*nmL
                 alpha = betaR/(2*nmL)
-            elseif betaQ > temp*par*nmL # denominator for Sigma involves 3α norm(L) in this case
+            elseif betaQ > temp*par*nmL # denominator for Sigma involves 3α opnorm(L) in this case
                 alpha = 2*nmL*temp/betaQ
             end
             gamma2 = 1/(betaR/2+ alpha*nmL)
@@ -117,7 +117,7 @@ end
 # Utility methods
 maxit(sol::AFBAIterator) = sol.maxit
 
-converged(sol::AFBAIterator, it) = it > 0 && vecnorm(sol.FPR_x)+vecnorm(sol.FPR_y) <= sol.tol
+converged(sol::AFBAIterator, it) = it > 0 && norm(sol.FPR_x)+norm(sol.FPR_y) <= sol.tol
 
 verbose(sol::AFBAIterator) = sol.verbose > 0
 verbose(sol::AFBAIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
@@ -128,7 +128,7 @@ function display(sol::AFBAIterator)
 end
 
 function display(sol::AFBAIterator, it)
-    @printf("%6d | %7.4e, %7.4e | %7.4e |\n", it, sol.gamma1, sol.gamma2, vecnorm(sol.FPR_x)+vecnorm(sol.FPR_y))
+    @printf("%6d | %7.4e, %7.4e | %7.4e |\n", it, sol.gamma1, sol.gamma2, norm(sol.FPR_x)+norm(sol.FPR_y))
 end
 
 function Base.show(io::IO, sol::AFBAIterator)
@@ -138,7 +138,7 @@ function Base.show(io::IO, sol::AFBAIterator)
     else
         println(io, "theta, mu           : $(sol.theta), $(sol.mu)" )
     end
-    println(io, "fpr                 : $(vecnorm(sol.FPR_x)+vecnorm(sol.FPR_y))")
+    println(io, "fpr                 : $(norm(sol.FPR_x)+norm(sol.FPR_y))")
     print(  io, "gamma1, gamma2      : $(sol.gamma1), $(sol.gamma2)")
 end
 
@@ -146,7 +146,7 @@ end
 # Initialization
 
 function initialize!(sol::AFBAIterator)
-    return
+    return sol.x, sol.y
 end
 
 ################################################################################
@@ -155,7 +155,7 @@ end
 function iterate!(sol::AFBAIterator{I, R, T1, T2}, it::I) where {I, R, T1, T2}
     # perform xbar-update step
     gradient!(sol.gradf, sol.f, sol.x)
-    Ac_mul_B!(sol.temp_x, sol.L, sol.y)
+    mul!(sol.temp_x, sol.L', sol.y)
     sol.temp_x .+= sol.gradf
     sol.temp_x .*= -sol.gamma1
     sol.temp_x .+= sol.x
@@ -163,7 +163,7 @@ function iterate!(sol::AFBAIterator{I, R, T1, T2}, it::I) where {I, R, T1, T2}
     # perform ybar-update step
     gradient!(sol.gradl, sol.lconj, sol.y)
     sol.temp_x .=  (sol.theta * sol.xbar) .+ ((1-sol.theta) * sol.x)
-    A_mul_B!(sol.temp_y, sol.L, sol.temp_x)
+    mul!(sol.temp_y, sol.L, sol.temp_x)
     sol.temp_y .-= sol.gradl
     sol.temp_y .*= sol.gamma2
     sol.temp_y .+= sol.y
@@ -173,11 +173,11 @@ function iterate!(sol::AFBAIterator{I, R, T1, T2}, it::I) where {I, R, T1, T2}
     sol.FPR_y .= sol.ybar .- sol.y
     # perform x-update step
     sol.temp_y .= sol.mu*(2-sol.theta)*sol.gamma1*sol.FPR_y
-    Ac_mul_B!(sol.temp_x, sol.L, sol.temp_y)
+    mul!(sol.temp_x, sol.L', sol.temp_y)
     sol.x .+= sol.lam *(sol.FPR_x .- sol.temp_x)
     # perform y-update step
     sol.temp_x .= (1-sol.mu)*(2-sol.theta)*sol.gamma2*sol.FPR_x
-    A_mul_B!(sol.temp_y, sol.L, sol.temp_x)
+    mul!(sol.temp_y, sol.L, sol.temp_x)
     sol.y .+= sol.lam *(sol.FPR_y .+ sol.temp_y)
     return sol.x, sol.y
 end
@@ -227,7 +227,6 @@ See [1, Figure 1] for other special cases and relation to other algorithms.
 [2] Condat. "A primal–dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms" Journal of Optimization Theory and Applications 158.2 (2013): 460-479.
 [3] Vũ. "A splitting algorithm for dual monotone inclusions involving cocoercive operators"" Advances in Computational Mathematics, 38(3), pp.667-681.
 """
-
 function AFBA(x0, y0; kwargs...)
     # Create iterable
     sol = AFBAIterator(x0, y0; kwargs...)
@@ -252,7 +251,6 @@ Points `x0` and `y0` are the initial primal and dual iterates, respectively.
 
 See documentation of `AFBA` for the list of keyword arguments.
 """
-
 function VuCondat(x0, y0; kwargs...)
     # Create iterable
     sol = AFBAIterator(x0, y0; kwargs..., theta=2)
@@ -276,7 +274,6 @@ Points `x0` and `y0` are the initial primal and dual iterates, respectively.
 
 See documentation of `AFBA` for the list of keyword arguments.
 """
-
 function ChambollePock(x0, y0; kwargs...)
     # Create iterable
     sol = AFBAIterator(x0, y0; kwargs..., f=IndFree(), theta=2)
