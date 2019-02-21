@@ -1,7 +1,7 @@
 ################################################################################
 # Template iterator
 
-struct TemplateIterator{I <: Integer, T <: BlockArray} <: ProximalAlgorithm{I,T}
+struct TemplateIterator{I <: Integer, T <: AbstractArray} <: ProximalAlgorithm{I,T}
     x::T
     maxit::I
     # Put here problem description, other parameters, method memory,

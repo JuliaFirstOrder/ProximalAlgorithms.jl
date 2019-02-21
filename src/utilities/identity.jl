@@ -8,11 +8,11 @@ end
 size(A::Identity) = (A.size, A.size)
 size(A::Identity, dim::Integer) = A.size
 
-mul!(y, A::Identity, x) = blockcopy!(y, x)
+mul!(y, A::Identity, x) = y .= x
 
 adjoint(A::Identity) = A
 
-(*)(A::Identity, x) = blockcopy(x)
+(*)(A::Identity, x) = copy(x)
 
 opnorm(A::Identity) = 1.0
 opnorm(A::Identity, p::Real) = 1.0

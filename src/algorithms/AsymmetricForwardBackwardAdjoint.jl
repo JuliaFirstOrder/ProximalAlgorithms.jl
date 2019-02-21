@@ -5,7 +5,7 @@
 # [2] Condat. "A primal–dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms" Journal of Optimization Theory and Applications 158.2 (2013): 460-479.
 # [3] Vũ. "A splitting algorithm for dual monotone inclusions involving cocoercive operators"" Advances in Computational Mathematics, 38(3), pp.667-681.
 
-struct AFBAIterator{I <: Integer, R <: Real, T1 <: BlockArray, T2 <: BlockArray} <: ProximalAlgorithm{I, Tuple{T1, T2}}
+struct AFBAIterator{I <: Integer, R <: Real, T1 <: AbstractArray, T2 <: AbstractArray} <: ProximalAlgorithm{I, Tuple{T1, T2}}
     x::T1
     y::T2
     g
@@ -37,19 +37,19 @@ end
 ################################################################################
 # Constructor(s)
 
-function AFBAIterator(x0::T1, y0::T2; g=IndFree(), h=IndFree(), f=IndFree(), l=IndZero(), L=Identity(blocksize(x0)), theta=1, mu=1, lam=1, betaQ=0, betaR=0, gamma1=-1, gamma2=-1, maxit::I=10000, tol::R=1e-5, verbose=1, verbose_freq = 100) where {I, R, T1, T2}
-    x = blockcopy(x0)
-    xbar = blockcopy(x0)
-    y = blockcopy(y0)
-    ybar = blockcopy(y0)
-    gradf = blockcopy(x0)
-    gradl = blockcopy(y0)
-    FPR_x = blockcopy(x0)
+function AFBAIterator(x0::T1, y0::T2; g=IndFree(), h=IndFree(), f=IndFree(), l=IndZero(), L=Identity(size(x0)), theta=1, mu=1, lam=1, betaQ=0, betaR=0, gamma1=-1, gamma2=-1, maxit::I=10000, tol::R=1e-5, verbose=1, verbose_freq = 100) where {I, R, T1, T2}
+    x = copy(x0)
+    xbar = copy(x0)
+    y = copy(y0)
+    ybar = copy(y0)
+    gradf = copy(x0)
+    gradl = copy(y0)
+    FPR_x = copy(x0)
     FPR_x .= Inf
-    FPR_y = blockcopy(y0)
+    FPR_y = copy(y0)
     FPR_y .= Inf
-    temp_x = blockcopy(x0)
-    temp_y = blockcopy(y0)
+    temp_x = copy(x0)
+    temp_y = copy(y0)
     hconj = Conjugate(h)
     lconj = Conjugate(l)
 
