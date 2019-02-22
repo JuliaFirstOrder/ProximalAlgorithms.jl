@@ -139,8 +139,7 @@ function initialize!(sol::FBSIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G}) where
         # 1) if adaptive = false and only fq is present then L is "accurate"
         # 2) otherwise L is "inaccurate" and set adaptive = true
         # TODO: implement case 1), now 2) is always performed
-        # xeps = sol.x .+ sqrt(eps())
-        xeps = (x -> x .+ sqrt(eps())).(sol.x)
+        xeps = sol.x .+ sqrt(eps())
         Aqxeps = sol.Aq*xeps
         gradfq_Aqxeps, = gradient(sol.fq, Aqxeps)
         Asxeps = sol.As*xeps

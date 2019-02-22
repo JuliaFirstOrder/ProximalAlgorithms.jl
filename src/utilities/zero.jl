@@ -10,7 +10,7 @@ function gradient!(y, f::Zero, x)
 end
 
 function gradient(f::Zero, x)
-    y = zeros(size(x))
+    y = zero(x)
     return y, 0.0
 end
 
