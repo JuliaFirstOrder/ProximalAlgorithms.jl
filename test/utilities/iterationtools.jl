@@ -6,6 +6,14 @@ using Random
 
 Random.seed!(0)
 
+struct FibonacciIterable{I}
+    s0::I
+    s1::I
+end
+
+Base.iterate(iter::FibonacciIterable) = iter.s0, (iter.s0, iter.s1)
+Base.iterate(iter::FibonacciIterable, state) = state[2], (state[2], sum(state))
+
 @testset "IterationTools" begin
 
     @testset "Looping" begin
@@ -21,14 +29,6 @@ Random.seed!(0)
     end
 
     @testset "Side effects" begin
-        struct FibonacciIterable{I}
-            s0::I
-            s1::I
-        end
-
-        Base.iterate(iter::FibonacciIterable) = iter.s0, (iter.s0, iter.s1)
-        Base.iterate(iter::FibonacciIterable, state) = state[2], (state[2], sum(state))
-
         disp(s) = @info "$s"
 
         iter = IterationTools.tee(FibonacciIterable(BigInt(0), BigInt(1)), disp)
