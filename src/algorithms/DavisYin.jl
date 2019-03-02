@@ -6,77 +6,46 @@
 # Set-Valued and Variational Analysis, vol. 25, no. 4, pp 829–858 (2017).
 #
 
-struct DavisYinIterator{I <: Integer, R <: Real, T1 <: BlockArray{R}, T2 <: BlockArray{R}} <: ProximalAlgorithm{I, Tuple{T1, T2}}
-    z::T1
+using Base.Iterators
+using ProximalAlgorithms.IterationTools
+using ProximalOperators: Zero
+using LinearAlgebra
+using Printf
+
+struct DY_iterable{R <: Real, C <: Union{R, Complex{R}}, T <: AbstractArray{C}}
     f
     g
     h
     L
+    x0::T
     gamma::R
     lambda::R
-    maxit::I
-    tol::R
-    verbose::I
-    verbose_freq::I
-    x::T1
-    y::T2
-    z_half::T1
-    w::T1
-    FPR_x::T1
 end
 
-################################################################################
-# Constructor(s)
-
-function DavisYinIterator(z0::BlockArray{R}; f=Zero(), g=Zero(), h=Zero(), L=Identity(blocksize(z0)), gamma::R=1.0, maxit::I=10000, tol::R=1e-4, verbose=1, verbose_freq = 100) where {I, R}
-    # TODO
+function DY_iterable()
+    # TODO: auto set parameters here
 end
 
-################################################################################
-# Utility methods
-
-maxit(sol::DavisYinIterator) = sol.maxit
-
-converged(sol::DavisYinIterator, it) = it > 0 && blockmaxabs(sol.FPR_x)/sol.gamma <= sol.tol
-
-verbose(sol::DavisYinIterator) = sol.verbose > 0
-verbose(sol::DavisYinIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
-
-function display(sol::DavisYinIterator)
-    # TODO
+mutable struct DY_state{T}
+    x::T
+    z::T
+    temp_x::T
+    res::T
 end
 
-function display(sol::DavisYinIterator, it)
-    # TODO
+function DY_state(iter::DY_iterable)
+    # TODO: initialize state here
 end
 
-function Base.show(io::IO, sol::DavisYinIterator)
-    # TODO
-end
-
-################################################################################
-# Initialization
-
-function initialize!(sol::DavisYinIterator)
-    return
-end
-
-################################################################################
-# Iteration
-
-function iterate!(sol::DavisYinIterator{I, T}, it::I) where {I, T}
-    # x = prox(g, z)
-    # y = Lx
-    # w = ∇h(y)
-    # z_half = 2x - z - γL'w
-    # z = z + λ(prox(f, z_half) - x)
-end
-
-################################################################################
-# Solver interface
-
-function DavisYin(x0; kwargs...)
-    sol = DavisYinIterator(x0; kwargs...)
-    it, point = run!(sol)
-    return (it, point, sol)
+function Base.iterate(iter::DY_iterable, state::DY_state=DRS_state(iter))
+    prox!(state.z, iter.g, state.x, iter.gamma)
+    y .= iter.L * state.z
+    grad_h_y, = gradient(iter.h, y)
+    mul!(state.temp_x, state.L', grad_h_y)
+    state.temp_x .*= -iter.gamma
+    state.temp_x .+= 2 .* state.z .- state.x
+    prox!(state.res, iter.f, state.temp_x, iter.gamma)
+    state.res .-= state.z
+    state.x .+= iter.lambda .* state.res
+    return state, state
 end

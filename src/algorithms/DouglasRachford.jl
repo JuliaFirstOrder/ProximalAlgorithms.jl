@@ -1,86 +1,80 @@
 ################################################################################
 # Douglas-Rachford splitting iterator
 #
-# See:
-# [1] Eckstein, Bertsekas "On the Douglas-Rachford Splitting Method and the Proximal Point Algorithm for Maximal Monotone Operators*", Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
+# [1] Eckstein, Bertsekas "On the Douglas-Rachford Splitting Method and the
+# Proximal Point Algorithm for Maximal Monotone Operators*",
+# Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 #
 
-struct DRSIterator{I <: Integer, R <: Real, T <: AbstractArray{R}} <: ProximalAlgorithm{I,T}
-    x::T
+using Base.Iterators
+using ProximalAlgorithms: LBFGS
+using ProximalAlgorithms.IterationTools
+using ProximalOperators: Zero
+using LinearAlgebra
+using Printf
+
+struct DRS_iterable{R <: Real, C <: Union{R, Complex{R}}, T <: AbstractArray{C}}
     f
     g
+    x::T
     gamma::R
-    maxit::I
-    tol::R
-    verbose::I
-    verbose_freq::I
+end
+
+mutable struct DRS_state{T}
+    x::T
     y::T
     r::T
     z::T
-    FPR_x::T
+    res::T
 end
 
-################################################################################
-# Constructor(s)
+DRS_state(iter::DRS_iterable) = DRS_state(copy(iter.x), zero(iter.x), zero(iter.x), zero(iter.x), zero(iter.x))
 
-function DRSIterator(x0::AbstractArray{R}; f=Zero(), g=Zero(), gamma::R=1.0, maxit::I=10000, tol::R=1e-4, verbose=1, verbose_freq = 100) where {I, R}
-    y = copy(x0)
-    r = copy(x0)
-    z = copy(x0)
-    FPR_x = copy(x0)
-    FPR_x .= Inf
-    return DRSIterator{I, R, typeof(x0)}(x0, f, g, gamma, maxit, tol, verbose, verbose_freq, y, r, z, FPR_x)
+function Base.iterate(iter::DRS_iterable, state::DRS_state=DRS_state(iter))
+    prox!(state.y, iter.f, state.x, iter.gamma)
+    state.r .= 2 .*state.y .- state.x
+    prox!(state.z, iter.g, state.r, iter.gamma)
+    state.res .= state.y .- state.z
+    state.x .-= state.res
+    return state, state
 end
 
-################################################################################
-# Utility methods
+"""
+    DRS(x0; f, g, gamma, [...])
 
-maxit(sol::DRSIterator) = sol.maxit
+Minimizes `f(x) + g(x)` with respect to `x`, using the Douglas-Rachfor splitting
+algorithm starting from `x0`, with stepsize `gamma`.
+If unspecified, `f` and `g` default to the identically zero function,
+while `gamma` defaults to one.
 
-converged(sol::DRSIterator, it) = it > 0 && maximum(abs,sol.FPR_x)/sol.gamma <= sol.tol
+Other optional keyword arguments:
 
-verbose(sol::DRSIterator) = sol.verbose > 0
-verbose(sol::DRSIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
+* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
+* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
+* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
+* `freq::Integer` (default: `100`), frequency of verbosity.
 
-function display(sol::DRSIterator)
-    @printf("%6s | %10s | %10s |\n ", "it", "gamma", "fpr")
-    @printf("------|------------|------------|\n")
-end
+References:
 
-function display(sol::DRSIterator, it)
-    @printf("%6d | %7.4e | %7.4e |\n", it, sol.gamma, maximum(abs,sol.FPR_x)/sol.gamma)
-end
+[1] Eckstein, Bertsekas "On the Douglas-Rachford Splitting Method and the
+Proximal Point Algorithm for Maximal Monotone Operators*",
+Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
+"""
+function DRS(x0;
+    f=Zero(), g=Zero(),
+    gamma=1.0,
+    maxit=1000, tol=1e-8,
+    verbose=false, freq=100)
 
-function Base.show(io::IO, sol::DRSIterator)
-    println(io, "Douglas-Rachford Splitting" )
-    println(io, "fpr        : $(maximum(abs,sol.FPR_x))")
-    print(  io, "gamma      : $(sol.gamma)")
-end
+    stop(state::DRS_state) = norm(state.res, Inf) <= tol
+    disp((it, state)) = @printf "%5d | %.3e\n" it norm(state.res, Inf)
 
-################################################################################
-# Initialization
+    iter = DRS_iterable(f, g, x0, gamma)
+    iter = take(halt(iter, stop), maxit)
+    iter = enumerate(iter)
+    if verbose iter = tee(sample(iter, freq), disp) end
 
-function initialize!(sol::DRSIterator)
-    return sol.z
-end
+    num_iters, state_final = loop(iter)
 
-################################################################################
-# Iteration
-
-function iterate!(sol::DRSIterator{I, T}, it::I) where {I, T}
-    prox!(sol.y, sol.f, sol.x, sol.gamma)
-    sol.r .= 2 .*sol.y .- sol.x
-    prox!(sol.z, sol.g, sol.r, sol.gamma)
-    sol.FPR_x .= sol.y .- sol.z
-    sol.x .-= sol.FPR_x
-    return sol.z
-end
-
-################################################################################
-# Solver interface
-
-function DRS(x0; kwargs...)
-    sol = DRSIterator(x0; kwargs...)
-    it, point = run!(sol)
-    return (it, point, sol)
+    return state_final.y, state_final.z, num_iters
 end

@@ -1,334 +1,221 @@
-################################################################################
-# PANOC iterator (with L-BFGS directions)
+using Base.Iterators
+using ProximalAlgorithms: LBFGS
+using ProximalAlgorithms.IterationTools
+using ProximalOperators: Zero
+using LinearAlgebra
+using Printf
 
-mutable struct PANOCIterator{I <: Integer, R <: Real, D, CS, FS, AS, CQ, FQ, AQ, G, HH} <: ProximalAlgorithm{I,D}
-    x::D
-    fs::FS
-    As::AS
-    fq::FQ
-    Aq::AQ
-    g::G
-    gamma::R
-    maxit::I
-    tol::R
-    adaptive::Bool
-    verbose::I
-    verbose_freq::I
-    alpha::R
-    beta::R
-    tau::R
-    y::D # gradient step
-    xbar::D # proximal-gradient step
-    H::HH # inverse Jacobian approximation
-    FPR_x::D
-    Aqx::CQ
-    Asx::CS
-    Aqxnew::CQ
-    Asxnew::CS
-    Aqd::CQ
-    Asd::CS
-    Aqfb::CQ
-    Asfb::CS
-    gradfq_Aqx::CQ
-    gradfs_Asx::CS
-    Aqxbar::CQ
-    Asxbar::CS
-    gradfq_Aqxbar::CQ
-    gradfs_Asxbar::CS
-    fs_Asx::R
-    fq_Aqx::R
-    f_Ax::R
-    At_gradf_Ax::D
-    Aqt_gradfq_Aqx::D
-    Ast_gradfs_Asx::D
-    g_xbar::R
-    FBE_x::R
-    FBE_x_prev::R
-    x_prev::D
-    FPR_x_prev::D
-    xnew::D
-    xnewbar::D
-    FPR_xnew::D
-    d::D
-    normFPR_x::R
+struct PANOC_iterable{R <: Real, C <: Union{R, Complex{R}}, Tx <: AbstractArray{C}, Tf, TA, Tg}
+    f::Tf             # smooth term
+    A::TA             # matrix/linear operator
+    g::Tg             # (possibly) nonsmooth, proximable term
+    x0::Tx            # initial point
+    alpha::R          # in (0, 1), e.g.: 0.95
+    beta::R           # in (0, 1), e.g.: 0.5
+    gamma::Maybe{R}   # stepsize parameter of forward and backward steps
+    adaptive::Bool    # enforce adaptive stepsize even if L is provided
+    memory::Int       # memory parameter for L-BFGS
 end
 
-################################################################################
-# Constructor
-
-function PANOCIterator(x0::D; 
-                       fs::FS=Zero(), As::AS=Identity(size(x0)), 
-                       fq::FQ=Zero(), Aq::AQ=Identity(size(x0)), 
-                       g::G=Zero(), 
-                       gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive::Bool=false, 
-                       memory::I=10, verbose::I=1, verbose_freq::I=100, 
-                       alpha::R=0.95, beta::R=0.5) where {I, R, D, FS, AS, FQ, AQ, G}
-    x       = copy(x0)
-    xbar    = zero(x0)
-    x_prev  = zero(x0)
-    xnew    = zero(x0)
-    xnewbar = zero(x0)
-    y = zero(x0)
-    FPR_x = zero(x0)
-    FPR_x_prev = zero(x0)
-    FPR_xnew = zero(x0)
-    Aqx = Aq*x
-    Asx = As*x
-    Aqxnew = zero(Aqx)
-    Asxnew = zero(Asx)
-    Aqd = zero(Aqx)
-    Asd = zero(Asx)
-    Aqfb = zero(Aqx)
-    Asfb = zero(Asx)
-    gradfq_Aqx = zero(Aqx)
-    gradfs_Asx = zero(Asx)
-    Aqxbar = zero(Aqx)
-    Asxbar = zero(Asx)
-    gradfq_Aqxbar = zero(Aqx)
-    gradfs_Asxbar = zero(Asx)
-    At_gradf_Ax = zero(x0)
-    Aqt_gradfq_Aqx = zero(x0)
-    Ast_gradfs_Asx = zero(x0)
-    d = zero(x0)
-    H = LBFGS(x, memory)
-    CQ = typeof(Aqx)
-    CS = typeof(Asx)
-    HH = typeof(H)
-    PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}(
-               x, fs, As,
-               fq, Aq, g,
-               gamma, maxit, tol,
-               adaptive, verbose,
-               verbose_freq, alpha, beta,
-               one(R), y, xbar,
-               H, FPR_x,
-               Aqx, Asx, Aqxnew, Asxnew, Aqd, Asd, Aqfb, Asfb, gradfq_Aqx, gradfs_Asx,
-               Aqxbar, Asxbar, gradfq_Aqxbar, gradfs_Asxbar,
-               zero(R), zero(R), zero(R),
-               At_gradf_Ax, Aqt_gradfq_Aqx, Ast_gradfs_Asx,
-               zero(R), zero(R),
-               zero(R), x_prev, FPR_x_prev,
-               xnew, xnewbar, FPR_xnew,
-               d, zero(R))
+mutable struct PANOC_state{R <: Real, Tx, TAx}
+    x::Tx             # iterate
+    Ax::TAx           # A times x
+    f_Ax::R           # value of smooth term
+    grad_f_Ax::Tx     # gradient of f at Ax
+    At_grad_f_Ax::TAx # gradient of smooth term
+    gamma::R          # stepsize parameter of forward and backward steps
+    y::Tx             # forward point
+    z::Tx             # forward-backward point
+    g_z::R            # value of nonsmooth term (at z)
+    res::Tx           # fixed-point residual at iterate (= z - x)
+    H::LBFGS.LBFGS_buffer{R} # variable metric
+    tau::Maybe{R}     # stepsize (can be nothing since the initial state doesn't have it)
+    # some additional storage:
+    d::Tx
+    Ad::TAx
+    x_d::Tx
+    Ax_d::TAx
+    f_Ax_d::R
+    grad_f_Ax_d::Tx
+    At_grad_f_Ax_d::TAx
+    z_curr::Tx
 end
 
-################################################################################
-# Utility methods
+PANOC_state(x::Tx, Ax::TAx, f_Ax::R, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res, H, tau) where {R, Tx, TAx} =
+    PANOC_state{R, Tx, TAx}(x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res, H, tau,
+                            zero(x), zero(Ax), zero(x), zero(Ax), zero(R), zero(Ax), zero(x), zero(x))
 
-maxit(sol::PANOCIterator{I}) where {I} = sol.maxit
+f_model(state::PANOC_state) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
 
-converged(sol::PANOCIterator{I,R,D}, it::I)  where {I,R,D}= it > 0 && maximum(abs,sol.FPR_x)/sol.gamma <= sol.tol
+function Base.iterate(iter::PANOC_iterable{R}) where R
+    x = iter.x0
+    Ax = iter.A * x
+    grad_f_Ax, f_Ax = gradient(iter.f, Ax)
 
-verbose(sol::PANOCIterator) = sol.verbose > 0
-verbose(sol::PANOCIterator, it) = sol.verbose > 0 && (sol.verbose == 2 ? true : (it == 1 || it%sol.verbose_freq == 0))
+    gamma = iter.gamma
 
-function display(sol::PANOCIterator)
-    @printf("%6s | %10s | %10s | %10s | %10s |\n ", "it", "gamma", "fpr", "tau", "FBE")
-    @printf("------|------------|------------|------------|------------|\n")
-end
-
-function display(sol::PANOCIterator, it)
-    @printf("%6d | %7.4e | %7.4e | %7.4e | %7.4e | \n", it, sol.gamma, maximum(abs,sol.FPR_x)/sol.gamma, sol.tau, sol.FBE_x)
-end
-
-function Base.show(io::IO, sol::PANOCIterator)
-    println(io, "PANOC" )
-    println(io, "fpr        : $(maximum(abs,sol.FPR_x))")
-    println(io, "gamma      : $(sol.gamma)")
-    println(io, "tau        : $(sol.tau)")
-    print(  io, "FBE        : $(sol.FBE_x)")
-end
-
-################################################################################
-# Initialization
-
-function initialize!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}) where {I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}
-
-    # reset L-BFGS operator (would be nice to have this option)
-    # TODO add function reset!(::LBFGS) in AbstractOperators
-    sol.H.currmem, sol.H.curridx = 0, 0
-    sol.H.H = 1.0
-
-    # compute first forward-backward step here
-    mul!(sol.Aqx, sol.Aq, sol.x)
-    sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqx)
-    mul!(sol.Asx, sol.As, sol.x)
-    sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asx)
-    sol.At_gradf_Ax .= sol.As'*sol.gradfs_Asx .+ sol.Aq'*sol.gradfq_Aqx
-    sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
-
-    if sol.gamma <= 0.0 # estimate L in this case, and set gamma = 1/L
-        # this part should be as follows:
-        # 1) if adaptive = false and only fq is present then L is "accurate"
-        # 2) otherwise L is "inaccurate" and set adaptive = true
-        # TODO: implement case 1), now 2) is always performed
-        xeps = sol.x .+ sqrt(eps())
-        Aqxeps = sol.Aq*xeps
-        gradfq_Aqxeps, = gradient(sol.fq, Aqxeps)
-        Asxeps = sol.As*xeps
-        gradfs_Asxeps, = gradient(sol.fs, Asxeps)
-        At_gradf_Axeps = sol.As'*gradfs_Asxeps .+ sol.Aq'*gradfq_Aqxeps
-        L = norm(sol.At_gradf_Ax .- At_gradf_Axeps)/(sqrt(eps()*length(xeps)))
-        sol.adaptive = true
-        # in both cases set gamma = 1/L
-        sol.gamma = sol.alpha/L
+    if gamma === nothing
+        # compute lower bound to Lipschitz constant of the gradient of x ↦ f(Ax)
+        xeps = x .+ R(1)
+        grad_f_Axeps, f_Axeps = gradient(iter.f, iter.A*xeps)
+        L = norm(iter.A' * (grad_f_Axeps - grad_f_Ax)) / sqrt(length(x))
+        gamma = iter.alpha/L
     end
 
-    sol.y .= sol.x .-sol.gamma .* sol.At_gradf_Ax
-    sol.g_xbar = prox!(sol.xbar, sol.g, sol.y, sol.gamma)
-    sol.FPR_x .= sol.x .- sol.xbar
+    # compute initial forward-backward step
+    At_grad_f_Ax = iter.A' * grad_f_Ax
+    y = x - gamma .* At_grad_f_Ax
+    z, g_z = prox(iter.g, y, gamma)
 
-    sol.normFPR_x = norm(sol.FPR_x)
-    sol.FBE_x = sol.f_Ax - real(dot(sol.At_gradf_Ax, sol.FPR_x)) + 0.5/sol.gamma*sol.normFPR_x^2 + sol.g_xbar
+    # compute initial fixed-point residual
+    res = x - z
 
-    return sol.xbar
+    # initialize variable metric
+    H = LBFGS.create(x, iter.memory)
 
+    state = PANOC_state(x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res, H, nothing)
+
+    return state, state
 end
 
-################################################################################
-# Iteration
+function Base.iterate(iter::PANOC_iterable{R}, state::PANOC_state{R, Tx, TAx}) where {R, Tx, TAx}
+    Az, f_Az, grad_f_Az, At_grad_f_Az = nothing, nothing, nothing, nothing
+    a, b, c = nothing, nothing, nothing
 
-function iterate!(sol::PANOCIterator{I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}, it::I) where {I, R, D, CS, FS, AS, CQ, FQ, AQ, G, HH}
+    f_Az_upp = f_model(state)
 
-    if sol.adaptive
-        for it_gam = 1:100 # TODO: replace/complement with lower bound on gamma
-            mul!(sol.Aqxbar, sol.Aq, sol.xbar)
-            fq_Aqxbar = gradient!(sol.gradfq_Aqxbar, sol.fq, sol.Aqxbar)
-            mul!(sol.Asxbar, sol.As, sol.xbar)
-            fs_Asxbar = gradient!(sol.gradfs_Asxbar, sol.fs, sol.Asxbar)
-            f_Axbar = fs_Asxbar + fq_Aqxbar
+    # backtrack gamma (warn and halt if gamma gets too small)
+    while iter.gamma === nothing || iter.adaptive == true
+        if state.gamma < 1e-7 # TODO: make this a parameter, or dependent on R?
+            @warn "parameter `gamma` became too small ($(state.gamma)), stopping the iterations"
+            return nothing
+        end
+        Az = iter.A*state.z
+        grad_f_Az, f_Az = gradient(iter.f, Az)
+        tol = 10*eps(R)*(1 + abs(f_Az))
+        if f_Az <= f_Az_upp + tol break end
+        state.gamma *= 0.5
+        state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
+        state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
+        state.res .= state.x .- state.z
+        LBFGS.reset!(state.H)
+        f_Az_upp = f_model(state)
+    end
 
-            uppbnd = sol.f_Ax - real(dot(sol.At_gradf_Ax, sol.FPR_x)) +
-                 0.5/sol.gamma*sol.normFPR_x^2
-            if f_Axbar > uppbnd + 1e-6*abs(sol.f_Ax)
-                sol.gamma = 0.5*sol.gamma
-                sol.y .= sol.x .- sol.gamma .* sol.At_gradf_Ax
-                sol.g_xbar = prox!(sol.xbar, sol.g, sol.y, sol.gamma)
-                sol.FPR_x .= sol.x .- sol.xbar
-                sol.normFPR_x = norm(sol.FPR_x)
-            else
-                sol.FBE_x = uppbnd + sol.g_xbar
-                break
+    # compute FBE
+    FBE_x = f_Az_upp + state.g_z
+
+    # update metric
+    LBFGS.update!(state.H, state.x, state.res)
+
+    # compute direction
+    mul!(state.d, state.H, -state.res)
+
+    # backtrack tau 1 → 0
+    tau = R(1)
+    mul!(state.Ad, iter.A, state.d)
+
+    state.x_d .= state.x .+ state.d
+    state.Ax_d .= state.Ax .+ state.Ad
+    state.f_Ax_d = gradient!(state.grad_f_Ax_d, iter.f, state.Ax_d)
+    mul!(state.At_grad_f_Ax_d, adjoint(iter.A), state.grad_f_Ax_d)
+
+    state.x .= state.x_d
+    state.Ax .= state.Ax_d
+    state.f_Ax = state.f_Ax_d
+    state.grad_f_Ax .= state.grad_f_Ax_d
+    state.At_grad_f_Ax .= state.At_grad_f_Ax_d
+
+    copyto!(state.z_curr, state.z)
+
+    sigma = iter.beta * (0.5/state.gamma) * (1 - iter.alpha)
+    tol = 10*eps(R)*(1 + abs(FBE_x))
+    threshold = FBE_x - sigma * norm(state.res)^2 + tol
+
+    for i = 1:10
+        state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
+        state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
+        state.res .= state.x .- state.z
+        FBE_x_new = f_model(state) + state.g_z
+
+        if FBE_x_new <= threshold
+            state.tau = tau
+            return state, state
+        end
+
+        if Az === nothing Az = iter.A * state.z_curr end
+
+        tau *= 0.5
+        state.x .= tau .* state.x_d .+ (1-tau) .* state.z_curr
+        state.Ax .= tau .* state.Ax_d .+ (1-tau) .* Az
+
+        if ProximalOperators.is_quadratic(iter.f)
+            # in case f is quadratic, we can compute its value and gradient
+            # along a line using interpolation and linear combinations
+            # this allows saving operations
+            if grad_f_Az === nothing grad_f_Az, f_Az = gradient(iter.f, Az) end
+            if At_grad_f_Az === nothing
+                At_grad_f_Az = iter.A' * grad_f_Az
+                c = f_Az
+                b = real(dot(state.Ax_d .- Az, grad_f_Az))
+                a = state.f_Ax_d - b - c
             end
+            state.f_Ax = a * tau^2 + b * tau + c
+            state.grad_f_Ax .= tau .* state.grad_f_Ax_d .+ (1-tau) .* grad_f_Az
+            state.At_grad_f_Ax .= tau .* state.At_grad_f_Ax_d .+ (1-tau) .* At_grad_f_Az
+        else
+            # otherwise, in the general case where f is only smooth, we compute
+            # one gradient and matvec per backtracking step
+            state.f_Ax = gradient!(state.grad_f_Ax, iter.f, state.Ax)
+            mul!(state.At_grad_f_Ax, adjoint(iter.A), state.grad_f_Ax)
         end
     end
 
-    if it > 1
-        update!(sol.H, sol.x, sol.x_prev, sol.FPR_x, sol.FPR_x_prev)
-    end
-    mul!(sol.d, sol.H, ( x -> .-x ).(sol.FPR_x)) # TODO: not nice
-
-    sol.FPR_x_prev, sol.FPR_x = sol.FPR_x, sol.FPR_x_prev
-    sol.x_prev .= sol.x
-
-    sigma = 0.5*sol.beta/sol.gamma*(1.0-sol.alpha)
-    maxit_tau = 10
-
-    # tau = 1
-    sol.tau = one(R)
-
-    mul!( sol.Aqd, sol.Aq, sol.d)
-    mul!( sol.Asd, sol.As, sol.d)
-
-    # xnew = x + tau*d
-    sol.xnew .= sol.x .+ sol.tau .* sol.d
-    # Aq*xnew = Aq*x + tau*Aq*d
-    sol.Aqxnew .= sol.Aqx .+ sol.tau .* sol.Aqd
-    # As*xnew = As*x + tau*As*d
-    sol.Asxnew .= sol.Asx .+ sol.tau .* sol.Asd
-
-    # calculate new FBE in xnew
-    sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxnew)
-    sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asxnew)
-
-    mul!(sol.Aqt_gradfq_Aqx, sol.Aq', sol.gradfq_Aqx)
-    mul!(sol.Ast_gradfs_Asx, sol.As', sol.gradfs_Asx)
-
-    sol.At_gradf_Ax .= sol.Aqt_gradfq_Aqx .+ sol.Ast_gradfs_Asx
-    sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
-
-    # gradient step
-    sol.y .= sol.xnew .- sol.gamma .* sol.At_gradf_Ax
-    # prox step
-    sol.g_xbar = prox!(sol.xnewbar, sol.g, sol.y, sol.gamma)
-
-    sol.FPR_xnew .= sol.xnew .- sol.xnewbar
-    norm_FPRxnew = norm(sol.FPR_xnew)
-
-    FBE_xnew = sol.f_Ax - real(dot(sol.At_gradf_Ax, sol.FPR_xnew)) +
-                   0.5/sol.gamma*norm_FPRxnew^2 + sol.g_xbar
-
-    if FBE_xnew > sol.FBE_x - sigma*sol.normFPR_x^2
-        # start using convex combination of FB direction and d
-
-        mul!(sol.Aqfb, sol.Aq, sol.FPR_x_prev)
-        mul!(sol.Asfb, sol.As, sol.FPR_x_prev)
-
-        for it_tau = 1:maxit_tau # TODO: replace/complement with lower bound on tau
-
-            sol.tau *= 0.5
-
-            # xnew = x + tau*d
-            sol.xnew .= sol.x .+ sol.tau .* sol.d
-            # xnew = x + tau*d - (1-tau)*fb
-            sol.xnew .= sol.xnew .+ (sol.tau-1.0) .* sol.FPR_x_prev
-
-            # Aq*xnew = Aq*x + tau*Aq*d
-            sol.Aqxnew .= sol.Aqx .+ sol.tau .* sol.Aqd
-            # Aq*xnew = Aq*x + tau*Aq*d - (1-tau)*Aq*fb
-            sol.Aqxnew .= sol.Aqxnew .+ (sol.tau-1.0) .* sol.Aqfb
-
-            # As*xnew = As*x + tau*As*d
-            sol.Asxnew .= sol.Asx .+ sol.tau .* sol.Asd
-            # As*xnew = As*x + tau*As*d - (1-tau)*As*fb
-            sol.Asxnew .= sol.Asxnew .+ (sol.tau-1.0) .* sol.Asfb
-
-            # calculate new FBE in xnew
-            sol.fq_Aqx = gradient!(sol.gradfq_Aqx, sol.fq, sol.Aqxnew)
-            sol.fs_Asx = gradient!(sol.gradfs_Asx, sol.fs, sol.Asxnew)
-
-            mul!(sol.Aqt_gradfq_Aqx, sol.Aq', sol.gradfq_Aqx)
-            mul!(sol.Ast_gradfs_Asx, sol.As', sol.gradfs_Asx)
-
-            sol.At_gradf_Ax .= sol.Aqt_gradfq_Aqx .+ sol.Ast_gradfs_Asx
-            sol.f_Ax = sol.fs_Asx + sol.fq_Aqx
-
-            # gradient step
-            sol.y .= sol.xnew .- sol.gamma .* sol.At_gradf_Ax
-            # prox step
-            sol.g_xbar = prox!(sol.xnewbar, sol.g, sol.y, sol.gamma)
-
-            sol.FPR_xnew .= sol.xnew .- sol.xnewbar
-            norm_FPRxnew = norm(sol.FPR_xnew)
-
-            FBE_xnew = sol.f_Ax - real(dot(sol.At_gradf_Ax, sol.FPR_xnew)) +
-                   0.5/sol.gamma*norm_FPRxnew^2 + sol.g_xbar
-
-            if FBE_xnew <= sol.FBE_x - sigma*sol.normFPR_x^2
-                break
-            end
-
-        end
-
-    end
-
-    sol.normFPR_x = norm_FPRxnew
-    sol.FPR_x, sol.FPR_xnew = sol.FPR_xnew, sol.FPR_x
-    sol.FBE_x = FBE_xnew
-    sol.x, sol.xbar, sol.xnew, sol.xnewbar = sol.xnew, sol.xnewbar, sol.x, sol.xbar
-    sol.Aqx, sol.Aqxnew = sol.Aqxnew, sol.Aqx
-    sol.Asx, sol.Asxnew = sol.Asxnew, sol.Asx
-
-    return sol.xbar
-
+    @warn "stepsize `tau` became too small ($(tau)), stopping the iterations"
+    return nothing
 end
 
-################################################################################
-# Solver interface(s)
+"""
+    PANOC(x0; f, A, g, [...])
 
-function PANOC(x0; kwargs...)
-    sol = PANOCIterator(x0; kwargs...)
-    it, point = run!(sol)
-    x0 .= point
-    return (it, point, sol)
+Minimizes f(A*x) + g(x) with respect to x, starting from x0, using PANOC.
+If unspecified, f and g default to the identically zero function, while A
+defaults to the identity.
+
+Other optional keyword arguments:
+
+* `L::Real` (default: `nothing`), the Lipschitz constant of the gradient of x ↦ f(Ax).
+* `gamma::Real` (default: `nothing`), the stepsize to use; defaults to `alpha/L` if not set (but `L` is).
+* `adaptive::Bool` (default: `false`), if true, forces the method stepsize to be adaptively adjusted even if `L` is provided (this behaviour is always enforced if `L` is not provided).
+* `memory::Integer` (default: `5`), memory parameter for L-BFGS.
+* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
+* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
+* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
+* `freq::Integer` (default: `10`), frequency of verbosity.
+* `alpha::Real` (default: `0.95`), stepsize to inverse-Lipschitz-constant ratio; should be in (0, 1).
+* `beta::Real` (default: `0.5`), sufficient decrease parameter; should be in (0, 1).
+"""
+function PANOC(x0;
+    f=Zero(), A=I, g=Zero(),
+    L=nothing, gamma=nothing,
+    adaptive=false, memory=5,
+    maxit=1000, tol=1e-8,
+    verbose=false, freq=10,
+    alpha=0.95, beta=0.5)
+
+    stop(state::PANOC_state) = norm(state.res, Inf)/state.gamma <= tol
+    disp((it, state)) = @printf "%5d | %.3e | %.3e | %.3e\n" it state.gamma norm(state.res, Inf)/state.gamma (state.tau === nothing ? 0.0 : state.tau)
+
+    if gamma === nothing && L !== nothing
+        gamma = alpha/L
+    end
+
+    iter = PANOC_iterable(f, A, g, x0, alpha, beta, gamma, adaptive, memory)
+    iter = take(halt(iter, stop), maxit)
+    iter = enumerate(iter)
+    if verbose iter = tee(sample(iter, freq), disp) end
+
+    num_iters, state_final = loop(iter)
+
+    return state_final.z, num_iters
 end
