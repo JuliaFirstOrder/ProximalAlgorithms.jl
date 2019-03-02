@@ -1,20 +1,12 @@
-using LinearAlgebra
 using ProximalOperators
 using RecursiveArrayTools
-
-## UniformScaling
-
-# NOTE: this definition won't be needed in the future, since it is
-# included in Julia master as of December 30th, 2018:
-# https://git.io/fhL24
-@inline LinearAlgebra.mul!(y::ArrayPartition, S::UniformScaling, x::ArrayPartition) =
-    LinearAlgebra.mul!(y, S.λ, x)
 
 ## AbstractOperator
 
 # import Base: *
+# using LinearAlgebra
 # using AbstractOperators
-# 
+#
 # @inline LinearAlgebra.mul!(y::ArrayPartition, L::AbstractOperator, x::ArrayPartition) =
 #     LinearAlgebra.mul!(y.x, L, x.x)
 #
