@@ -1,7 +1,6 @@
 module ProximalAlgorithms
 
 using AbstractOperators
-using AbstractOperators.BlockArrays
 using ProximalOperators
 using LinearAlgebra
 using Printf
@@ -11,6 +10,7 @@ import Base: iterate
 include("utilities/identity.jl")
 include("utilities/zero.jl")
 include("utilities/conjugate.jl")
+include("utilities/tomove.jl")
 
 abstract type ProximalAlgorithm{I,T} end
 

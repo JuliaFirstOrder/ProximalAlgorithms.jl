@@ -1,7 +1,6 @@
 using ProximalOperators
 using ProximalAlgorithms
 using AbstractOperators
-using AbstractOperators.BlockArrays
 using LinearAlgebra
 using SparseArrays
 using FFTW
@@ -9,10 +8,10 @@ using Random
 using Test
 using DelimitedFiles
 
+
 @testset "ProximalAlgorithms" begin
 
 @testset "Utilities" begin
-#    include("test_block.jl")  # remove?
     include("test_conjugate.jl")
 end
 
