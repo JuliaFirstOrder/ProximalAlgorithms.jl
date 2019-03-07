@@ -1,6 +1,7 @@
 module ProximalAlgorithms
 
-using AbstractOperators
+using RecursiveArrayTools # can be removed if utilities/tomove.jl is moved to ProxOpt
+using AbstractOperators   # only dependency in LBFGS
 using ProximalOperators
 using LinearAlgebra
 using Printf
