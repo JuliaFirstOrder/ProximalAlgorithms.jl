@@ -41,9 +41,13 @@ mutable struct PANOC_state{R <: Real, Tx, TAx}
     z_curr::Tx
 end
 
-PANOC_state(x::Tx, Ax::TAx, f_Ax::R, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res, H, tau) where {R, Tx, TAx} =
-    PANOC_state{R, Tx, TAx}(x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res, H, tau,
-                            zero(x), zero(Ax), zero(x), zero(Ax), zero(R), zero(Ax), zero(x), zero(x))
+PANOC_state(
+    x::Tx, Ax::TAx, f_Ax::R, grad_f_Ax, At_grad_f_Ax, gamma::R, y, z, g_z, res, H, tau
+) where {R, Tx, TAx} =
+    PANOC_state{R, Tx, TAx}(
+        x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res, H, tau,
+        zero(x), zero(Ax), zero(x), zero(Ax), zero(R), zero(Ax), zero(x), zero(x)
+    )
 
 f_model(state::PANOC_state) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
 
@@ -58,7 +62,7 @@ function Base.iterate(iter::PANOC_iterable{R}) where R
         # compute lower bound to Lipschitz constant of the gradient of x ↦ f(Ax)
         xeps = x .+ R(1)
         grad_f_Axeps, f_Axeps = gradient(iter.f, iter.A*xeps)
-        L = norm(iter.A' * (grad_f_Axeps - grad_f_Ax)) / sqrt(length(x))
+        L = norm(iter.A' * (grad_f_Axeps - grad_f_Ax)) / R(sqrt(length(x)))
         gamma = iter.alpha/L
     end
 
@@ -203,14 +207,22 @@ function PANOC(x0;
     verbose=false, freq=10,
     alpha=0.95, beta=0.5)
 
-    stop(state::PANOC_state) = norm(state.res, Inf)/state.gamma <= tol
-    disp((it, state)) = @printf "%5d | %.3e | %.3e | %.3e\n" it state.gamma norm(state.res, Inf)/state.gamma (state.tau === nothing ? 0.0 : state.tau)
+    R = real(eltype(x0))
+
+    stop(state::PANOC_state) = norm(state.res, Inf)/state.gamma <= R(tol)
+    disp((it, state)) = @printf(
+        "%5d | %.3e | %.3e | %.3e\n",
+        it, state.gamma, norm(state.res, Inf)/state.gamma,
+        (state.tau === nothing ? 0.0 : state.tau)
+    )
 
     if gamma === nothing && L !== nothing
-        gamma = alpha/L
+        gamma = R(alpha)/R(L)
+    elseif gamma !== nothing
+        gamma = R(gamma)
     end
 
-    iter = PANOC_iterable(f, A, g, x0, alpha, beta, gamma, adaptive, memory)
+    iter = PANOC_iterable(f, A, g, x0, R(alpha), R(beta), gamma, adaptive, memory)
     iter = take(halt(iter, stop), maxit)
     iter = enumerate(iter)
     if verbose iter = tee(sample(iter, freq), disp) end

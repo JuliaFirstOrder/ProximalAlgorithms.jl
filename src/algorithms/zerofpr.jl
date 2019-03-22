@@ -1,5 +1,5 @@
 ################################################################################
-# ZeroFPR iterator (with L-BFGS directions)
+# ZeroFPR iterable (with L-BFGS directions)
 
 mutable struct ZeroFPRIterator{I <: Integer, R <: Real, D, CS, FS, AS, CQ, FQ, AQ, G, HH} <: ProximalAlgorithm{I,D}
     x::D
@@ -50,11 +50,11 @@ end
 ################################################################################
 # Constructor
 
-function ZeroFPRIterator(x0::D; 
-                         fs::FS=Zero(), As::AS=Identity(size(x0)), 
-                         fq::FQ=Zero(), Aq::AQ=Identity(size(x0)), 
-                         g::G=Zero(), 
-                         gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive::Bool=false, memory::I=10, 
+function ZeroFPRIterator(x0::D;
+                         fs::FS=Zero(), As::AS=Identity(size(x0)),
+                         fq::FQ=Zero(), Aq::AQ=Identity(size(x0)),
+                         g::G=Zero(),
+                         gamma::R=-1.0, maxit::I=10000, tol::R=1e-4, adaptive::Bool=false, memory::I=10,
                          verbose::I=1, verbose_freq::I=100, alpha::R=0.95, beta::R=0.5) where {I, R, D, FS, AS, FQ, AQ, G}
     x = copy(x0)
     y = zero(x0)

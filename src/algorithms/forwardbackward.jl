@@ -42,7 +42,7 @@ function Base.iterate(iter::FBS_iterable{R}) where R
         # compute lower bound to Lipschitz constant of the gradient of x ↦ f(Ax)
         xeps = x .+ R(1)
         grad_f_Axeps, f_Axeps = gradient(iter.f, iter.A*xeps)
-        L = norm(iter.A' * (grad_f_Axeps - grad_f_Ax)) / sqrt(length(x))
+        L = norm(iter.A' * (grad_f_Axeps - grad_f_Ax)) / R(sqrt(length(x)))
         gamma = R(1)/L
     end
 
@@ -137,11 +137,18 @@ function FBS(x0;
     maxit=10_000, tol=1e-8,
     verbose=false, freq=100)
 
-    stop(state::FBS_state) = norm(state.res, Inf)/state.gamma <= tol
-    disp((it, state)) = @printf "%5d | %.3e | %.3e\n" it state.gamma norm(state.res, Inf)/state.gamma
+    R = real(eltype(x0))
+
+    stop(state::FBS_state) = norm(state.res, Inf)/state.gamma <= R(tol)
+    disp((it, state)) = @printf(
+        "%5d | %.3e | %.3e\n",
+        it, state.gamma, norm(state.res, Inf)/state.gamma
+    )
 
     if gamma === nothing && L !== nothing
-        gamma = 1/L
+        gamma = R(1)/R(L)
+    elseif gamma !== nothing
+        gamma = R(gamma)
     end
 
     iter = FBS_iterable(f, A, g, x0, gamma, adaptive, fast)

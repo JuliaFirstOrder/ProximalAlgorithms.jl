@@ -88,7 +88,7 @@ Random.seed!(0)
 
         ## 2- testing with three terms: 1/2\|Ax-b\|^2+ λ\|x\|_1 + + λ_2*\|x\|^2
 
-        lam2 = 1.0;
+        lam2 = 1.0
 
         x0 = randn(n)
         y0 = randn(n)

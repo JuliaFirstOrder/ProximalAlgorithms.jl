@@ -3,9 +3,9 @@ using LinearAlgebra
 using ProximalAlgorithms: LBFGS
 using RecursiveArrayTools: ArrayPartition, unpack
 
-@testset "L-BFGS" begin
+@testset "L-BFGS ($T)" for T in [Float32, Float64, Complex{Float32}, Complex{Float64}]
 
-    Q = [
+    Q = T[
             32.0000 13.1000 -4.9000 -3.0000  6.0000  2.2000  2.6000  3.4000 -1.9000 -7.5000;
             13.1000 18.3000 -5.3000 -9.5000  3.0000  2.1000  3.9000  3.0000 -3.6000 -4.4000;
             -4.9000 -5.3000  7.7000  2.1000 -0.4000 -3.4000 -0.8000 -3.0000  5.3000  5.5000;
@@ -18,18 +18,18 @@ using RecursiveArrayTools: ArrayPartition, unpack
             -7.5000 -4.4000  5.5000  2.1000 -2.0000 -5.1000  1.2000  2.7000  5.7000 16.1000;
     ]
 
-    q = [2.9000, 0.8000, 1.3000, -1.1000, -0.5000, -0.3000, 1.0000, -0.3000, 0.7000, -2.1000]
+    q = T[2.9000, 0.8000, 1.3000, -1.1000, -0.5000, -0.3000, 1.0000, -0.3000, 0.7000, -2.1000]
 
     xs = [
-            [1.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09],
-            [0.09, 1.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08],
-            [0.08, 0.09, 1.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07],
-            [0.07, 0.08, 0.09, 1.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06],
-            [0.06, 0.07, 0.08, 0.09, 1.0, 0.01, 0.02, 0.03, 0.04, 0.05]
+            T[1.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09],
+            T[0.09, 1.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08],
+            T[0.08, 0.09, 1.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07],
+            T[0.07, 0.08, 0.09, 1.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06],
+            T[0.06, 0.07, 0.08, 0.09, 1.0, 0.01, 0.02, 0.03, 0.04, 0.05]
     ]
 
     dirs_ref = [
-        [
+        T[
             -3.476000000000000e+01,
             -1.367700000000000e+01,
             2.961000000000000e+00,
@@ -41,7 +41,7 @@ using RecursiveArrayTools: ArrayPartition, unpack
             4.010000000000000e-01,
             7.639999999999999e+00,
         ],
-        [
+        T[
             -6.861170733797231e-01,
             -1.661270665201917e+00,
             2.217225828759783e-01,
@@ -53,7 +53,7 @@ using RecursiveArrayTools: ArrayPartition, unpack
             1.267604425710271e-01,
             3.360845247013288e-01,
         ],
-        [
+        T[
             -1.621334774299757e-01,
             2.870743130038511e-01,
             -5.485761164147891e-01,
@@ -65,7 +65,7 @@ using RecursiveArrayTools: ArrayPartition, unpack
             -7.776943954825602e-02,
             -2.335884953507600e-02,
         ],
-        [
+        T[
             -2.008976150849174e-01,
             2.237224648542354e-01,
             4.811889625788801e-02,
@@ -77,7 +77,7 @@ using RecursiveArrayTools: ArrayPartition, unpack
             -1.285590864125103e-01,
             -3.204963735369062e-03,
         ],
-        [
+        T[
             -2.317011191832649e-01,
             2.980080835636926e-02,
             -1.267017945785352e-01,
@@ -93,9 +93,9 @@ using RecursiveArrayTools: ArrayPartition, unpack
 
     @testset "Arrays" begin
         mem = 3
-        x = zeros(10)
+        x = zeros(T, 10)
         H = LBFGS.create(x, mem)
-        dir  = zeros(10)
+        dir = zeros(T, 10)
         for i = 1:5
             x = xs[i]
             grad = Q*x + q
@@ -107,9 +107,9 @@ using RecursiveArrayTools: ArrayPartition, unpack
 
     @testset "ArrayPartition" begin
         mem = 3
-        x = ArrayPartition(zeros(10), zeros(10))
+        x = ArrayPartition(zeros(T, 10), zeros(T, 10))
         H = LBFGS.create(x, mem)
-        dir  = ArrayPartition(zeros(10), zeros(10))
+        dir = ArrayPartition(zeros(T, 10), zeros(T, 10))
         for i = 1:5
             x = ArrayPartition(xs[i], xs[i])
             temp = Q*unpack(x, 1) + q

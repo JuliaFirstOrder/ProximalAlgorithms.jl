@@ -19,7 +19,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct AFBA_iterable{R <: Real, C <: Union{R, Complex{R}}, Tx <: AbstractArray{C}, Ty <: AbstractArray{C}}
+struct AFBA_iterable{R, Tx, Ty}
     f
     g
     h
@@ -91,59 +91,59 @@ function Base.iterate(iter::AFBA_iterable, state::AFBA_state=AFBA_state(iter))
 end
 
 function AFBA_default_stepsizes(L, h, theta::R, mu::R, betaQ::R, betaR::R) where {R <: Real}
-    par = 4 #  scale parameter for comparing Lipschitz constant and opnorm(L)
-    nmL = opnorm(L)
-    alpha = 1
+    par = R(4) #  scale parameter for comparing Lipschitz constant and opnorm(L)
+    nmL = R(opnorm(L))
+    alpha = R(1)
 
     if isa(h, ProximalOperators.Zero)
         # mu=0 is the only case where stepsizes matter
-        alpha = 1000/(betaQ+1e-5) # the speed is determined by gamma1 since bary=0
-        temp = theta^2-3*theta+3
-        gamma1 = 0.99/(betaQ/2+ temp*nmL/alpha) # in this case R=0
-        gamma2 = 1/(nmL*alpha)
+        alpha = R(1000)/(betaQ+R(1e-5)) # the speed is determined by gamma1 since bary=0
+        temp = theta^2-3*theta+R(3)
+        gamma1 = R(0.99)/(betaQ/2 + temp*nmL/alpha) # in this case R=0
+        gamma2 = R(1)/(nmL*alpha)
     else
         if theta==2 # default stepsize for Vu-Condat
             if betaQ > par*nmL && betaR > par*nmL
-                alpha = 1
+                alpha = R(1)
             elseif betaQ > par*nmL
                 alpha = 2*nmL/betaQ
             elseif betaR > par*nmL
                 alpha = betaR/(2*nmL)
             end
-            gamma1 = 1/(betaQ/2+nmL/alpha)
-            gamma2 = 0.99/(betaR/2+nmL*alpha)
+            gamma1 = R(1)/(betaQ/2+nmL/alpha)
+            gamma2 = R(0.99)/(betaR/2+nmL*alpha)
         elseif theta == 1 && mu == 1 # default stepsize for theta=1, mu=1
             if betaQ > par*nmL && betaR > par*nmL
-                alpha = 1
+                alpha = R(1)
             elseif betaQ > par*nmL
                 alpha = 2*nmL/betaQ
             elseif betaR > par*nmL
                 alpha = betaR/(2*nmL)
             end
-            gamma1 = 1/(betaQ/2+nmL/alpha)
-            gamma2 = 0.99/(betaR/2+gamma1*nmL^2)
+            gamma1 = R(1)/(betaQ/2+nmL/alpha)
+            gamma2 = R(0.99)/(betaR/2 + gamma1*nmL^2)
         elseif theta == 0 && mu == 1 # default stepsize for theta=0, mu=1
             temp=3
             if betaQ > par*nmL && betaR > temp*par*nmL # denominator for Sigma involves 3α opnorm(L) in this case
-                alpha = 1
+                alpha = R(1)
             elseif betaQ > par*nmL
                 alpha = 2*nmL/betaQ
             elseif betaR > temp*par*nmL # denominator for Sigma involves 3α opnorm(L) in this case
                 alpha = betaR/(temp*2*nmL)
             end
-            gamma1 = 1/(betaQ/2+nmL/alpha)
-            gamma2 = 0.99/(betaR/2+2*gamma1*nmL^2+ alpha*nmL)
+            gamma1 = R(1)/(betaQ/2+nmL/alpha)
+            gamma2 = R(0.99)/(betaR/2 + 2*gamma1*nmL^2 + alpha*nmL)
         elseif mu == 0 # default stepsize for  mu=0
             temp = theta^2-3*theta+3
             if betaQ > temp*par*nmL && betaR > par*nmL
-                alpha = 1
+                alpha = R(1)
             elseif betaR > par*nmL
                 alpha = betaR/(2*nmL)
             elseif betaQ > temp*par*nmL # denominator for Sigma involves 3α opnorm(L) in this case
                 alpha = 2*nmL*temp/betaQ
             end
-            gamma2 = 1/(betaR/2+ alpha*nmL)
-            gamma1 = 0.99/(betaQ/2+ (temp-1)*gamma2*nmL^2+ nmL/alpha)
+            gamma2 = R(1)/(betaR/2+ alpha*nmL)
+            gamma1 = R(0.99)/(betaQ/2 + (temp-1)*gamma2*nmL^2 + nmL/alpha)
         else
             error("this choice of theta and mu is not supported!")
         end
@@ -208,19 +208,24 @@ Theory and Applications 158.2 (2013): 460-479.
 [3] Vũ. "A splitting algorithm for dual monotone inclusions involving
 cocoercive operators"" Advances in Computational Mathematics, 38(3), pp.667-681.
 """
-function AFBA(x0::AbstractArray, y0::AbstractArray;
+function AFBA(x0, y0;
     f=Zero(), g=Zero(), h=Zero(), l=IndZero(), L=I,
     theta=1.0, mu=1.0, lam=1.0, betaQ=0.0, betaR=0.0, gamma1=nothing, gamma2=nothing,
     maxit=10000, tol=1e-5, verbose=false, freq=100)
 
-    stop(state::AFBA_state) = norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= tol
-    disp((it, state)) = @printf "%6d | %7.4e |\n" it norm(state.FPR_x, Inf)+norm(state.FPR_y, Inf)
+    R = real(eltype(x0))
+
+    stop(state::AFBA_state) = norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= R(tol)
+    disp((it, state)) = @printf(
+        "%6d | %7.4e\n",
+        it, norm(state.FPR_x, Inf)+norm(state.FPR_y, Inf)
+    )
 
     if gamma1 === nothing || gamma2 === nothing
-        gamma1, gamma2 = AFBA_default_stepsizes(L, h, theta, mu, betaQ, betaR)
+        gamma1, gamma2 = AFBA_default_stepsizes(L, h, R(theta), R(mu), R(betaQ), R(betaR))
     end
 
-    iter = AFBA_iterable(f, g, h, l, L, x0, y0, theta, mu, lam, gamma1, gamma2)
+    iter = AFBA_iterable(f, g, h, l, L, x0, y0, R(theta), R(mu), R(lam), gamma1, gamma2)
     iter = take(halt(iter, stop), maxit)
     iter = enumerate(iter)
     if verbose iter = tee(sample(iter, freq), disp) end
@@ -228,29 +233,6 @@ function AFBA(x0::AbstractArray, y0::AbstractArray;
     num_iters, state_final = loop(iter)
 
     return state_final.x, state_final.y, num_iters
-end
-
-"""
-**Chambolle-Pock primal-dual algorithm**
-
-    ChambollePock(x0, y0; g, h, l, L, [...])
-
-Solves convex optimization problems of the form
-
-    minimize g(x) + (h □ l)(L x).
-
-where `g` and `h` are possibly nonsmooth and `l` is strongly convex.
-Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
-Points `x0` and `y0` are the initial primal and dual iterates, respectively.
-
-See documentation of `AFBA` for the list of keyword arguments.
-"""
-function ChambollePock(x0, y0; kwargs...)
-    # Create iterable
-    sol = AFBAIterator(x0, y0; kwargs..., f=Zero(), theta=2)
-    # Run iterations
-    (it, (primal, dual)) = run!(sol)
-    return (it, primal, dual, sol)
 end
 
 """
@@ -270,9 +252,24 @@ Points `x0` and `y0` are the initial primal and dual iterates, respectively.
 See documentation of `AFBA` for the list of keyword arguments.
 """
 function VuCondat(x0, y0; kwargs...)
-    # Create iterable
-    sol = AFBAIterator(x0, y0; kwargs..., theta=2)
-    # Run iterations
-    (it, (primal, dual)) = run!(sol)
-    return (it, primal, dual, sol)
+    return AFBA(x0, y0; kwargs..., theta=2.0)
+end
+
+"""
+**Chambolle-Pock primal-dual algorithm**
+
+    ChambollePock(x0, y0; g, h, l, L, [...])
+
+Solves convex optimization problems of the form
+
+    minimize g(x) + (h □ l)(L x).
+
+where `g` and `h` are possibly nonsmooth and `l` is strongly convex.
+Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
+Points `x0` and `y0` are the initial primal and dual iterates, respectively.
+
+See documentation of `AFBA` for the list of keyword arguments.
+"""
+function ChambollePock(x0, y0; kwargs...)
+    return VuCondat(x0, y0; kwargs..., f=Zero())
 end

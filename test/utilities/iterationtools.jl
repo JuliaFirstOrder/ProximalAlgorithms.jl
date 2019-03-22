@@ -39,8 +39,6 @@ Base.iterate(iter::FibonacciIterable, state) = state[2], (state[2], sum(state))
         for k in 2:10
             _, state = @test_logs (:info, "$(fib[k])") iterate(iter, state)
         end
-
-        @printf "\n"
     end
 
     @testset "Sampling" begin

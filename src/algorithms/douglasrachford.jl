@@ -1,5 +1,5 @@
 ################################################################################
-# Douglas-Rachford splitting iterator
+# Douglas-Rachford splitting iterable
 #
 # [1] Eckstein, Bertsekas "On the Douglas-Rachford Splitting Method and the
 # Proximal Point Algorithm for Maximal Monotone Operators*",
@@ -66,10 +66,12 @@ function DRS(x0;
     maxit=1000, tol=1e-8,
     verbose=false, freq=100)
 
-    stop(state::DRS_state) = norm(state.res, Inf) <= tol
-    disp((it, state)) = @printf "%5d | %.3e\n" it norm(state.res, Inf)
+    R = real(eltype(x0))
 
-    iter = DRS_iterable(f, g, x0, gamma)
+    stop(state::DRS_state) = norm(state.res, Inf) <= R(tol)
+    disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf))
+
+    iter = DRS_iterable(f, g, x0, R(gamma))
     iter = take(halt(iter, stop), maxit)
     iter = enumerate(iter)
     if verbose iter = tee(sample(iter, freq), disp) end
