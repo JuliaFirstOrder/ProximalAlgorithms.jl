@@ -8,6 +8,8 @@ Proximal algorithms (also known as "splitting" algorithms or methods) for nonsmo
 
 This package can be used in combination with [ProximalOperators.jl](https://github.com/kul-forbes/ProximalOperators.jl) (providing first-order primitives, i.e. gradient and proximal mapping, for numerous cost functions) and [AbstractOperators.jl](https://github.com/kul-forbes/AbstractOperators.jl) (providing several linear and nonlinear operators) to formulate and solve a wide spectrum of nonsmooth optimization problems.
 
+[StructuredOptimization.jl](https://github.com/kul-forbes/StructuredOptimization.jl) provides a higher-level interface to formulate and solve problems using (some of) the algorithms here included.
+
 ### Installation
 
 ```julia
