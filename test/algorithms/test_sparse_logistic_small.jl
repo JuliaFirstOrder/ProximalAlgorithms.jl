@@ -42,11 +42,11 @@ using Test
 
     # ZeroFPR/Adaptive
 
-    # x0 = zeros(n)
-    # it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fs=f, As=A, g=g, tol=1e-6, adaptive=true)
-    # @test norm(x - x_star, Inf) <= 1e-4
-    # @test it < 25
-    # println(sol)
+    x0 = zeros(T, n)
+    x, it = ProximalAlgorithms.ZeroFPR(x0, f=f, A=A, g=g, adaptive=true, tol=TOL)
+    @test eltype(x) == T
+    @test norm(x - x_star, Inf) <= 1e-4
+    @test it < 25
 
     # PANOC/Adaptive
 

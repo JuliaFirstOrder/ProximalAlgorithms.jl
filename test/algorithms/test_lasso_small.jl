@@ -72,24 +72,21 @@ using Test
 
     @testset "ZeroFPR" begin
 
-        # # ZeroFPR/Nonadaptive
-        #
-        # x0 = zeros(n)
-        # it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, gamma=1.0/opnorm(A)^2)
-        # @test norm(x - x_star, Inf) <= TOL
-        # @test it < 15
-        # println(sol)
-        #
-        # #testing solver already at solution
-        # it, x = ProximalAlgorithms.run!(sol)
-        # @test it == 1
-        #
-        # # ZeroFPR/Adaptive
-        #
-        # x0 = zeros(n)
-        # it, x, sol = ProximalAlgorithms.ZeroFPR(x0; fq=f, Aq=A, g=g, adaptive=true)
-        # @test norm(x - x_star, Inf) <= TOL
-        # @test it < 15
+        # ZeroFPR/Nonadaptive
+
+        x0 = zeros(T, n)
+        x, it = ProximalAlgorithms.ZeroFPR(x0, f=f, A=A, g=g, L=opnorm(A)^2, tol=TOL)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+
+        # ZeroFPR/Adaptive
+
+        x0 = zeros(T, n)
+        x, it = ProximalAlgorithms.ZeroFPR(x0, f=f, A=A, g=g, adaptive=true, tol=TOL)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
 
     end
 

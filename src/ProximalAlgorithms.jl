@@ -16,7 +16,7 @@ include("utilities/lbfgs.jl")
 # algorithms
 
 include("algorithms/forwardbackward.jl")
-# include("algorithms/zerofpr.jl")
+include("algorithms/zerofpr.jl")
 include("algorithms/panoc.jl")
 include("algorithms/douglasrachford.jl")
 include("algorithms/primaldual.jl")
