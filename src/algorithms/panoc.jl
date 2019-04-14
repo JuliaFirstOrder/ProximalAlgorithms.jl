@@ -21,13 +21,13 @@ mutable struct PANOC_state{R <: Real, Tx, TAx}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
-    grad_f_Ax::Tx     # gradient of f at Ax
-    At_grad_f_Ax::TAx # gradient of smooth term
+    grad_f_Ax::TAx    # gradient of f at Ax
+    At_grad_f_Ax::Tx  # gradient of smooth term
     gamma::R          # stepsize parameter of forward and backward steps
     y::Tx             # forward point
     z::Tx             # forward-backward point
     g_z::R            # value of nonsmooth term (at z)
-    res::Tx           # fixed-point residual at iterate (= z - x)
+    res::Tx           # fixed-point residual at iterate (= x - z)
     H::LBFGS.LBFGS_buffer{R} # variable metric
     tau::Maybe{R}     # stepsize (can be nothing since the initial state doesn't have it)
     # some additional storage:
@@ -36,8 +36,8 @@ mutable struct PANOC_state{R <: Real, Tx, TAx}
     x_d::Tx
     Ax_d::TAx
     f_Ax_d::R
-    grad_f_Ax_d::Tx
-    At_grad_f_Ax_d::TAx
+    grad_f_Ax_d::TAx
+    At_grad_f_Ax_d::Tx
     z_curr::Tx
 end
 
