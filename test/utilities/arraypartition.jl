@@ -1,19 +1,6 @@
 using ProximalOperators
 using RecursiveArrayTools
 
-## AbstractOperator
-
-# import Base: *
-# using LinearAlgebra
-# using AbstractOperators
-#
-# @inline LinearAlgebra.mul!(y::ArrayPartition, L::AbstractOperator, x::ArrayPartition) =
-#     LinearAlgebra.mul!(y.x, L, x.x)
-#
-# @inline (*)(L::AbstractOperator, x::ArrayPartition) = ArrayPartition(L * x.x)
-
-## ProximableFunction
-
 @inline function ProximalOperators.prox(h::ProximableFunction, x::ArrayPartition, gamma...)
     # unwrap
     y, fy = ProximalOperators.prox(h, x.x, gamma...)

@@ -7,7 +7,6 @@ include("compat.jl")
 
 # utilities
 
-include("utilities/arraypartition.jl")
 include("utilities/conjugate.jl")
 include("utilities/fbetools.jl")
 include("utilities/iterationtools.jl")
