@@ -18,8 +18,8 @@ mutable struct FBS_state{R <: Real, Tx, TAx}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
-    grad_f_Ax::Tx     # gradient of f at Ax
-    At_grad_f_Ax::TAx # gradient of smooth term
+    grad_f_Ax::TAx    # gradient of f at Ax
+    At_grad_f_Ax::Tx  # gradient of smooth term
     gamma::R          # stepsize parameter of forward and backward steps
     y::Tx             # forward point
     z::Tx             # forward-backward point

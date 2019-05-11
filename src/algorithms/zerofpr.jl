@@ -132,8 +132,8 @@ function Base.iterate(iter::ZeroFPR_iterable{R}, state::ZeroFPR_state{R, Tx, TAx
     threshold = FBE_x - sigma * norm(state.res)^2 + tol
 
     for i = 1:10
-        state.x = state.xbar_curr .+ tau .* state.d
-        state.Ax = state.Axbar .+ tau .* state.Ad
+        state.x .= state.xbar_curr .+ tau .* state.d
+        state.Ax .= state.Axbar .+ tau .* state.Ad
         # TODO: can precompute most of next line in case f is quadratic
         state.f_Ax = gradient!(state.grad_f_Ax, iter.f, state.Ax)
         mul!(state.At_grad_f_Ax, iter.A', state.grad_f_Ax)
@@ -146,7 +146,7 @@ function Base.iterate(iter::ZeroFPR_iterable{R}, state::ZeroFPR_state{R, Tx, TAx
             state.tau = tau
             return state, state
         end
-        
+
         tau *= 0.5
     end
 
