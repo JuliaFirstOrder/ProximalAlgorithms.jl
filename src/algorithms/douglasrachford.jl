@@ -13,9 +13,9 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct DRS_iterable{R <: Real, C <: Union{R, Complex{R}}, T <: AbstractArray{C}}
-    f
-    g
+struct DRS_iterable{R <: Real, C <: Union{R, Complex{R}}, T <: AbstractArray{C}, Tf, Tg}
+    f::Tf
+    g::Tg
     x::T
     gamma::R
 end

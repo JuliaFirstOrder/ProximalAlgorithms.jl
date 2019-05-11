@@ -12,11 +12,11 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct DYS_iterable{R <: Real, C <: Union{R, Complex{R}}, T <: AbstractArray{C}}
-    f
-    g
-    h
-    A
+struct DYS_iterable{R <: Real, C <: Union{R, Complex{R}}, T <: AbstractArray{C}, Tf, Tg, Th, TA}
+    f::Tf
+    g::Tg
+    h::Th
+    A::TA
     x0::T
     gamma::R
     lambda::R

@@ -19,12 +19,12 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct AFBA_iterable{R, Tx, Ty}
-    f
-    g
-    h
-    l
-    L
+struct AFBA_iterable{R, Tx, Ty, Tf, Tg, Th, Tl, TL}
+    f::Tf
+    g::Tg
+    h::Th
+    l::Tl
+    L::TL
     x0::Tx
     y0::Ty
     theta::R
