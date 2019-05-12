@@ -20,17 +20,18 @@ julia> Pkg.add("ProximalAlgorithms")
 
 Algorithm                             | Function      | Reference
 --------------------------------------|---------------|-----------
-Asymmetric forward-backward-adjoint algorithm | [`AFBA`](src/algorithms/AsymmetricForwardBackwardAdjoint.jl) | [[10]][latafat_2017]
-Chambolle-Pock primal dual algorithm  | [`ChambollePock`](src/algorithms/AsymmetricForwardBackwardAdjoint.jl) | [[4]][chambolle_2011]
-Douglas-Rachford splitting algorithm  | [`DRS`](src/algorithms/DouglasRachford.jl) | [[1]][eckstein_1989]
-Forward-backward splitting (i.e. proximal gradient) algorithm | [`FBS`](src/algorithms/ForwardBackward.jl) | [[2]][tseng_2008], [[3]][beck_2009]
-Vũ-Condat primal-dual algorithm       | [`VuCondat`](src/algorithms/AsymmetricForwardBackwardAdjoint.jl) | [[6]][vu_2013], [[7]][condat_2013]
-ZeroFPR (L-BFGS)                      | [`ZeroFPR`](src/algorithms/ZeroFPR.jl) | [[9]][themelis_2016]
-PANOC (L-BFGS)                        | [`PANOC`](src/algorithms/PANOC.jl) | [[11]][stella_2017]
+Douglas-Rachford splitting algorithm  | [`douglasrachford`](src/algorithms/douglasrachford.jl) | [[1]][eckstein_1989]
+Forward-backward splitting (i.e. proximal gradient) algorithm | [`FBS`](src/algorithms/forwardbackward.jl) | [[2]][tseng_2008], [[3]][beck_2009]
+Chambolle-Pock primal dual algorithm  | [`chambollepock`](src/algorithms/primaldual.jl) | [[4]][chambolle_2011]
+Vũ-Condat primal-dual algorithm       | [`vucondat`](src/algorithms/primaldual.jl) | [[6]][vu_2013], [[7]][condat_2013]
+Davis-Yin splitting algorithm         | [`davisyin`](src/algorithms/davisyin.jl) | [[9]][davis_2017]
+Asymmetric forward-backward-adjoint algorithm | [`afba`](src/algorithms/primaldual.jl) | [[10]][latafat_2017]
+PANOC (L-BFGS)                        | [`panoc`](src/algorithms/panoc.jl) | [[11]][stella_2017]
+ZeroFPR (L-BFGS)                      | [`zerofpr`](src/algorithms/zerofpr.jl) | [[12]][themelis_2018]
 
 ### Contributing
 
-Contributions are welcome in the form of [issues notification](https://github.com/kul-forbes/ProximalAlgorithms.jl/issues) or [pull requests](https://github.com/kul-forbes/ProximalAlgorithms.jl/pulls). We recommend looking at already implemented algorithms, or following the [template](src/template/Template.jl), to get inspiration on how to structure new ones.
+Contributions are welcome in the form of [issues notification](https://github.com/kul-forbes/ProximalAlgorithms.jl/issues) or [pull requests](https://github.com/kul-forbes/ProximalAlgorithms.jl/pulls). We recommend looking at already implemented algorithms to get inspiration on how to structure new ones.
 
 ### References
 
@@ -50,11 +51,14 @@ Contributions are welcome in the form of [issues notification](https://github.co
 
 [[8]][parikh_2014] Parikh, Boyd, *Proximal Algorithms*, Foundations and Trends in Optimization, vol. 1, no. 3, pp. 127-239 (2014).
 
-[[9]][themelis_2016] Themelis, Stella, Patrinos, *Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms*, arXiv:1606.06256 (2016).
+[[9]][davis_2017] Davis, Yin, *A Three-Operator Splitting Scheme and its Optimization Applications*, Set-Valued and Variational Analysis, vol. 25, no. 4, pp. 829–858 (2017).
 
 [[10]][latafat_2017] Latafat, Patrinos, *Asymmetric forward–backward–adjoint splitting for solving monotone inclusions involving three operators*, Computational Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
 
 [[11]][stella_2017] Stella, Themelis, Sopasakis, Patrinos, *A simple and efficient algorithm for nonlinear model predictive control*, 56th IEEE Conference on Decision and Control (2017).
+
+[[12]][themelis_2018] Themelis, Stella, Patrinos, *Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms*, SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
+
 
 [eckstein_1989]: https://link.springer.com/article/10.1007/BF01581204
 [tseng_2008]: http://www.mit.edu/~dimitrib/PTseng/papers/apgm.pdf
@@ -62,8 +66,9 @@ Contributions are welcome in the form of [issues notification](https://github.co
 [chambolle_2011]: https://link.springer.com/article/10.1007/s10851-010-0251-1
 [boyd_2011]: http://www.nowpublishers.com/article/Details/MAL-016
 [parikh_2014]: http://www.nowpublishers.com/article/Details/OPT-003
-[themelis_2016]: https://arxiv.org/abs/1606.06256
+[themelis_2018]: https://epubs.siam.org/doi/10.1137/16M1080240
 [latafat_2017]: https://link.springer.com/article/10.1007/s10589-017-9909-6
 [stella_2017]: https://doi.org/10.1109/CDC.2017.8263933
 [condat_2013]: https://link.springer.com/article/10.1007/s10957-012-0245-9
 [vu_2013]: https://link.springer.com/article/10.1007/s10444-011-9254-8
+[davis_2017]: https://link.springer.com/article/10.1007/s11228-017-0421-z
