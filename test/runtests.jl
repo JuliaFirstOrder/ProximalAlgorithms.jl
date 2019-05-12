@@ -1,4 +1,7 @@
-include("utilities/arraypartition.jl")
+using Test
+
+include("definitions/arraypartition.jl")
+
 include("utilities/iterationtools.jl")
 include("utilities/lbfgs.jl")
 include("utilities/conjugate.jl")

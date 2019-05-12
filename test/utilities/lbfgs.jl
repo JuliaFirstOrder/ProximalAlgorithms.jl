@@ -1,9 +1,8 @@
-using Test
-using LinearAlgebra
-using ProximalAlgorithms: LBFGS
-using RecursiveArrayTools: ArrayPartition, unpack
-
 @testset "L-BFGS ($T)" for T in [Float32, Float64, Complex{Float32}, Complex{Float64}]
+
+    using LinearAlgebra
+    using ProximalAlgorithms: LBFGS
+    using RecursiveArrayTools: ArrayPartition, unpack
 
     Q = T[
             32.0000 13.1000 -4.9000 -3.0000  6.0000  2.2000  2.6000  3.4000 -1.9000 -7.5000;

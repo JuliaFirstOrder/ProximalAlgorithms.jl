@@ -1,20 +1,18 @@
-using Test
-using Printf
-using ProximalAlgorithms: IterationTools
-
-using Random
-
-Random.seed!(0)
-
-struct FibonacciIterable{I}
-    s0::I
-    s1::I
-end
-
-Base.iterate(iter::FibonacciIterable) = iter.s0, (iter.s0, iter.s1)
-Base.iterate(iter::FibonacciIterable, state) = state[2], (state[2], sum(state))
-
 @testset "IterationTools" begin
+
+    using Printf
+    using ProximalAlgorithms: IterationTools
+    using Random
+
+    Random.seed!(0)
+
+    struct FibonacciIterable{I}
+        s0::I
+        s1::I
+    end
+
+    Base.iterate(iter::FibonacciIterable) = iter.s0, (iter.s0, iter.s1)
+    Base.iterate(iter::FibonacciIterable, state) = state[2], (state[2], sum(state))
 
     @testset "Looping" begin
         iter = rand(Float64, 10)

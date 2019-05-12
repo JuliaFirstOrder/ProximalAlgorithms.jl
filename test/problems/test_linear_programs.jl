@@ -1,29 +1,11 @@
-using ProximalOperators
-using ProximalAlgorithms
-using LinearAlgebra
-using Random
-using Test
-
-Random.seed!(0)
-
-function assert_lp_solution(c, A, b, x, y, tol)
-    # Check and print solution quality measures (for some reason the
-    # returned dual iterate is the negative of the dual LP variable y)
-
-    nonneg = -minimum(min.(0.0, x))
-    @test nonneg <= tol
-
-    primal_feasibility = norm(A*x - b)
-    @test primal_feasibility <= tol
-
-    dual_feasibility = maximum(max.(0.0, -A'*y - c))
-    @test dual_feasibility <= tol
-
-    complementarity = abs(dot(c + A'*y, x))
-    @test complementarity <= tol
-end
-
 @testset "Linear programs ($T)" for T in [Float32, Float64]
+
+    using ProximalOperators
+    using ProximalAlgorithms
+    using LinearAlgebra
+    using Random
+
+    Random.seed!(0)
 
     # Solving LP with AFBA
     #
@@ -43,6 +25,23 @@ end
     #   A'y <= c            [dual feasibility]
     #   X'(c - A'y) = 0     [complementarity slackness]
     #
+
+    function assert_lp_solution(c, A, b, x, y, tol)
+        # Check and print solution quality measures (for some reason the
+        # returned dual iterate is the negative of the dual LP variable y)
+
+        nonneg = -minimum(min.(0.0, x))
+        @test nonneg <= tol
+
+        primal_feasibility = norm(A*x - b)
+        @test primal_feasibility <= tol
+
+        dual_feasibility = maximum(max.(0.0, -A'*y - c))
+        @test dual_feasibility <= tol
+
+        complementarity = abs(dot(c + A'*y, x))
+        @test complementarity <= tol
+    end
 
     n = 100 # primal dimension
     m = 80 # dual dimension (i.e. number of linear equalities)

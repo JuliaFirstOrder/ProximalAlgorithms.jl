@@ -1,11 +1,13 @@
-using ProximalOperators
-using ProximalAlgorithms
-using LinearAlgebra
-using AbstractOperators
-using Random
-using Test
-
 @testset "Lasso small (h. split, $T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
+
+    using ProximalOperators
+    using ProximalAlgorithms
+    using LinearAlgebra
+    using AbstractOperators: MatrixOp
+    using RecursiveArrayTools: ArrayPartition
+    using Random
+
+    Random.seed!(0)
 
     A1 = T[  1.0  -2.0   3.0;
              2.0  -1.0   0.0;
