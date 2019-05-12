@@ -64,6 +64,35 @@ function Base.iterate(iter::DYS_iterable, state::DYS_state)
     return state, state
 end
 
+"""
+    davisyin(x0; f, g, h, A, [...])
+
+Solves convex optimization problems of the form
+
+    minimize f(x) + g(x) + h(A x),
+
+where `h` is smooth and `A` is a linear mapping, using the Davis-Yin splitting
+algorithm, see [1].
+
+Either of the following arguments must be specified:
+
+* `L::Real`, Lipschitz constant of the gradient of `h(A x)`.
+* `gamma:Real`, stepsize parameter.
+
+Other optional keyword arguments:
+
+* `labmda::Real` (default: `1.0`), relaxation parameter, see [1].
+* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
+* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
+* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
+* `freq::Integer` (default: `100`), frequency of verbosity.
+
+References:
+
+[1] Davis, Yin. "A Three-Operator Splitting Scheme and its Optimization
+Applications", Set-Valued and Variational Analysis, vol. 25, no. 4,
+pp. 829–858 (2017).
+"""
 function davisyin(x0;
     f=Zero(), g=Zero(), h=Zero(), A=I,
     lambda=1.0, L=nothing, gamma=nothing,

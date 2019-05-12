@@ -129,6 +129,15 @@ Other optional keyword arguments:
 * `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
 * `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
 * `freq::Integer` (default: `10`), frequency of verbosity.
+
+References:
+
+[1] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
+Optimization" (2008).
+
+[2] Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
+for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
+pp. 183-202 (2009).
 """
 function forwardbackward(x0;
     f=Zero(), A=I, g=Zero(),

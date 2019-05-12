@@ -173,6 +173,12 @@ Other optional keyword arguments:
 * `freq::Integer` (default: `10`), frequency of verbosity.
 * `alpha::Real` (default: `0.95`), stepsize to inverse-Lipschitz-constant ratio; should be in (0, 1).
 * `beta::Real` (default: `0.5`), sufficient decrease parameter; should be in (0, 1).
+
+References:
+
+[1] Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two
+nonconvex functions: Further properties and nonmonotone line-search algorithms",
+SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
 """
 function zerofpr(x0;
     f=Zero(), A=I, g=Zero(),

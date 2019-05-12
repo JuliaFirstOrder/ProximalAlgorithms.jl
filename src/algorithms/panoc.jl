@@ -198,6 +198,12 @@ Other optional keyword arguments:
 * `freq::Integer` (default: `10`), frequency of verbosity.
 * `alpha::Real` (default: `0.95`), stepsize to inverse-Lipschitz-constant ratio; should be in (0, 1).
 * `beta::Real` (default: `0.5`), sufficient decrease parameter; should be in (0, 1).
+
+References:
+
+[1] Stella, Themelis, Sopasakis, Patrinos, "A simple and efficient algorithm
+for nonlinear model predictive control", 56th IEEE Conference on Decision
+and Control (2017).
 """
 function panoc(x0;
     f=Zero(), A=I, g=Zero(),

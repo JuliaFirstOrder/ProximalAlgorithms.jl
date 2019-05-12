@@ -56,8 +56,8 @@ Other optional keyword arguments:
 
 References:
 
-[1] Eckstein, Bertsekas "On the Douglas-Rachford Splitting Method and the
-Proximal Point Algorithm for Maximal Monotone Operators*",
+[1] Eckstein, Bertsekas, "On the Douglas-Rachford Splitting Method and the
+Proximal Point Algorithm for Maximal Monotone Operators",
 Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 """
 function douglasrachford(x0;
