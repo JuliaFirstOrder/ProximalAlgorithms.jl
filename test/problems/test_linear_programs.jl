@@ -66,7 +66,7 @@
         x0 = zeros(T, n)
         y0 = zeros(T, m)
 
-        x, y, it = ProximalAlgorithms.AFBA(
+        x, y, it = ProximalAlgorithms.afba(
             x0, y0, f=f, g=g, h=h, L=A, tol=tol, maxit=maxit
         )
 
@@ -88,7 +88,7 @@
         x0 = zeros(T, n)
         y0 = zeros(T, m)
 
-        x, y, it = ProximalAlgorithms.VuCondat(
+        x, y, it = ProximalAlgorithms.vucondat(
             x0, y0, f=f, g=g, h=h, L=A, tol=tol, maxit=maxit
         )
 
@@ -111,7 +111,7 @@
 
         x0 = zeros(T, n)
 
-        xf, xg, it = ProximalAlgorithms.DYS(
+        xf, xg, it = ProximalAlgorithms.davisyin(
             x0, f=f, g=g, h=h, gamma=T(1), tol=tol, maxit=maxit
         )
 

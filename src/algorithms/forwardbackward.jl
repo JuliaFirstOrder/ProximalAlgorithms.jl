@@ -112,7 +112,7 @@ function Base.iterate(iter::FBS_iterable{R}, state::FBS_state{R, Tx, TAx}) where
 end
 
 """
-    FBS(x0; f, A, g, [...])
+    forwardbackward(x0; f, A, g, [...])
 
 Minimizes f(A*x) + g(x) with respect to x, starting from x0, using the
 forward-backward splitting algorithm (also known as proximal gradient method).
@@ -130,7 +130,7 @@ Other optional keyword arguments:
 * `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
 * `freq::Integer` (default: `10`), frequency of verbosity.
 """
-function FBS(x0;
+function forwardbackward(x0;
     f=Zero(), A=I, g=Zero(),
     L=nothing, gamma=nothing,
     adaptive=false, fast=false,

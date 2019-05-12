@@ -40,7 +40,7 @@ function Base.iterate(iter::DRS_iterable, state::DRS_state=DRS_state(iter))
 end
 
 """
-    DRS(x0; f, g, gamma, [...])
+    douglasrachford(x0; f, g, gamma, [...])
 
 Minimizes `f(x) + g(x)` with respect to `x`, using the Douglas-Rachfor splitting
 algorithm starting from `x0`, with stepsize `gamma`.
@@ -60,7 +60,7 @@ References:
 Proximal Point Algorithm for Maximal Monotone Operators*",
 Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 """
-function DRS(x0;
+function douglasrachford(x0;
     f=Zero(), g=Zero(),
     gamma=1.0,
     maxit=1000, tol=1e-8,

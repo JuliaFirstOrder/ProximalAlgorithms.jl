@@ -153,15 +153,14 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, betaQ::R, betaR::R) where
 end
 
 """
-**Asymmetric forward-backward-adjoint algorithm**
-
-    AFBA(x0, y0; f, g, h, l, L, [...])
+    afba(x0, y0; f, g, h, l, L, [...])
 
 Solves convex optimization problems of the form
 
     minimize f(x) + g(x) + (h □ l)(L x),
 
-where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly convex.
+where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly convex,
+using the asymmetric forward-backward-adjoint algorithm (AFBA), see [1].
 Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
 Points `x0` and `y0` are the initial primal and dual iterates, respectively.
 If unspecified, functions `f`, `g`, and `h` default to the identically zero function,
@@ -208,7 +207,7 @@ Theory and Applications 158.2 (2013): 460-479.
 [3] Vũ. "A splitting algorithm for dual monotone inclusions involving
 cocoercive operators"" Advances in Computational Mathematics, 38(3), pp.667-681.
 """
-function AFBA(x0, y0;
+function afba(x0, y0;
     f=Zero(), g=Zero(), h=Zero(), l=IndZero(), L=I,
     theta=1.0, mu=1.0, lam=1.0, betaQ=0.0, betaR=0.0, gamma1=nothing, gamma2=nothing,
     maxit=10000, tol=1e-5, verbose=false, freq=100)
@@ -236,40 +235,38 @@ function AFBA(x0, y0;
 end
 
 """
-**Vũ-Condat primal-dual algorithm**
-
-    VuCondat(x0, y0; f, g, h, l, L, [...])
+    vucondat(x0, y0; f, g, h, l, L, [...])
 
 Solves convex optimization problems of the form
 
     minimize f(x) + g(x) + (h □ l)(L x).
 
-where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly convex.
+where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly convex,
+using the Vũ-Condat primal-dual algorithm.
 
 Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
 Points `x0` and `y0` are the initial primal and dual iterates, respectively.
 
-See documentation of `AFBA` for the list of keyword arguments.
+See documentation of `afba` for the list of keyword arguments.
 """
-function VuCondat(x0, y0; kwargs...)
-    return AFBA(x0, y0; kwargs..., theta=2.0)
+function vucondat(x0, y0; kwargs...)
+    return afba(x0, y0; kwargs..., theta=2.0)
 end
 
 """
-**Chambolle-Pock primal-dual algorithm**
-
-    ChambollePock(x0, y0; g, h, l, L, [...])
+    chambollepock(x0, y0; g, h, l, L, [...])
 
 Solves convex optimization problems of the form
 
     minimize g(x) + (h □ l)(L x).
 
-where `g` and `h` are possibly nonsmooth and `l` is strongly convex.
+where `g` and `h` are possibly nonsmooth and `l` is strongly convex,
+using the Chambolle-Pock primal-dual algorithm.
 Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
 Points `x0` and `y0` are the initial primal and dual iterates, respectively.
 
-See documentation of `AFBA` for the list of keyword arguments.
+See documentation of `afba` for the list of keyword arguments.
 """
-function ChambollePock(x0, y0; kwargs...)
-    return VuCondat(x0, y0; kwargs..., f=Zero())
+function chambollepock(x0, y0; kwargs...)
+    return vucondat(x0, y0; kwargs..., f=Zero())
 end

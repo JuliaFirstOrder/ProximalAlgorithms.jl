@@ -155,7 +155,7 @@ function Base.iterate(iter::ZeroFPR_iterable{R}, state::ZeroFPR_state{R, Tx, TAx
 end
 
 """
-    ZeroFPR(x0; f, A, g, [...])
+    zerofpr(x0; f, A, g, [...])
 
 Minimizes f(A*x) + g(x) with respect to x, starting from x0, using ZeroFPR.
 If unspecified, f and g default to the identically zero function, while A
@@ -174,7 +174,7 @@ Other optional keyword arguments:
 * `alpha::Real` (default: `0.95`), stepsize to inverse-Lipschitz-constant ratio; should be in (0, 1).
 * `beta::Real` (default: `0.5`), sufficient decrease parameter; should be in (0, 1).
 """
-function ZeroFPR(x0;
+function zerofpr(x0;
     f=Zero(), A=I, g=Zero(),
     L=nothing, gamma=nothing,
     adaptive=false, memory=5,

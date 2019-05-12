@@ -33,7 +33,7 @@
         ## Nonfast/Nonadaptive
 
         x0 = zeros(T, n)
-        x, it = ProximalAlgorithms.FBS(x0, f=f, A=A, g=g, L=opnorm(A)^2, tol=TOL)
+        x, it = ProximalAlgorithms.forwardbackward(x0, f=f, A=A, g=g, L=opnorm(A)^2, tol=TOL)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 150
@@ -41,7 +41,7 @@
         # Nonfast/Adaptive
 
         x0 = zeros(T, n)
-        x, it = ProximalAlgorithms.FBS(x0, f=f, A=A, g=g, adaptive=true, tol=TOL)
+        x, it = ProximalAlgorithms.forwardbackward(x0, f=f, A=A, g=g, adaptive=true, tol=TOL)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 300
@@ -49,7 +49,7 @@
         # Fast/Nonadaptive
 
         x0 = zeros(T, n)
-        x, it = ProximalAlgorithms.FBS(x0, f=f, A=A, g=g, L=opnorm(A)^2, tol=TOL, fast=true)
+        x, it = ProximalAlgorithms.forwardbackward(x0, f=f, A=A, g=g, L=opnorm(A)^2, tol=TOL, fast=true)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100
@@ -57,7 +57,7 @@
         # Fast/Adaptive
 
         x0 = zeros(T, n)
-        x, it = ProximalAlgorithms.FBS(x0, f=f, A=A, g=g, adaptive=true, tol=TOL, fast=true)
+        x, it = ProximalAlgorithms.forwardbackward(x0, f=f, A=A, g=g, adaptive=true, tol=TOL, fast=true)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 200
@@ -68,7 +68,7 @@
         # ZeroFPR/Nonadaptive
 
         x0 = zeros(T, n)
-        x, it = ProximalAlgorithms.ZeroFPR(x0, f=f, A=A, g=g, L=opnorm(A)^2, tol=TOL)
+        x, it = ProximalAlgorithms.zerofpr(x0, f=f, A=A, g=g, L=opnorm(A)^2, tol=TOL)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -76,7 +76,7 @@
         # ZeroFPR/Adaptive
 
         x0 = zeros(T, n)
-        x, it = ProximalAlgorithms.ZeroFPR(x0, f=f, A=A, g=g, adaptive=true, tol=TOL)
+        x, it = ProximalAlgorithms.zerofpr(x0, f=f, A=A, g=g, adaptive=true, tol=TOL)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -88,7 +88,7 @@
         # PANOC/Nonadaptive
 
         x0 = zeros(T, n)
-        x, it = ProximalAlgorithms.PANOC(x0, f=f, A=A, g=g, L=opnorm(A)^2, tol=TOL)
+        x, it = ProximalAlgorithms.panoc(x0, f=f, A=A, g=g, L=opnorm(A)^2, tol=TOL)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -96,7 +96,7 @@
         ## PANOC/Adaptive
 
         x0 = zeros(T, n)
-        x, it = ProximalAlgorithms.PANOC(x0, f=f, A=A, g=g, adaptive=true, tol=TOL)
+        x, it = ProximalAlgorithms.panoc(x0, f=f, A=A, g=g, adaptive=true, tol=TOL)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -108,7 +108,7 @@
         # Douglas-Rachford
 
         x0 = zeros(T, n)
-        y, z, it = ProximalAlgorithms.DRS(x0, f=f2, g=g, gamma=10.0/opnorm(A)^2, tol=TOL)
+        y, z, it = ProximalAlgorithms.douglasrachford(x0, f=f2, g=g, gamma=10.0/opnorm(A)^2, tol=TOL)
         @test eltype(y) == T
         @test eltype(z) == T
         @test norm(y - x_star, Inf) <= TOL

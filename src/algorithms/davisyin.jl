@@ -64,7 +64,7 @@ function Base.iterate(iter::DYS_iterable, state::DYS_state)
     return state, state
 end
 
-function DYS(x0;
+function davisyin(x0;
     f=Zero(), g=Zero(), h=Zero(), A=I,
     lambda=1.0, L=nothing, gamma=nothing,
     maxit=10_000, tol=1e-8,
