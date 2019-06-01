@@ -30,14 +30,15 @@
 
     x_star = T[-3.877278911564627e-01, 0, 0, 2.174149659863943e-02, 6.168435374149660e-01]
 
-    TOL = 1e-4
+    TOL = R(1e-4)
 
     @testset "FBS" begin
 
         ## Nonfast/Nonadaptive
 
         x0 = zeros(T, n)
-        x, it = ProximalAlgorithms.forwardbackward(x0, f=f, A=A, g=g, L=opnorm([A1; A2])^2, tol=TOL)
+        solver = ProximalAlgorithms.FBS{R}(tol=TOL)
+        x, it = solver(x0, f=f, A=A, g=g, L=opnorm([A1; A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 150
@@ -45,7 +46,8 @@
         # Nonfast/Adaptive
 
         x0 = zeros(T, n)
-        x, it = ProximalAlgorithms.forwardbackward(x0, f=f, A=A, g=g, adaptive=true, tol=TOL)
+        solver = ProximalAlgorithms.FBS{R}(tol=TOL, adaptive=true)
+        x, it = solver(x0, f=f, A=A, g=g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 300
@@ -53,7 +55,8 @@
         # Fast/Nonadaptive
 
         x0 = zeros(T, n)
-        x, it = ProximalAlgorithms.forwardbackward(x0, f=f, A=A, g=g, L=opnorm([A1; A2])^2, tol=TOL, fast=true)
+        solver = ProximalAlgorithms.FBS{R}(tol=TOL, fast=true)
+        x, it = solver(x0, f=f, A=A, g=g, L=opnorm([A1; A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100
@@ -61,7 +64,8 @@
         # Fast/Adaptive
 
         x0 = zeros(T, n)
-        x, it = ProximalAlgorithms.forwardbackward(x0, f=f, A=A, g=g, adaptive=true, tol=TOL, fast=true)
+        solver = ProximalAlgorithms.FBS{R}(tol=TOL, adaptive=true, fast=true)
+        x, it = solver(x0, f=f, A=A, g=g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 200
