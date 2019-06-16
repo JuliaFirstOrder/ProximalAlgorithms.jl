@@ -1,4 +1,3 @@
-################################################################################
 # Douglas-Rachford splitting iterable
 #
 # [1] Eckstein, Bertsekas "On the Douglas-Rachford Splitting Method and the
@@ -39,14 +38,16 @@ function Base.iterate(iter::DRS_iterable, state::DRS_state=DRS_state(iter))
     return state, state
 end
 
-struct DRS{R}
-    gamma::R
-    maxit
-    tol
-    verbose
-    freq
+# Solver
 
-    function DRS{R}(; gamma::R, maxit::Int=1000, tol::R=R(1e-8),
+struct DouglasRachford{R}
+    gamma::R
+    maxit::Int
+    tol::R
+    verbose::Bool
+    freq::Int
+
+    function DouglasRachford{R}(; gamma::R, maxit::Int=1000, tol::R=R(1e-8),
         verbose::Bool=false, freq::Int=100
     ) where R
         @assert gamma > 0
@@ -57,9 +58,10 @@ struct DRS{R}
     end
 end
 
-function (solver::DRS{R})(
+function (solver::DouglasRachford{R})(
     x0::AbstractArray{C}; f=Zero(), g=Zero()
 ) where {R, C <: Union{R, Complex{R}}}
+
     stop(state::DRS_state) = norm(state.res, Inf) <= solver.tol
     disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf))
 
@@ -71,7 +73,13 @@ function (solver::DRS{R})(
     num_iters, state_final = loop(iter)
 
     return state_final.y, state_final.z, num_iters
+
 end
+
+# Outer constructors
+
+DouglasRachford(::Type{R}; kwargs...) where R = DouglasRachford{R}(; kwargs...)
+DouglasRachford(; kwargs...) = DouglasRachford(Float64; kwargs...)
 
 # """
 #     douglasrachford(x0; f, g, gamma, [...])
@@ -94,23 +102,3 @@ end
 # Proximal Point Algorithm for Maximal Monotone Operators",
 # Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 # """
-# function douglasrachford(x0;
-#     f=Zero(), g=Zero(),
-#     gamma=1.0,
-#     maxit=1000, tol=1e-8,
-#     verbose=false, freq=100)
-#
-#     R = real(eltype(x0))
-#
-#     stop(state::DRS_state) = norm(state.res, Inf) <= R(tol)
-#     disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf))
-#
-#     iter = DRS_iterable(f, g, x0, R(gamma))
-#     iter = take(halt(iter, stop), maxit)
-#     iter = enumerate(iter)
-#     if verbose iter = tee(sample(iter, freq), disp) end
-#
-#     num_iters, state_final = loop(iter)
-#
-#     return state_final.y, state_final.z, num_iters
-# end

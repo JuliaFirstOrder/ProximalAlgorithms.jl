@@ -28,7 +28,7 @@
     # Nonfast/Adaptive
 
     x0 = zeros(T, n)
-    solver = ProximalAlgorithms.FBS{R}(tol=TOL, adaptive=true, fast=false)
+    solver = ProximalAlgorithms.ForwardBackward{R}(tol=TOL, adaptive=true, fast=false)
     x, it = solver(x0, f=f, A=A, g=g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
@@ -37,7 +37,7 @@
     # Fast/Adaptive
 
     x0 = zeros(T, n)
-    solver = ProximalAlgorithms.FBS{R}(tol=TOL, adaptive=true, fast=true)
+    solver = ProximalAlgorithms.ForwardBackward{R}(tol=TOL, adaptive=true, fast=true)
     x, it = solver(x0, f=f, A=A, g=g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
@@ -46,7 +46,8 @@
     # ZeroFPR/Adaptive
 
     x0 = zeros(T, n)
-    x, it = ProximalAlgorithms.zerofpr(x0, f=f, A=A, g=g, adaptive=true, tol=TOL)
+    solver = ProximalAlgorithms.ZeroFPR{R}(adaptive=true, tol=TOL)
+    x, it = solver(x0, f=f, A=A, g=g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 25
@@ -54,7 +55,8 @@
     # PANOC/Adaptive
 
     x0 = zeros(T, n)
-    x, it = ProximalAlgorithms.panoc(x0, f=f, A=A, g=g, adaptive=true, tol=TOL)
+    solver = ProximalAlgorithms.PANOC{R}(adaptive=true, tol=TOL)
+    x, it = solver(x0, f=f, A=A, g=g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 50

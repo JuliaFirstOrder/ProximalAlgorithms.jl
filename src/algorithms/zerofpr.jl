@@ -154,61 +154,93 @@ function Base.iterate(iter::ZeroFPR_iterable{R}, state::ZeroFPR_state{R, Tx, TAx
     return nothing
 end
 
-"""
-    zerofpr(x0; f, A, g, [...])
+# Solver
 
-Minimizes f(A*x) + g(x) with respect to x, starting from x0, using ZeroFPR.
-If unspecified, f and g default to the identically zero function, while A
-defaults to the identity.
+struct ZeroFPR{R <: Real}
+    alpha::R
+    beta::R
+    gamma::Maybe{R}
+    adaptive::Bool
+    memory::Int
+    maxit::Int
+    tol::R
+    verbose::Bool
+    freq::Int
 
-Other optional keyword arguments:
+    function ZeroFPR{R}(; alpha::R=R(0.95), beta::R=R(0.5),
+        gamma::Maybe{R}=nothing, adaptive::Bool=false, memory::Int=5,
+        maxit::Int=1000, tol::R=R(1e-8), verbose::Bool=false, freq::Int=10
+    ) where R
+        @assert 0 < alpha < 1
+        @assert 0 < beta < 1
+        @assert gamma === nothing || gamma > 0
+        @assert memory >= 0
+        @assert maxit > 0
+        @assert tol > 0
+        @assert freq > 0
+        new(alpha, beta, gamma, adaptive, memory, maxit, tol, verbose, freq)
+    end
+end
 
-* `L::Real` (default: `nothing`), the Lipschitz constant of the gradient of x ↦ f(Ax).
-* `gamma::Real` (default: `nothing`), the stepsize to use; defaults to `alpha/L` if not set (but `L` is).
-* `adaptive::Bool` (default: `false`), if true, forces the method stepsize to be adaptively adjusted even if `L` is provided (this behaviour is always enforced if `L` is not provided).
-* `memory::Integer` (default: `5`), memory parameter for L-BFGS.
-* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
-* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
-* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
-* `freq::Integer` (default: `10`), frequency of verbosity.
-* `alpha::Real` (default: `0.95`), stepsize to inverse-Lipschitz-constant ratio; should be in (0, 1).
-* `beta::Real` (default: `0.5`), sufficient decrease parameter; should be in (0, 1).
+function (solver::ZeroFPR{R})(
+    x0::AbstractArray{C}; f=Zero(), A=I, g=Zero(), L::Maybe{R}=nothing
+) where {R, C <: Union{R, Complex{R}}}
 
-References:
-
-[1] Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two
-nonconvex functions: Further properties and nonmonotone line-search algorithms",
-SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
-"""
-function zerofpr(x0;
-    f=Zero(), A=I, g=Zero(),
-    L=nothing, gamma=nothing,
-    adaptive=false, memory=5,
-    maxit=1000, tol=1e-8,
-    verbose=false, freq=10,
-    alpha=0.95, beta=0.5)
-
-    R = real(eltype(x0))
-
-    stop(state::ZeroFPR_state) = norm(state.res, Inf)/state.gamma <= R(tol)
+    stop(state::ZeroFPR_state) = norm(state.res, Inf)/state.gamma <= solver.tol
     disp((it, state)) = @printf(
         "%5d | %.3e | %.3e | %.3e\n",
         it, state.gamma, norm(state.res, Inf)/state.gamma,
         (state.tau === nothing ? 0.0 : state.tau)
     )
 
-    if gamma === nothing && L !== nothing
-        gamma = R(alpha)/R(L)
-    elseif gamma !== nothing
-        gamma = R(gamma)
+    if solver.gamma === nothing && L !== nothing
+        gamma = solver.alpha/L
+    elseif solver.gamma !== nothing
+        gamma = solver.gamma
     end
 
-    iter = ZeroFPR_iterable(f, A, g, x0, R(alpha), R(beta), gamma, adaptive, memory)
-    iter = take(halt(iter, stop), maxit)
+    iter = ZeroFPR_iterable(
+        f, A, g, x0,
+        solver.alpha, solver.beta, solver.gamma, solver.adaptive, solver.memory
+    )
+    iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
-    if verbose iter = tee(sample(iter, freq), disp) end
+    if solver.verbose iter = tee(sample(iter, solver.freq), disp) end
 
     num_iters, state_final = loop(iter)
 
     return state_final.xbar, num_iters
+
 end
+
+# Outer constructors
+
+ZeroFPR(::Type{R}; kwargs...) where R = ZeroFPR{R}(; kwargs...)
+ZeroFPR(; kwargs...) = ZeroFPR(Float64; kwargs...)
+
+# """
+#     zerofpr(x0; f, A, g, [...])
+#
+# Minimizes f(A*x) + g(x) with respect to x, starting from x0, using ZeroFPR.
+# If unspecified, f and g default to the identically zero function, while A
+# defaults to the identity.
+#
+# Other optional keyword arguments:
+#
+# * `L::Real` (default: `nothing`), the Lipschitz constant of the gradient of x ↦ f(Ax).
+# * `gamma::Real` (default: `nothing`), the stepsize to use; defaults to `alpha/L` if not set (but `L` is).
+# * `adaptive::Bool` (default: `false`), if true, forces the method stepsize to be adaptively adjusted even if `L` is provided (this behaviour is always enforced if `L` is not provided).
+# * `memory::Integer` (default: `5`), memory parameter for L-BFGS.
+# * `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
+# * `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
+# * `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
+# * `freq::Integer` (default: `10`), frequency of verbosity.
+# * `alpha::Real` (default: `0.95`), stepsize to inverse-Lipschitz-constant ratio; should be in (0, 1).
+# * `beta::Real` (default: `0.5`), sufficient decrease parameter; should be in (0, 1).
+#
+# References:
+#
+# [1] Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two
+# nonconvex functions: Further properties and nonmonotone line-search algorithms",
+# SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
+# """
