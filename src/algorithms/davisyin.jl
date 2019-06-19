@@ -1,8 +1,8 @@
 # Davis-Yin splitting iterable
 #
-# See:
-# [1] Davis, Yin "A Three-Operator Splitting Scheme and its Optimization Applications",
-# Set-Valued and Variational Analysis, vol. 25, no. 4, pp 829–858 (2017).
+# Davis, Yin "A Three-Operator Splitting Scheme and its Optimization
+# Applications", Set-Valued and Variational Analysis, vol. 25, no. 4,
+# pp 829–858 (2017).
 #
 
 using Base.Iterators
@@ -115,35 +115,38 @@ end
 
 # Outer constructors
 
+"""
+    DavisYin([gamma, lambda, maxit, tol, verbose, freq])
+
+Instantiate the Davis-Yin splitting algorithm (see [1]) for solving
+convex optimization problems of the form
+
+    minimize f(x) + g(x) + h(A x),
+
+where `h` is smooth and `A` is a linear mapping (for example, a matrix).
+If `solver = DavisYin(args...)`, then the above problem is solved with
+
+    solver(x0; [f, g, h, A])
+
+Optional keyword arguments:
+
+* `gamma::Real` (default: `nothing`), stepsize parameter.
+* `labmda::Real` (default: `1.0`), relaxation parameter, see [1].
+* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
+* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
+* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
+* `freq::Integer` (default: `100`), frequency of verbosity.
+
+If `gamma` is not specified at construction time, the following keyword
+argument must be specified at solve time:
+
+* `L::Real`, Lipschitz constant of the gradient of `h(A x)`.
+
+References:
+
+[1] Davis, Yin. "A Three-Operator Splitting Scheme and its Optimization
+Applications", Set-Valued and Variational Analysis, vol. 25, no. 4,
+pp. 829–858 (2017).
+"""
 DavisYin(::Type{R}; kwargs...) where R = DavisYin{R}(; kwargs...)
 DavisYin(; kwargs...) = DavisYin(Float64; kwargs...)
-
-# """
-#     davisyin(x0; f, g, h, A, [...])
-#
-# Solves convex optimization problems of the form
-#
-#     minimize f(x) + g(x) + h(A x),
-#
-# where `h` is smooth and `A` is a linear mapping, using the Davis-Yin splitting
-# algorithm, see [1].
-#
-# Either of the following arguments must be specified:
-#
-# * `L::Real`, Lipschitz constant of the gradient of `h(A x)`.
-# * `gamma:Real`, stepsize parameter.
-#
-# Other optional keyword arguments:
-#
-# * `labmda::Real` (default: `1.0`), relaxation parameter, see [1].
-# * `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
-# * `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
-# * `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
-# * `freq::Integer` (default: `100`), frequency of verbosity.
-#
-# References:
-#
-# [1] Davis, Yin. "A Three-Operator Splitting Scheme and its Optimization
-# Applications", Set-Valued and Variational Analysis, vol. 25, no. 4,
-# pp. 829–858 (2017).
-# """

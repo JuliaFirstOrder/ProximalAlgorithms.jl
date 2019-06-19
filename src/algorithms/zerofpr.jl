@@ -215,32 +215,41 @@ end
 
 # Outer constructors
 
+"""
+    ZeroFPR([gamma, adaptive, memory, maxit, tol, verbose, freq, alpha, beta])
+
+Instantiate the ZeroFPR algorithm (see [1]) for solving optimization problems
+of the form
+
+    minimize f(Ax) + g(x),
+
+where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+If `solver = ZeroFPR(args...)`, then the above problem is solved with
+
+    solver(x0, [f, A, g, L])
+
+Optional keyword arguments:
+
+* `gamma::Real` (default: `nothing`), the stepsize to use; defaults to `alpha/L` if not set (but `L` is).
+* `adaptive::Bool` (default: `false`), if true, forces the method stepsize to be adaptively adjusted even if `L` is provided (this behaviour is always enforced if `L` is not provided).
+* `memory::Integer` (default: `5`), memory parameter for L-BFGS.
+* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
+* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
+* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
+* `freq::Integer` (default: `10`), frequency of verbosity.
+* `alpha::Real` (default: `0.95`), stepsize to inverse-Lipschitz-constant ratio; should be in (0, 1).
+* `beta::Real` (default: `0.5`), sufficient decrease parameter; should be in (0, 1).
+
+If `gamma` is not specified at construction time, the following keyword
+argument can be used to set the stepsize parameter:
+
+* `L::Real` (default: `nothing`), the Lipschitz constant of the gradient of x ↦ f(Ax).
+
+References:
+
+[1] Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two
+nonconvex functions: Further properties and nonmonotone line-search algorithms",
+SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
+"""
 ZeroFPR(::Type{R}; kwargs...) where R = ZeroFPR{R}(; kwargs...)
 ZeroFPR(; kwargs...) = ZeroFPR(Float64; kwargs...)
-
-# """
-#     zerofpr(x0; f, A, g, [...])
-#
-# Minimizes f(A*x) + g(x) with respect to x, starting from x0, using ZeroFPR.
-# If unspecified, f and g default to the identically zero function, while A
-# defaults to the identity.
-#
-# Other optional keyword arguments:
-#
-# * `L::Real` (default: `nothing`), the Lipschitz constant of the gradient of x ↦ f(Ax).
-# * `gamma::Real` (default: `nothing`), the stepsize to use; defaults to `alpha/L` if not set (but `L` is).
-# * `adaptive::Bool` (default: `false`), if true, forces the method stepsize to be adaptively adjusted even if `L` is provided (this behaviour is always enforced if `L` is not provided).
-# * `memory::Integer` (default: `5`), memory parameter for L-BFGS.
-# * `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
-# * `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
-# * `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
-# * `freq::Integer` (default: `10`), frequency of verbosity.
-# * `alpha::Real` (default: `0.95`), stepsize to inverse-Lipschitz-constant ratio; should be in (0, 1).
-# * `beta::Real` (default: `0.5`), sufficient decrease parameter; should be in (0, 1).
-#
-# References:
-#
-# [1] Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two
-# nonconvex functions: Further properties and nonmonotone line-search algorithms",
-# SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
-# """
