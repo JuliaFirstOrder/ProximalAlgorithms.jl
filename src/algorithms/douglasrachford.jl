@@ -1,9 +1,6 @@
-# Douglas-Rachford splitting iterable
-#
-# Eckstein, Bertsekas "On the Douglas-Rachford Splitting Method and the
-# Proximal Point Algorithm for Maximal Monotone Operators*",
+# Eckstein, Bertsekas, "On the Douglas-Rachford Splitting Method and the
+# Proximal Point Algorithm for Maximal Monotone Operators",
 # Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
-#
 
 using Base.Iterators
 using ProximalAlgorithms: LBFGS

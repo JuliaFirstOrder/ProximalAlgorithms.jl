@@ -1,3 +1,7 @@
+# Stella, Themelis, Sopasakis, Patrinos, "A simple and efficient algorithm
+# for nonlinear model predictive control", 56th IEEE Conference on Decision
+# and Control (2017).
+
 using Base.Iterators
 using ProximalAlgorithms: LBFGS
 using ProximalAlgorithms.IterationTools

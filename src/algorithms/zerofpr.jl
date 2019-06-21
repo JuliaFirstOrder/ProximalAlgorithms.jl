@@ -1,3 +1,8 @@
+# Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two
+# nonconvex functions: Further properties and nonmonotone line-search
+# algorithms", SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303
+# (2018).
+
 using Base.Iterators
 using ProximalAlgorithms: LBFGS
 using ProximalAlgorithms.IterationTools

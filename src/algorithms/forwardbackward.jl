@@ -1,3 +1,10 @@
+# Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
+# Optimization" (2008).
+# 
+# Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
+# for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2,
+# no. 1, pp. 183-202 (2009).
+
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
 using ProximalOperators: Zero

@@ -1,21 +1,19 @@
-# Primal-dual algorithms based on Asymmetric Forward-Backward-Adjoint
-#
-# Latafat, Patrinos. "Asymmetric forward–backward–adjoint splitting for
-# solving monotone inclusions involving three operators"  Computational
-# Optimization and Applications, pages 1–37, 2017.
+# Latafat, Patrinos, "Asymmetric forward–backward–adjoint splitting for
+# solving monotone inclusions involving three operators", Computational
+# Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
 #
 # Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems
 # with Applications to Imaging", Journal of Mathematical Imaging and Vision,
 # vol. 40, no. 1, pp. 120-145 (2011).
 #
-# Condat. "A primal–dual splitting method for convex optimization involving
-# Lipschitzian, proximable and linear composite terms" Journal of Optimization
-# Theory and Applications 158.2 (2013): 460-479.
-#
-# Vũ. "A splitting algorithm for dual monotone inclusions involving
-# cocoercive operators"" Advances in Computational Mathematics, 38(3),
-# pp.667-681.
-#
+# Condat, "A primal–dual splitting method for convex optimization
+# involving Lipschitzian, proximable and linear composite terms",
+# Journal of Optimization Theory and Applications, vol. 158, no. 2,
+# pp 460-479 (2013).
+# 
+# Vũ, "A splitting algorithm for dual monotone inclusions involving
+# cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
+# pp. 667-681 (2013).
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools

@@ -1,9 +1,6 @@
-# Davis-Yin splitting iterable
-#
-# Davis, Yin "A Three-Operator Splitting Scheme and its Optimization
+# Davis, Yin. "A Three-Operator Splitting Scheme and its Optimization
 # Applications", Set-Valued and Variational Analysis, vol. 25, no. 4,
-# pp 829–858 (2017).
-#
+# pp. 829–858 (2017).
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
