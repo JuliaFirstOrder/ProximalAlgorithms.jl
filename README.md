@@ -19,14 +19,13 @@ julia> Pkg.add("ProximalAlgorithms")
 
 Algorithm                             | Function      | Reference
 --------------------------------------|---------------|-----------
-Douglas-Rachford splitting algorithm  | [`douglasrachford`](src/algorithms/douglasrachford.jl) | [[1]][eckstein_1989]
-Forward-backward splitting (i.e. proximal gradient) algorithm | [`forwardbackward`](src/algorithms/forwardbackward.jl) | [[2]][tseng_2008], [[3]][beck_2009]
-Chambolle-Pock primal dual algorithm  | [`chambollepock`](src/algorithms/primaldual.jl) | [[4]][chambolle_2011]
-Vũ-Condat primal-dual algorithm       | [`vucondat`](src/algorithms/primaldual.jl) | [[6]][vu_2013], [[7]][condat_2013]
-Davis-Yin splitting algorithm         | [`davisyin`](src/algorithms/davisyin.jl) | [[9]][davis_2017]
-Asymmetric forward-backward-adjoint algorithm | [`afba`](src/algorithms/primaldual.jl) | [[10]][latafat_2017]
-PANOC (L-BFGS)                        | [`panoc`](src/algorithms/panoc.jl) | [[11]][stella_2017]
-ZeroFPR (L-BFGS)                      | [`zerofpr`](src/algorithms/zerofpr.jl) | [[12]][themelis_2018]
+Douglas-Rachford splitting algorithm  | [`DouglasRachford`](src/algorithms/douglasrachford.jl) | [[1]][eckstein_1989]
+Forward-backward splitting (i.e. proximal gradient) algorithm | [`ForwardBackward`](src/algorithms/forwardbackward.jl) | [[2]][tseng_2008], [[3]][beck_2009]
+Vũ-Condat primal-dual algorithm       | [`VuCondat`](src/algorithms/primaldual.jl) | [[4]][chambolle_2011], [[6]][vu_2013], [[7]][condat_2013]
+Davis-Yin splitting algorithm         | [`DavisYin`](src/algorithms/davisyin.jl) | [[9]][davis_2017]
+Asymmetric forward-backward-adjoint algorithm | [`AFBA`](src/algorithms/primaldual.jl) | [[10]][latafat_2017]
+PANOC (L-BFGS)                        | [`PANOC`](src/algorithms/panoc.jl) | [[11]][stella_2017]
+ZeroFPR (L-BFGS)                      | [`ZeroFPR`](src/algorithms/zerofpr.jl) | [[12]][themelis_2018]
 
 ### Contributing
 
