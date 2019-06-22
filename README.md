@@ -9,11 +9,16 @@ This package can be used in combination with [ProximalOperators.jl](https://gith
 
 [StructuredOptimization.jl](https://github.com/kul-forbes/StructuredOptimization.jl) provides a higher-level interface to formulate and solve problems using (some of) the algorithms here included.
 
-### Installation
+### Quick start
+
+To install the package, simply issue the following command in the Julia REPL:
 
 ```julia
-julia> Pkg.add("ProximalAlgorithms")
+] add ProximalAlgorithms
 ```
+
+Check out [these test scripts](test/problems) for examples on how to apply
+the provided algorithms to problems.
 
 ### Implemented Algorithms
 
