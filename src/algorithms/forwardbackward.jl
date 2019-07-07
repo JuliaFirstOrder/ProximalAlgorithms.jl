@@ -1,6 +1,6 @@
 # Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
 # Optimization" (2008).
-# 
+#
 # Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
 # for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2,
 # no. 1, pp. 183-202 (2009).
@@ -130,7 +130,7 @@ struct ForwardBackward{R <: Real}
     freq::Int
 
     function ForwardBackward{R}(; gamma::Maybe{R}=nothing, adaptive::Bool=false,
-        fast::Bool=false, maxit::Int=1000, tol::R=R(1e-8), verbose::Bool=false,
+        fast::Bool=false, maxit::Int=10000, tol::R=R(1e-8), verbose::Bool=false,
         freq::Int=100
     ) where R
         @assert gamma === nothing || gamma > 0
@@ -190,7 +190,7 @@ Optional keyword arguments:
 * `gamma::Real` (default: `nothing`), the stepsize to use; defaults to `1/L` if not set (but `L` is).
 * `adaptive::Bool` (default: `false`), if true, forces the method stepsize to be adaptively adjusted.
 * `fast::Bool` (default: `false`), if true, uses Nesterov acceleration.
-* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
+* `maxit::Integer` (default: `10000`), maximum number of iterations to perform.
 * `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
 * `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
 * `freq::Integer` (default: `10`), frequency of verbosity.
