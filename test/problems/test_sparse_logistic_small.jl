@@ -23,12 +23,13 @@
 
     x_star = T[0, 0, 2.114635341704963e-01, 0, 2.845881348733116e+00]
 
-    TOL = 1e-6
+    TOL = R(1e-6)
 
     # Nonfast/Adaptive
 
     x0 = zeros(T, n)
-    x, it = ProximalAlgorithms.forwardbackward(x0, f=f, A=A, g=g, fast=false, adaptive=true, tol=TOL)
+    solver = ProximalAlgorithms.ForwardBackward{R}(tol=TOL, adaptive=true, fast=false)
+    x, it = solver(x0, f=f, A=A, g=g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 1100
@@ -36,7 +37,8 @@
     # Fast/Adaptive
 
     x0 = zeros(T, n)
-    x, it = ProximalAlgorithms.forwardbackward(x0, f=f, A=A, g=g, fast=true, adaptive=true, tol=TOL)
+    solver = ProximalAlgorithms.ForwardBackward{R}(tol=TOL, adaptive=true, fast=true)
+    x, it = solver(x0, f=f, A=A, g=g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 500
@@ -44,7 +46,8 @@
     # ZeroFPR/Adaptive
 
     x0 = zeros(T, n)
-    x, it = ProximalAlgorithms.zerofpr(x0, f=f, A=A, g=g, adaptive=true, tol=TOL)
+    solver = ProximalAlgorithms.ZeroFPR{R}(adaptive=true, tol=TOL)
+    x, it = solver(x0, f=f, A=A, g=g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 25
@@ -52,7 +55,8 @@
     # PANOC/Adaptive
 
     x0 = zeros(T, n)
-    x, it = ProximalAlgorithms.panoc(x0, f=f, A=A, g=g, adaptive=true, tol=TOL)
+    solver = ProximalAlgorithms.PANOC{R}(adaptive=true, tol=TOL)
+    x, it = solver(x0, f=f, A=A, g=g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 50

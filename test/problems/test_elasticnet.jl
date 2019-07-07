@@ -24,13 +24,15 @@
     L = opnorm(A)^2
 
     x0 = zeros(T, n)
-    x_panoc, it = ProximalAlgorithms.panoc(x0, f=loss, A=A, g=reg, tol=eps(R))
+    solver = ProximalAlgorithms.PANOC{R}(tol=eps(R))
+    x_panoc, it = solver(x0, f=loss, A=A, g=reg)
 
-    @testset "DYS" begin
+    @testset "DavisYin" begin
 
         x0 = zeros(T, n)
-        xf_dys, xg_dys, it_dys = ProximalAlgorithms.davisyin(
-            x0, f=reg1, g=reg2, h=loss, A=A, L=L, tol=1e-6
+        solver = ProximalAlgorithms.DavisYin{R}(tol=R(1e-6))
+        xf_dys, xg_dys, it_dys = solver(
+            x0, f=reg1, g=reg2, h=loss, A=A, L=L
         )
         @test eltype(xf_dys) == T
         @test eltype(xg_dys) == T
@@ -39,8 +41,9 @@
         @test it_dys <= 1900
 
         x0 = randn(T, n)
-        xf_dys, xg_dys, it_dys = ProximalAlgorithms.davisyin(
-            x0, f=reg1, g=reg2, h=loss, A=A, L=L, tol=1e-6
+        solver = ProximalAlgorithms.DavisYin{R}(tol=R(1e-6))
+        xf_dys, xg_dys, it_dys = solver(
+            x0, f=reg1, g=reg2, h=loss, A=A, L=L
         )
         @test eltype(xf_dys) == T
         @test eltype(xg_dys) == T
@@ -63,8 +66,9 @@
         x0 = randn(T, n)
         y0 = randn(T, m)
 
-        x_afba, y_afba, it_afba = ProximalAlgorithms.afba(
-            x0, y0, f=reg2, g=reg1, h=loss, L=A, betaQ=R(1), theta=theta, mu=mu, tol=1e-6
+        solver = ProximalAlgorithms.AFBA{R}(theta=theta, mu=mu, tol=R(1e-6))
+        x_afba, y_afba, it_afba = solver(
+            x0, y0, f=reg2, g=reg1, h=loss, L=A, betaQ=R(1),
         )
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T

@@ -1,3 +1,10 @@
+# Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
+# Optimization" (2008).
+#
+# Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
+# for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2,
+# no. 1, pp. 183-202 (2009).
+
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
 using ProximalOperators: Zero
@@ -111,24 +118,87 @@ function Base.iterate(iter::FBS_iterable{R}, state::FBS_state{R, Tx, TAx}) where
     return state, state
 end
 
+# Solver
+
+struct ForwardBackward{R <: Real}
+    gamma::Maybe{R}
+    adaptive::Bool
+    fast::Bool
+    maxit::Int
+    tol::R
+    verbose::Bool
+    freq::Int
+
+    function ForwardBackward{R}(; gamma::Maybe{R}=nothing, adaptive::Bool=false,
+        fast::Bool=false, maxit::Int=10000, tol::R=R(1e-8), verbose::Bool=false,
+        freq::Int=100
+    ) where R
+        @assert gamma === nothing || gamma > 0
+        @assert maxit > 0
+        @assert tol > 0
+        @assert freq > 0
+        new(gamma, adaptive, fast, maxit, tol, verbose, freq)
+    end
+end
+
+function (solver::ForwardBackward{R})(
+    x0::AbstractArray{C}; f=Zero(), A=I, g=Zero(), L::Maybe{R}=nothing
+) where {R, C <: Union{R, Complex{R}}}
+
+    stop(state::FBS_state) = norm(state.res, Inf)/state.gamma <= solver.tol
+    disp((it, state)) = @printf(
+        "%5d | %.3e | %.3e\n",
+        it, state.gamma, norm(state.res, Inf)/state.gamma
+    )
+
+    if solver.gamma === nothing && L !== nothing
+        gamma = R(1)/L
+    elseif solver.gamma !== nothing
+        gamma = solver.gamma
+    else
+        gamma = nothing
+    end
+
+    iter = FBS_iterable(f, A, g, x0, gamma, solver.adaptive, solver.fast)
+    iter = take(halt(iter, stop), solver.maxit)
+    iter = enumerate(iter)
+    if solver.verbose iter = tee(sample(iter, solver.freq), disp) end
+
+    num_iters, state_final = loop(iter)
+
+    return state_final.z, num_iters
+
+end
+
+# Outer constructors
+
 """
-    forwardbackward(x0; f, A, g, [...])
+    ForwardBackward([gamma, adaptive, fast, maxit, tol, verbose, freq])
 
-Minimizes f(A*x) + g(x) with respect to x, starting from x0, using the
-forward-backward splitting algorithm (also known as proximal gradient method).
-If unspecified, f and g default to the identically zero function, while A
-defaults to the identity.
+Instantiate the Forward-Backward splitting algorithm (see [1, 2]) for solving
+optimization problems of the form
 
-Other optional keyword arguments:
+    minimize f(Ax) + g(x),
 
-* `L::Real` (default: `nothing`), the Lipschitz constant of the gradient of x ↦ f(Ax).
+where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+If `solver = ForwardBackward(args...)`, then the above problem is solved with
+
+    solver(x0, [f, A, g, L])
+
+Optional keyword arguments:
+
 * `gamma::Real` (default: `nothing`), the stepsize to use; defaults to `1/L` if not set (but `L` is).
 * `adaptive::Bool` (default: `false`), if true, forces the method stepsize to be adaptively adjusted.
 * `fast::Bool` (default: `false`), if true, uses Nesterov acceleration.
-* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
+* `maxit::Integer` (default: `10000`), maximum number of iterations to perform.
 * `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
 * `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
 * `freq::Integer` (default: `10`), frequency of verbosity.
+
+If `gamma` is not specified at construction time, the following keyword
+argument can be used to set the stepsize parameter:
+
+* `L::Real` (default: `nothing`), the Lipschitz constant of the gradient of x ↦ f(Ax).
 
 References:
 
@@ -139,33 +209,5 @@ Optimization" (2008).
 for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
 pp. 183-202 (2009).
 """
-function forwardbackward(x0;
-    f=Zero(), A=I, g=Zero(),
-    L=nothing, gamma=nothing,
-    adaptive=false, fast=false,
-    maxit=10_000, tol=1e-8,
-    verbose=false, freq=100)
-
-    R = real(eltype(x0))
-
-    stop(state::FBS_state) = norm(state.res, Inf)/state.gamma <= R(tol)
-    disp((it, state)) = @printf(
-        "%5d | %.3e | %.3e\n",
-        it, state.gamma, norm(state.res, Inf)/state.gamma
-    )
-
-    if gamma === nothing && L !== nothing
-        gamma = R(1)/R(L)
-    elseif gamma !== nothing
-        gamma = R(gamma)
-    end
-
-    iter = FBS_iterable(f, A, g, x0, gamma, adaptive, fast)
-    iter = take(halt(iter, stop), maxit)
-    iter = enumerate(iter)
-    if verbose iter = tee(sample(iter, freq), disp) end
-
-    num_iters, state_final = loop(iter)
-
-    return state_final.z, num_iters
-end
+ForwardBackward(::Type{R}; kwargs...) where R = ForwardBackward{R}(; kwargs...)
+ForwardBackward(; kwargs...) = ForwardBackward(Float64; kwargs...)

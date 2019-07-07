@@ -54,7 +54,7 @@
     b = A*x_star
     c = A'*y_star + s_star
 
-    tol = 1e2*eps(T)
+    tol = 100*eps(T)
     maxit = 10_000
 
     @testset "AFBA" begin
@@ -66,9 +66,8 @@
         x0 = zeros(T, n)
         y0 = zeros(T, m)
 
-        x, y, it = ProximalAlgorithms.afba(
-            x0, y0, f=f, g=g, h=h, L=A, tol=tol, maxit=maxit
-        )
+        solver = ProximalAlgorithms.AFBA{T}(tol=tol, maxit=maxit)
+        x, y, it = solver(x0, y0, f=f, g=g, h=h, L=A)
 
         @test eltype(x) == T
         @test eltype(y) == T
@@ -88,9 +87,8 @@
         x0 = zeros(T, n)
         y0 = zeros(T, m)
 
-        x, y, it = ProximalAlgorithms.vucondat(
-            x0, y0, f=f, g=g, h=h, L=A, tol=tol, maxit=maxit
-        )
+        solver = ProximalAlgorithms.VuCondat(T, tol=tol, maxit=maxit)
+        x, y, it = solver(x0, y0, f=f, g=g, h=h, L=A)
 
         @test eltype(x) == T
         @test eltype(y) == T
@@ -111,9 +109,8 @@
 
         x0 = zeros(T, n)
 
-        xf, xg, it = ProximalAlgorithms.davisyin(
-            x0, f=f, g=g, h=h, gamma=T(1), tol=tol, maxit=maxit
-        )
+        solver = ProximalAlgorithms.DavisYin{T}(gamma=T(1), tol=tol, maxit=maxit)
+        xf, xg, it = solver(x0, f=f, g=g, h=h)
 
         @test eltype(xf) == T
         @test eltype(xg) == T

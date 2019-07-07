@@ -1,17 +1,19 @@
-################################################################################
-# Primal-dual algorithms based on Asymmetric Forward-Backward-Adjoint
+# Latafat, Patrinos, "Asymmetric forward–backward–adjoint splitting for
+# solving monotone inclusions involving three operators", Computational
+# Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
 #
-# [1] Latafat, Patrinos. "Asymmetric forward–backward–adjoint splitting for
-# solving monotone inclusions involving three operators"  Computational
-# Optimization and Applications, pages 1–37, 2017.
+# Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems
+# with Applications to Imaging", Journal of Mathematical Imaging and Vision,
+# vol. 40, no. 1, pp. 120-145 (2011).
 #
-# [2] Condat. "A primal–dual splitting method for convex optimization involving
-# Lipschitzian, proximable and linear composite terms" Journal of Optimization
-# Theory and Applications 158.2 (2013): 460-479.
-#
-# [3] Vũ. "A splitting algorithm for dual monotone inclusions involving
-# cocoercive operators"" Advances in Computational Mathematics, 38(3), pp.667-681.
-#
+# Condat, "A primal–dual splitting method for convex optimization
+# involving Lipschitzian, proximable and linear composite terms",
+# Journal of Optimization Theory and Applications, vol. 158, no. 2,
+# pp 460-479 (2013).
+# 
+# Vũ, "A splitting algorithm for dual monotone inclusions involving
+# cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
+# pp. 667-681 (2013).
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
@@ -29,7 +31,7 @@ struct AFBA_iterable{R, Tx, Ty, Tf, Tg, Th, Tl, TL}
     y0::Ty
     theta::R
     mu::R
-    lam::R
+    lambda::R
     gamma1::R
     gamma2::R
 end
@@ -80,12 +82,12 @@ function Base.iterate(iter::AFBA_iterable, state::AFBA_state=AFBA_state(iter))
     # perform x-update step
     state.temp_y .= (iter.mu * (2-iter.theta) * iter.gamma1) .* state.FPR_y
     mul!(state.temp_x, iter.L', state.temp_y)
-    state.x .+= iter.lam .* (state.FPR_x .- state.temp_x)
+    state.x .+= iter.lambda .* (state.FPR_x .- state.temp_x)
 
     # perform y-update step
     state.temp_x .= ((1-iter.mu) * (2-iter.theta) * iter.gamma2) .* state.FPR_x
     mul!(state.temp_y, iter.L, state.temp_x)
-    state.y .+= iter.lam .* (state.FPR_y .+ state.temp_y)
+    state.y .+= iter.lambda .* (state.FPR_y .+ state.temp_y)
 
     return state, state
 end
@@ -152,21 +154,85 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, betaQ::R, betaR::R) where
     return gamma1, gamma2
 end
 
-"""
-    afba(x0, y0; f, g, h, l, L, [...])
+# Solver
 
-Solves convex optimization problems of the form
+struct AFBA{R}
+    gamma1::Maybe{R}
+    gamma2::Maybe{R}
+    theta::R
+    mu::R
+    lambda::R
+    maxit::Int
+    tol::R
+    verbose::Bool
+    freq::Int
+
+    function AFBA{R}(; gamma1::Maybe{R}=nothing, gamma2::Maybe{R}=nothing,
+        theta::R=R(1), mu::R=R(1), lambda::R=R(1), maxit::Int=10000,
+        tol::R=R(1e-5), verbose::Bool=false, freq::Int=100
+    ) where R
+        @assert gamma1 === nothing || gamma > 0
+        @assert gamma2 === nothing || gamma > 0
+        @assert theta >= 0
+        @assert 0 <= mu <= 1
+        @assert lambda > 0
+        @assert maxit > 0
+        @assert tol > 0
+        @assert freq > 0
+        new(gamma1, gamma2, theta, mu, lambda, maxit, tol, verbose, freq)
+    end
+end
+
+function (solver::AFBA{R})(x0::AbstractArray{C}, y0::AbstractArray{C};
+    f=Zero(), g=Zero(), h=Zero(), l=IndZero(), L=I, betaQ::R=R(0), betaR::R=R(0)
+) where {R, C <: Union{R, Complex{R}}}
+
+    stop(state::AFBA_state) = norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= solver.tol
+    disp((it, state)) = @printf(
+        "%6d | %7.4e\n",
+        it, norm(state.FPR_x, Inf)+norm(state.FPR_y, Inf)
+    )
+
+    if solver.gamma1 === nothing || solver.gamma2 === nothing
+        gamma1, gamma2 = AFBA_default_stepsizes(
+            L, h, solver.theta, solver.mu, betaQ, betaR
+        )
+    else
+        gamma1, gamma2 = solver.gamma1, solver.gamma2
+    end
+
+    iter = AFBA_iterable(f, g, h, l, L, x0, y0,
+        solver.theta, solver.mu, solver.lambda, gamma1, gamma2
+    )
+    iter = take(halt(iter, stop), solver.maxit)
+    iter = enumerate(iter)
+    if solver.verbose iter = tee(sample(iter, solver.freq), disp) end
+
+    num_iters, state_final = loop(iter)
+
+    return state_final.x, state_final.y, num_iters
+end
+
+# Outer constructors
+
+"""
+    AFBA([gamma1, gamma2, theta, mu, lambda, maxit, tol, verbose, freq])
+
+Instantiate the asymmetric forward-backward-adjoing algorithm (AFBA, see [1])
+for solving convex optimization problems of the form
 
     minimize f(x) + g(x) + (h □ l)(L x),
 
-where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly convex,
-using the asymmetric forward-backward-adjoint algorithm (AFBA), see [1].
-Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
-Points `x0` and `y0` are the initial primal and dual iterates, respectively.
-If unspecified, functions `f`, `g`, and `h` default to the identically zero function,
-`l` defaults to the indicator of the set `{0}`, and `L` defaults to the identity.
+where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly
+convex. Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
+If `solver = AFBA(args...)`, then the above problem is solved with
 
-Important keyword arguments, in case `f` and `l` are set, are:
+    solver(x0, y0; [f, g, h, l, L, betaQ, betaR])
+
+Points `x0` and `y0` are the initial primal and dual iterates, respectively.
+If unspecified, functions `f`, `g`, and `h` default to the identically zero
+function, `l` defaults to the indicator of the set `{0}`, and `L` defaults to
+the identity. Important keyword arguments, in case `f` and `l` are set, are:
 
 * `betaQ`: Lipschitz constant of gradient of `f` (default: zero)
 * `betaR`: Lipschitz constant of gradient of the conjugate of `l` (default: zero)
@@ -174,12 +240,12 @@ Important keyword arguments, in case `f` and `l` are set, are:
 These are used to determine the algorithm default stepsizes, `gamma1` and `gamma2`,
 in case they are not directly specified.
 
-Other optional keyword arguments are:
+Optional keyword arguments are:
 
 * `gamma1`: stepsize corresponding to the primal updates (default: see [1] for each case)
 * `gamma2`: stepsize corresponding to the dual updates (default: see [1] for each case)
-* `theta`: nonnegative algorithm parameter (default: '1')
-* `mu`: algorithm parameter in the range [0,1] (default: '1')
+* `theta`: nonnegative algorithm parameter (default: `1.0`)
+* `mu`: algorithm parameter in the range [0,1] (default: `1.0`)
 * `tol`: primal-dual termination tolerance (default: `1e-5`)
 * `maxit`: maximum number of iterations (default: `10000`)
 * `verbose`, verbosity level (default: `1`)
@@ -209,83 +275,39 @@ pp 460-479 (2013).
 cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
 pp. 667-681 (2013).
 """
-function afba(x0, y0;
-    f=Zero(), g=Zero(), h=Zero(), l=IndZero(), L=I,
-    theta=1.0, mu=1.0, lam=1.0, betaQ=0.0, betaR=0.0, gamma1=nothing, gamma2=nothing,
-    maxit=10000, tol=1e-5, verbose=false, freq=100)
-
-    R = real(eltype(x0))
-
-    stop(state::AFBA_state) = norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= R(tol)
-    disp((it, state)) = @printf(
-        "%6d | %7.4e\n",
-        it, norm(state.FPR_x, Inf)+norm(state.FPR_y, Inf)
-    )
-
-    if gamma1 === nothing || gamma2 === nothing
-        gamma1, gamma2 = AFBA_default_stepsizes(L, h, R(theta), R(mu), R(betaQ), R(betaR))
-    end
-
-    iter = AFBA_iterable(f, g, h, l, L, x0, y0, R(theta), R(mu), R(lam), gamma1, gamma2)
-    iter = take(halt(iter, stop), maxit)
-    iter = enumerate(iter)
-    if verbose iter = tee(sample(iter, freq), disp) end
-
-    num_iters, state_final = loop(iter)
-
-    return state_final.x, state_final.y, num_iters
-end
+AFBA(::Type{R}; kwargs...) where R = AFBA{R}(; kwargs...)
+AFBA(; kwargs...) = AFBA(Float64; kwargs...)
 
 """
-    vucondat(x0, y0; f, g, h, l, L, [...])
+    VuCondat([gamma1, gamma2, theta, mu, lambda, maxit, tol, verbose, freq])
 
-Solves convex optimization problems of the form
+Instantiate the Vû-Condat splitting algorithm (see [2, 3])
+for solving convex optimization problems of the form
 
-    minimize f(x) + g(x) + (h □ l)(L x).
+    minimize f(x) + g(x) + (h □ l)(L x),
 
-where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly convex,
-using the Vũ-Condat primal-dual algorithm.
+where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly
+convex. Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
+If `solver = VuCondat(args...)`, then the above problem is solved with
 
-Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
-Points `x0` and `y0` are the initial primal and dual iterates, respectively.
+    solver(x0, y0; [f, g, h, l, L, betaQ, betaR])
 
-See documentation of `afba` for the list of keyword arguments.
-
-References:
-
-[1] Condat, "A primal–dual splitting method for convex optimization
-involving Lipschitzian, proximable and linear composite terms",
-Journal of Optimization Theory and Applications, vol. 158, no. 2,
-pp 460-479 (2013).
-
-[2] Vũ, "A splitting algorithm for dual monotone inclusions involving
-cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
-pp. 667-681 (2013).
-"""
-function vucondat(x0, y0; kwargs...)
-    return afba(x0, y0; kwargs..., theta=2.0)
-end
-
-"""
-    chambollepock(x0, y0; g, h, l, L, [...])
-
-Solves convex optimization problems of the form
-
-    minimize g(x) + (h □ l)(L x).
-
-where `g` and `h` are possibly nonsmooth and `l` is strongly convex,
-using the Chambolle-Pock primal-dual algorithm.
-Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
-Points `x0` and `y0` are the initial primal and dual iterates, respectively.
-
-See documentation of `afba` for the list of keyword arguments.
+See documentation of `AFBA` for the list of keyword arguments.
 
 References:
 
 [1] Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems
 with Applications to Imaging", Journal of Mathematical Imaging and Vision,
 vol. 40, no. 1, pp. 120-145 (2011).
+
+[2] Condat, "A primal–dual splitting method for convex optimization
+involving Lipschitzian, proximable and linear composite terms",
+Journal of Optimization Theory and Applications, vol. 158, no. 2,
+pp 460-479 (2013).
+
+[3] Vũ, "A splitting algorithm for dual monotone inclusions involving
+cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
+pp. 667-681 (2013).
 """
-function chambollepock(x0, y0; kwargs...)
-    return vucondat(x0, y0; kwargs..., f=Zero())
-end
+VuCondat(::Type{R}; kwargs...) where R = AFBA{R}(; kwargs..., theta=R(2.0))
+VuCondat(; kwargs...) = VuCondat(Float64; kwargs...)
