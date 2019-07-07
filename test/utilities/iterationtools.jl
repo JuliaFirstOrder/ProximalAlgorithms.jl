@@ -45,6 +45,7 @@ end
     @testset "Sampling" begin
         iter = randn(Float64, 147)
         sample = IterationTools.sample(iter, 10)
+        @test eltype(sample) == Float64
         @test length(sample) == 15
         k = 0
         for x in sample
