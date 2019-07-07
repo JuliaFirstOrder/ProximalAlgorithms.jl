@@ -11,6 +11,11 @@ struct HaltingIterable{I, F}
     fun::F
 end
 
+Base.IteratorSize(::Type{HaltingIterable{I, F}}) where {I, F} = Base.SizeUnknown()
+Base.IteratorEltype(::Type{HaltingIterable{I, F}}) where {I, F} = Base.IteratorEltype(I)
+
+Base.eltype(iter::HaltingIterable{I, F}) where {I, F} = eltype(iter.iter)
+
 function Base.iterate(iter::HaltingIterable)
     next = iterate(iter.iter)
     return dispatch(iter, next)
@@ -36,6 +41,13 @@ struct TeeIterable{I, F}
     fun::F
 end
 
+Base.IteratorSize(::Type{TeeIterable{I, F}}) where {I, F} = Base.IteratorSize(I)
+Base.IteratorEltype(::Type{TeeIterable{I, F}}) where {I, F} = Base.IteratorEltype(I)
+
+Base.length(iter::TeeIterable{I, F}) where {I, F} = length(iter.iter)
+Base.axes(iter::TeeIterable{I, F}) where {I, F} = axes(iter.iter)
+Base.eltype(iter::TeeIterable{I, F}) where {I, F} = eltype(iter.iter)
+
 function Base.iterate(iter::TeeIterable, args...)
     next = iterate(iter.iter, args...)
     if next !== nothing iter.fun(next[1]) end
@@ -50,6 +62,18 @@ struct SamplingIterable{I}
     iter::I
     period::UInt
 end
+
+Base.IteratorSize(::Type{SamplingIterable{I}}) where I = Base.IteratorSize(I)
+Base.IteratorEltype(::Type{SamplingIterable{I}}) where I = Base.IteratorEltype(I)
+
+function Base.length(iter::SamplingIterable{I}) where I
+    remainder = length(iter.iter) % iter.period
+    quotient = length(iter.iter) ÷ iter.period
+    return remainder == 0 ? quotient : quotient + 1
+end
+
+Base.size(iter::SamplingIterable{I}) where I = (length(iter), )
+Base.eltype(iter::SamplingIterable{I}) where I = eltype(iter.iter)
 
 function Base.iterate(iter::SamplingIterable, state=iter.iter)
     current = iterate(state)
@@ -69,6 +93,13 @@ sample(iter::I, period) where I = SamplingIterable{I}(iter, period)
 struct StopwatchIterable{I}
     iter::I
 end
+
+Base.IteratorSize(::Type{StopwatchIterable{I}}) where I = Base.IteratorSize(I)
+Base.IteratorEltype(::Type{StopwatchIterable{I}}) where I = Base.IteratorEltype(I)
+
+Base.length(iter::StopwatchIterable{I}) where I = length(iter.iter)
+Base.axes(iter::StopwatchIterable{I}) where I = axes(iter.iter)
+Base.eltype(iter::StopwatchIterable{I}) where I = (UInt64, eltype(iter.iter))
 
 function Base.iterate(iter::StopwatchIterable)
     t0 = time_ns()
