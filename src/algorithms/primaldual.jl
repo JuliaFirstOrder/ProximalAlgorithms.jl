@@ -171,8 +171,8 @@ struct AFBA{R}
         theta::R=R(1), mu::R=R(1), lambda::R=R(1), maxit::Int=10000,
         tol::R=R(1e-5), verbose::Bool=false, freq::Int=100
     ) where R
-        @assert gamma1 === nothing || gamma > 0
-        @assert gamma2 === nothing || gamma > 0
+        @assert gamma1 === nothing || gamma1 > 0
+        @assert gamma2 === nothing || gamma2 > 0
         @assert theta >= 0
         @assert 0 <= mu <= 1
         @assert lambda > 0
