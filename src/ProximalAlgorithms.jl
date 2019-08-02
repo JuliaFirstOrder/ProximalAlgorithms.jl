@@ -20,5 +20,6 @@ include("algorithms/panoc.jl")
 include("algorithms/douglasrachford.jl")
 include("algorithms/primaldual.jl")
 include("algorithms/davisyin.jl")
+include("algorithms/lilin.jl")
 
 end # module
