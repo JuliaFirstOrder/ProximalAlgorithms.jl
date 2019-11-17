@@ -136,7 +136,7 @@ function Base.iterate(iter::ZeroFPR_iterable{R}, state::ZeroFPR_state{R, Tx, TAx
     tol = 10*eps(R)*(1 + abs(FBE_x))
     threshold = FBE_x - sigma * norm(state.res)^2 + tol
 
-    for i = 1:10
+    for i = 1:20
         state.x .= state.xbar_curr .+ tau .* state.d
         state.Ax .= state.Axbar .+ tau .* state.Ad
         # TODO: can precompute most of next line in case f is quadratic

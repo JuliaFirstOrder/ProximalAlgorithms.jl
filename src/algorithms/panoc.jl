@@ -140,7 +140,7 @@ function Base.iterate(iter::PANOC_iterable{R}, state::PANOC_state{R, Tx, TAx}) w
     tol = 10*eps(R)*(1 + abs(FBE_x))
     threshold = FBE_x - sigma * norm(state.res)^2 + tol
 
-    for i = 1:10
+    for i = 1:20
         state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
         state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
         state.res .= state.x .- state.z
