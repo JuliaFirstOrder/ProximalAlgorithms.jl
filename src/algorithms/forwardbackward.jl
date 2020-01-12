@@ -151,12 +151,10 @@ function (solver::ForwardBackward{R})(
         it, state.gamma, norm(state.res, Inf)/state.gamma
     )
 
-    if solver.gamma === nothing && L !== nothing
-        gamma = R(1)/L
-    elseif solver.gamma !== nothing
-        gamma = solver.gamma
+    gamma = if solver.gamma === nothing && L !== nothing
+        R(1) / L
     else
-        gamma = nothing
+        solver.gamma
     end
 
     iter = FBS_iterable(f, A, g, x0, gamma, solver.adaptive, solver.fast)

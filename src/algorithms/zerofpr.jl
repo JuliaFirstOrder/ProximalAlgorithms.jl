@@ -198,15 +198,15 @@ function (solver::ZeroFPR{R})(
         (state.tau === nothing ? 0.0 : state.tau)
     )
 
-    if solver.gamma === nothing && L !== nothing
-        gamma = solver.alpha/L
-    elseif solver.gamma !== nothing
-        gamma = solver.gamma
+    gamma = if solver.gamma === nothing && L !== nothing
+        solver.alpha / L
+    else
+        solver.gamma
     end
 
     iter = ZeroFPR_iterable(
         f, A, g, x0,
-        solver.alpha, solver.beta, solver.gamma, solver.adaptive, solver.memory
+        solver.alpha, solver.beta, gamma, solver.adaptive, solver.memory
     )
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
