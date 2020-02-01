@@ -59,8 +59,8 @@ function (solver::DouglasRachford{R})(
     x0::AbstractArray{C}; f=Zero(), g=Zero()
 ) where {R, C <: Union{R, Complex{R}}}
 
-    stop(state::DRS_state) = norm(state.res, Inf) <= solver.tol
-    disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf))
+    stop(state::DRS_state) = norm(state.res, Inf) / solver.gamma <= solver.tol
+    disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf) / solver.gamma)
 
     iter = DRS_iterable(f, g, x0, solver.gamma)
     iter = take(halt(iter, stop), solver.maxit)
