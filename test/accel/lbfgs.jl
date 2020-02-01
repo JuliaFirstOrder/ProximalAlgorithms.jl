@@ -1,7 +1,7 @@
 @testset "L-BFGS ($T)" for T in [Float32, Float64, Complex{Float32}, Complex{Float64}]
 
     using LinearAlgebra
-    using ProximalAlgorithms: LBFGS
+    using ProximalAlgorithms: LBFGS, update!
     using RecursiveArrayTools: ArrayPartition, unpack
 
     Q = T[
@@ -93,12 +93,12 @@
     @testset "Arrays" begin
         mem = 3
         x = zeros(T, 10)
-        H = LBFGS.create(x, mem)
+        H = LBFGS(x, mem)
         dir = zeros(T, 10)
         for i = 1:5
             x = xs[i]
             grad = Q*x + q
-            LBFGS.update!(H, x, grad)
+            update!(H, x, grad)
             mul!(dir, H, -grad)
             @test dir ≈ dirs_ref[i]
         end
@@ -107,13 +107,13 @@
     @testset "ArrayPartition" begin
         mem = 3
         x = ArrayPartition(zeros(T, 10), zeros(T, 10))
-        H = LBFGS.create(x, mem)
+        H = LBFGS(x, mem)
         dir = ArrayPartition(zeros(T, 10), zeros(T, 10))
         for i = 1:5
             x = ArrayPartition(xs[i], xs[i])
             temp = Q*unpack(x, 1) + q
             grad = ArrayPartition(temp, temp)
-            LBFGS.update!(H, x, grad)
+            update!(H, x, grad)
             mul!(dir, H, -grad)
             @test unpack(dir, 1) ≈ dirs_ref[i]
             @test unpack(dir, 2) ≈ dirs_ref[i]

@@ -3,7 +3,6 @@
 # and Control (2017).
 
 using Base.Iterators
-using ProximalAlgorithms: LBFGS
 using ProximalAlgorithms.IterationTools
 using ProximalOperators: Zero
 using LinearAlgebra
@@ -32,7 +31,7 @@ mutable struct PANOC_state{R <: Real, Tx, TAx}
     z::Tx             # forward-backward point
     g_z::R            # value of nonsmooth term (at z)
     res::Tx           # fixed-point residual at iterate (= x - z)
-    H::LBFGS.LBFGS_buffer{R} # variable metric
+    H::LBFGS{R}       # variable metric
     tau::Maybe{R}     # stepsize (can be nothing since the initial state doesn't have it)
     # some additional storage:
     d::Tx
@@ -79,7 +78,7 @@ function Base.iterate(iter::PANOC_iterable{R}) where R
     res = x - z
 
     # initialize variable metric
-    H = LBFGS.create(x, iter.memory)
+    H = LBFGS(x, iter.memory)
 
     state = PANOC_state(x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res, H, nothing)
 
@@ -106,7 +105,7 @@ function Base.iterate(iter::PANOC_iterable{R}, state::PANOC_state{R, Tx, TAx}) w
         state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
         state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
         state.res .= state.x .- state.z
-        LBFGS.reset!(state.H)
+        reset!(state.H)
         f_Az_upp = f_model(state)
     end
 
@@ -114,7 +113,7 @@ function Base.iterate(iter::PANOC_iterable{R}, state::PANOC_state{R, Tx, TAx}) w
     FBE_x = f_Az_upp + state.g_z
 
     # update metric
-    LBFGS.update!(state.H, state.x, state.res)
+    update!(state.H, state.x, state.res)
 
     # compute direction
     mul!(state.d, state.H, -state.res)
