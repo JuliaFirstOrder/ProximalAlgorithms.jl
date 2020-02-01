@@ -10,7 +10,12 @@ include("compat.jl")
 include("utilities/conjugate.jl")
 include("utilities/fbetools.jl")
 include("utilities/iterationtools.jl")
-include("utilities/lbfgs.jl")
+
+# acceleration operators
+
+include("accel/lbfgs.jl")
+include("accel/anderson.jl")
+include("accel/nesterov.jl")
 
 # algorithms
 

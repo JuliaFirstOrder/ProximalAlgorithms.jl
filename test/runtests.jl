@@ -3,8 +3,11 @@ using Test
 include("definitions/arraypartition.jl")
 
 include("utilities/iterationtools.jl")
-include("utilities/lbfgs.jl")
 include("utilities/conjugate.jl")
+
+include("accel/lbfgs.jl")
+include("accel/anderson.jl")
+include("accel/nesterov.jl")
 
 include("problems/test_elasticnet.jl")
 include("problems/test_lasso_small.jl")

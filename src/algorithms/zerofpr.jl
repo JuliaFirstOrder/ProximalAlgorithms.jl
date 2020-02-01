@@ -4,7 +4,6 @@
 # (2018).
 
 using Base.Iterators
-using ProximalAlgorithms: LBFGS
 using ProximalAlgorithms.IterationTools
 using ProximalOperators: Zero
 using LinearAlgebra
@@ -33,7 +32,7 @@ mutable struct ZeroFPR_state{R <: Real, Tx, TAx}
     xbar::Tx          # forward-backward point
     g_xbar::R         # value of nonsmooth term (at xbar)
     res::Tx           # fixed-point residual at iterate (= x - xbar)
-    H::LBFGS.LBFGS_buffer{R} # variable metric
+    H::LBFGS{R}       # variable metric
     tau::Maybe{R}     # stepsize (can be nothing since the initial state doesn't have it)
     # some additional storage:
     Axbar::TAx
@@ -80,7 +79,7 @@ function Base.iterate(iter::ZeroFPR_iterable{R}) where R
     res = x - xbar
 
     # initialize variable metric
-    H = LBFGS.create(x, iter.memory)
+    H = LBFGS(x, iter.memory)
 
     state = ZeroFPR_state(x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, xbar, g_xbar, res, H, nothing)
 
@@ -105,7 +104,7 @@ function Base.iterate(iter::ZeroFPR_iterable{R}, state::ZeroFPR_state{R, Tx, TAx
         state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
         state.g_xbar = prox!(state.xbar, iter.g, state.y, state.gamma)
         state.res .= state.x .- state.xbar
-        LBFGS.reset!(state.H)
+        reset!(state.H)
         f_Axbar_upp = f_model(state)
         mul!(state.Axbar, iter.A, state.xbar)
         f_Axbar = gradient!(state.grad_f_Axbar, iter.f, state.Axbar)
@@ -121,7 +120,7 @@ function Base.iterate(iter::ZeroFPR_iterable{R}, state::ZeroFPR_state{R, Tx, TAx
     state.res_xbar .= state.xbar .- state.xbarbar
 
     # update metric
-    LBFGS.update!(state.H, state.xbar, state.res_xbar)
+    update!(state.H, state.xbar, state.res_xbar)
 
     # compute direction
     mul!(state.d, state.H, -state.res_xbar)
