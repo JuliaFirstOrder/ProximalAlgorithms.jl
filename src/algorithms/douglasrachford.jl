@@ -3,7 +3,6 @@
 # Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 
 using Base.Iterators
-using ProximalAlgorithms: LBFGS
 using ProximalAlgorithms.IterationTools
 using ProximalOperators: Zero
 using LinearAlgebra
