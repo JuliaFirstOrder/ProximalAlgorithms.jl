@@ -1,5 +1,7 @@
 @testset "Anderson accel. ($T)" for T in [Float32, Float64, Complex{Float32}, Complex{Float64}]
 
+# TODO: this is just a smoke test, a proper test should be added too
+
 using LinearAlgebra
 using ProximalAlgorithms: AndersonAcceleration, update!
 
@@ -29,11 +31,19 @@ xs = [
 mem = 3
 x = zeros(T, 10)
 H = AndersonAcceleration(x, mem)
-dir = zeros(T, 10)
+
+x = xs[1]
+grad = Q*x + q
+dir = -(H*grad)
+
 for i = 1:5
+    x_prev = x
+    grad_prev = grad
+    
     x = xs[i]
     grad = Q*x + q
-    update!(H, x, grad)
+    
+    update!(H, x - x_prev, grad - grad_prev)
     mul!(dir, H, -grad)
 end
 

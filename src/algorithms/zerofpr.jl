@@ -40,7 +40,8 @@ mutable struct ZeroFPR_state{R <: Real, Tx, TAx}
     At_grad_f_Axbar::Tx
     xbarbar::Tx
     res_xbar::Tx
-    xbar_curr::Tx
+    xbar_prev::Maybe{Tx}
+    res_xbar_prev::Maybe{Tx}
     d::Tx
     Ad::TAx
 end
@@ -50,7 +51,7 @@ ZeroFPR_state(
 ) where {R, Tx, TAx} =
     ZeroFPR_state{R, Tx, TAx}(
         x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, xbar, g_xbar, res, H, tau,
-        zero(Ax), zero(Ax), zero(x), zero(x), zero(x), zero(x), zero(x), zero(Ax)
+        zero(Ax), zero(Ax), zero(x), zero(x), zero(x), nothing, nothing, zero(x), zero(Ax)
     )
 
 f_model(state::ZeroFPR_state) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
@@ -109,6 +110,11 @@ function Base.iterate(iter::ZeroFPR_iterable{R}, state::ZeroFPR_state{R, Tx, TAx
         mul!(state.Axbar, iter.A, state.xbar)
         f_Axbar = gradient!(state.grad_f_Axbar, iter.f, state.Axbar)
     end
+    
+    if state.xbar_prev === nothing
+        state.xbar_prev = zero(state.x)
+        state.res_xbar_prev = zero(state.x)
+    end
 
     # compute FBE
     FBE_x = f_Axbar_upp + state.g_xbar
@@ -118,9 +124,14 @@ function Base.iterate(iter::ZeroFPR_iterable{R}, state::ZeroFPR_state{R, Tx, TAx
     state.y .= state.xbar .- state.gamma .* state.At_grad_f_Axbar
     g_xbarbar = prox!(state.xbarbar, iter.g, state.y, state.gamma)
     state.res_xbar .= state.xbar .- state.xbarbar
-
-    # update metric
-    update!(state.H, state.xbar, state.res_xbar)
+    
+    if state.xbar_prev !== nothing
+        # update metric
+        update!(state.H, state.xbar - state.xbar_prev, state.res_xbar - state.res_xbar_prev)
+        # store vectors for next update
+        copyto!(state.xbar_prev, state.xbar)
+        copyto!(state.res_xbar_prev, state.res_xbar)
+    end
 
     # compute direction
     mul!(state.d, state.H, -state.res_xbar)
@@ -128,15 +139,13 @@ function Base.iterate(iter::ZeroFPR_iterable{R}, state::ZeroFPR_state{R, Tx, TAx
     # Perform line-search over the FBE
     tau = R(1)
     mul!(state.Ad, iter.A, state.d)
-
-    copyto!(state.xbar_curr, state.xbar)
-
+    
     sigma = iter.beta * (0.5/state.gamma) * (1 - iter.alpha)
     tol = 10*eps(R)*(1 + abs(FBE_x))
     threshold = FBE_x - sigma * norm(state.res)^2 + tol
 
     for i = 1:20
-        state.x .= state.xbar_curr .+ tau .* state.d
+        state.x .= state.xbar_prev .+ tau .* state.d
         state.Ax .= state.Axbar .+ tau .* state.Ad
         # TODO: can precompute most of next line in case f is quadratic
         state.f_Ax = gradient!(state.grad_f_Ax, iter.f, state.Ax)

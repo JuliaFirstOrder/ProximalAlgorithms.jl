@@ -94,12 +94,23 @@
         mem = 3
         x = zeros(T, 10)
         H = LBFGS(x, mem)
-        dir = zeros(T, 10)
-        for i = 1:5
+        
+        x = xs[1]
+        grad = Q*x + q
+        dir = -(H * grad)
+        
+        @test dir ≈ dirs_ref[1]
+        
+        for i = 2:5
+            x_prev = x
+            grad_prev = grad
+            
             x = xs[i]
             grad = Q*x + q
-            update!(H, x, grad)
+            
+            update!(H, x - x_prev, grad - grad_prev)
             mul!(dir, H, -grad)
+            
             @test dir ≈ dirs_ref[i]
         end
     end
@@ -108,13 +119,26 @@
         mem = 3
         x = ArrayPartition(zeros(T, 10), zeros(T, 10))
         H = LBFGS(x, mem)
-        dir = ArrayPartition(zeros(T, 10), zeros(T, 10))
-        for i = 1:5
+        
+        x = ArrayPartition(xs[1], xs[1])
+        temp = Q*unpack(x, 1) + q
+        grad = ArrayPartition(temp, temp)
+        dir = -(H * grad)
+        
+        @test unpack(dir, 1) ≈ dirs_ref[1]
+        @test unpack(dir, 2) ≈ dirs_ref[1]
+        
+        for i = 2:5
+            x_prev = x
+            grad_prev = grad
+            
             x = ArrayPartition(xs[i], xs[i])
             temp = Q*unpack(x, 1) + q
             grad = ArrayPartition(temp, temp)
-            update!(H, x, grad)
+            
+            update!(H, x - x_prev, grad - grad_prev)
             mul!(dir, H, -grad)
+            
             @test unpack(dir, 1) ≈ dirs_ref[i]
             @test unpack(dir, 2) ≈ dirs_ref[i]
         end

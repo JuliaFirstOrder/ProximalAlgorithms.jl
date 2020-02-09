@@ -34,6 +34,8 @@ mutable struct PANOC_state{R <: Real, Tx, TAx}
     H::LBFGS{R}       # variable metric
     tau::Maybe{R}     # stepsize (can be nothing since the initial state doesn't have it)
     # some additional storage:
+    x_prev::Tx
+    res_prev::Tx
     d::Tx
     Ad::TAx
     x_d::Tx
@@ -49,7 +51,7 @@ PANOC_state(
 ) where {R, Tx, TAx} =
     PANOC_state{R, Tx, TAx}(
         x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res, H, tau,
-        zero(x), zero(Ax), zero(x), zero(Ax), zero(R), zero(Ax), zero(x), zero(x)
+        zero(x), zero(x), zero(x), zero(Ax), zero(x), zero(Ax), zero(R), zero(Ax), zero(x), zero(x)
     )
 
 f_model(state::PANOC_state) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
@@ -112,11 +114,12 @@ function Base.iterate(iter::PANOC_iterable{R}, state::PANOC_state{R, Tx, TAx}) w
     # compute FBE
     FBE_x = f_Az_upp + state.g_z
 
-    # update metric
-    update!(state.H, state.x, state.res)
-
     # compute direction
     mul!(state.d, state.H, -state.res)
+    
+    # store iterate and residual for metric update later on
+    state.x_prev .= state.x
+    state.res_prev .= state.res
 
     # backtrack tau 1 → 0
     tau = R(1)
@@ -146,6 +149,8 @@ function Base.iterate(iter::PANOC_iterable{R}, state::PANOC_state{R, Tx, TAx}) w
         FBE_x_new = f_model(state) + state.g_z
 
         if FBE_x_new <= threshold
+            # update metric
+            update!(state.H, state.x - state.x_prev, state.res - state.res_prev)
             state.tau = tau
             return state, state
         end
