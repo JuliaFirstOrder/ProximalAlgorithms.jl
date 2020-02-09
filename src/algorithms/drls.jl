@@ -23,8 +23,9 @@ mutable struct DRLS_state{R, Tx, TH}
     v::Tx
     w::Tx
     res::Tx
+    res_prev::Tx
     xbar::Tx
-    xbar_curr::Tx
+    xbar_prev::Tx
     d::Tx
     x_d::Tx
     gamma::R
@@ -49,17 +50,17 @@ function Base.iterate(iter::DRLS_iterable)
     res = u - v
     xbar = x - iter.lambda * res
     state = DRLS_state(
-        x, u, v, w, res, xbar, zero(x), zero(x), zero(x), iter.gamma, f_u, g_v, iter.H, nothing
+        x, u, v, w, res, zero(x), xbar, zero(x), zero(x), zero(x), iter.gamma, f_u, g_v, iter.H, nothing
     )
     return state, state
 end
 
 function Base.iterate(iter::DRLS_iterable{R}, state::DRLS_state) where R
     DRE_curr = DRE(state)
-    update!(iter.H, state.x, state.res)
     mul!(state.d, iter.H, -state.res)
     state.x_d .= state.x .+ state.d
-    copyto!(state.xbar_curr, state.xbar)
+    copyto!(state.xbar_prev, state.xbar)
+    copyto!(state.res_prev, state.res)
     state.tau = R(1)
     state.x .= state.x_d
     for k in 1:iter.N
@@ -67,13 +68,16 @@ function Base.iterate(iter::DRLS_iterable{R}, state::DRLS_state) where R
         state.w .= 2 .* state.u .- state.x
         state.g_v = prox!(state.v, iter.g, state.w, iter.gamma)
         state.res .= state.u .- state.v
+        if k == 1
+            update!(iter.H, state.d, state.res - state.res_prev)
+        end
         state.xbar .= state.x .- iter.lambda * state.res
         DRE_candidate = DRE(state)
         if DRE_candidate <= DRE_curr - iter.c * norm(state.res)^2
             return state, state
         end
         state.tau = state.tau / 2
-        state.x .= state.tau .* state.x_d .+ (1 - state.tau) .* state.xbar_curr
+        state.x .= state.tau .* state.x_d .+ (1 - state.tau) .* state.xbar_prev
     end
 end
 

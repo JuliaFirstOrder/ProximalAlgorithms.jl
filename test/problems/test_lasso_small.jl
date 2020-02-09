@@ -137,7 +137,7 @@
         @test eltype(z) == T
         @test norm(y - x_star, Inf) <= TOL
         @test norm(z - x_star, Inf) <= TOL
-        @test it < 25
+        @test it < 26
 
     end
 
