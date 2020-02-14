@@ -6,7 +6,9 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct DRLS_iterable{R, C <: Union{R, Complex{R}}, Tx <: AbstractArray{C}, Tf, Tg, TH}
+struct DRLS_iterable{
+    R, C <: Union{R, Complex{R}}, Tx <: AbstractArray{C}, Tf, Tg, TH
+}
     f::Tf
     g::Tg
     x0::Tx
@@ -37,8 +39,9 @@ end
 
 function DRE(state::DRLS_state)
     return (
-        state.f_u + state.g_v - real(dot(state.x - state.u, state.res))/state.gamma
-        + norm(state.res)^2/(2*state.gamma)
+        state.f_u + state.g_v
+        - real(dot(state.x - state.u, state.res))/state.gamma
+        + 1/(2*state.gamma) * norm(state.res)^2
     )
 end
 
@@ -50,35 +53,45 @@ function Base.iterate(iter::DRLS_iterable)
     res = u - v
     xbar = x - iter.lambda * res
     state = DRLS_state(
-        x, u, v, w, res, zero(x), xbar, zero(x), zero(x), zero(x), iter.gamma, f_u, g_v, iter.H, nothing
+        x, u, v, w, res, zero(x), xbar, zero(x), zero(x), zero(x), iter.gamma,
+        f_u, g_v, iter.H, nothing
     )
     return state, state
 end
 
 function Base.iterate(iter::DRLS_iterable{R}, state::DRLS_state) where R
     DRE_curr = DRE(state)
+    
     mul!(state.d, iter.H, -state.res)
     state.x_d .= state.x .+ state.d
     copyto!(state.xbar_prev, state.xbar)
     copyto!(state.res_prev, state.res)
     state.tau = R(1)
     state.x .= state.x_d
+    
     for k in 1:iter.N
         state.f_u = prox!(state.u, iter.f, state.x, iter.gamma)
         state.w .= 2 .* state.u .- state.x
         state.g_v = prox!(state.v, iter.g, state.w, iter.gamma)
         state.res .= state.u .- state.v
+        
         if k == 1
             update!(iter.H, state.d, state.res - state.res_prev)
         end
+        
         state.xbar .= state.x .- iter.lambda * state.res
         DRE_candidate = DRE(state)
-        if DRE_candidate <= DRE_curr - iter.c * norm(state.res)^2
+        
+        if DRE_candidate <= DRE_curr - iter.c / iter.gamma * norm(state.res)^2
             return state, state
         end
+        
         state.tau = state.tau / 2
         state.x .= state.tau .* state.x_d .+ (1 - state.tau) .* state.xbar_prev
     end
+    
+    @warn "stepsize `tau` became too small ($(state.tau)), stopping the iterations"
+    return nothing
 end
 
 # Solver
@@ -128,7 +141,10 @@ function (solver::DRLS{R})(
         solver.gamma
     end
 
-    C_gamma_lambda = solver.lambda / ((1 + gamma * L) ^ 2) * ((2 - solver.lambda) / (2 * gamma) - L)
+    C_gamma_lambda = (
+        solver.lambda / ((1 + gamma * L) ^ 2) * 
+        ((2 - solver.lambda) / (2 * gamma) - L)
+    )
     c = solver.beta * C_gamma_lambda
 
     iter = DRLS_iterable(
