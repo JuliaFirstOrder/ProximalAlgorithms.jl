@@ -3,9 +3,6 @@
     using ProximalOperators
     using ProximalAlgorithms
     using LinearAlgebra
-    using Random
-
-    Random.seed!(0)
 
     # Solving LP with AFBA
     #

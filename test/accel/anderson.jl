@@ -52,6 +52,6 @@ for it in 1:30
     update!(acc, x - x_prev, res - res_prev)
 end
 
-@test f(x) ≈ f_star
+@test f(x) <= f_star + (1 + abs(f_star)) * 1e-6
 
 end

@@ -5,9 +5,6 @@
     using LinearAlgebra
     using AbstractOperators: MatrixOp
     using RecursiveArrayTools: ArrayPartition
-    using Random
-
-    Random.seed!(0)
 
     A1 = T[  1.0  -2.0   3.0;
              2.0  -1.0   0.0;
