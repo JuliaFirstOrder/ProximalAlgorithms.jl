@@ -3,12 +3,16 @@ using LinearAlgebra
 mutable struct Broyden{R <: Real, C <: Union{R, Complex{R}}, T <: AbstractArray{C}}
     H
     theta_bar::R
-    function Broyden{R, C, T}(x::T; H=I, theta_bar=R(0.2)) where {R, C, T}
+    function Broyden{R, C, T}(x::T, H, theta_bar) where {R, C, T}
         new(H, theta_bar)
     end
 end
 
-_sign(x::R) = x == 0 ? R(1) : sign(x)
+Broyden(x::T; H=I, theta_bar=R(0.2)) where {
+    R <: Real, C <: Union{R, Complex{R}}, T <: AbstractArray{C}
+} = Broyden{R, C, T}(x, H, theta_bar)
+
+_sign(x::R) where R = x == 0 ? R(1) : sign(x)
 
 function update!(L::Broyden{R, C, T}, s, y) where {R, C, T}
     Hy = L.H * y

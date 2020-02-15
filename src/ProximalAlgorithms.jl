@@ -16,6 +16,7 @@ include("utilities/iterationtools.jl")
 include("accel/lbfgs.jl")
 include("accel/anderson.jl")
 include("accel/nesterov.jl")
+include("accel/broyden.jl")
 
 # algorithms
 
