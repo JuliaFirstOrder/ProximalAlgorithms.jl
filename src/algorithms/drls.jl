@@ -136,14 +136,23 @@ function (solver::DRLS{R})(
     )
 
     gamma = if solver.gamma === nothing && L !== nothing
-        solver.alpha * (2 - solver.lambda) / (2 * L)
+        if ProximalOperators.is_convex(f)
+            solver.alpha / L
+        else
+            solver.alpha * (2 - solver.lambda) / (2 * L)
+        end
     else
         solver.gamma
     end
 
+    m = if ProximalOperators.is_convex(f)
+        max(gamma * L - solver.lambda / 2, 0)
+    else
+        1
+    end
     C_gamma_lambda = (
         solver.lambda / ((1 + gamma * L) ^ 2) * 
-        ((2 - solver.lambda) / (2 * gamma) - L)
+        ((2 - solver.lambda) / 2 - gamma * L * m)
     )
     c = solver.beta * C_gamma_lambda
 
