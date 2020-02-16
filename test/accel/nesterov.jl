@@ -21,19 +21,37 @@ Lip = opnorm(H)
 gamma = 1/Lip
 x = zeros(n)
 res = zeros(n)
-d = zeros(n)
+x_prev = zeros(n)
+res_prev = zeros(n)
 
 acc = NesterovAcceleration(x)
 
+mul!(res, H, x)
+res .+= l
+res .*= gamma
+
+d = acc * res
+
 for it in 1:500
+    # store iterate and residual for the operator update later
+    res_prev .= res
+    x_prev .= x
+    
+    # compute accelerated direction
+    mul!(d, acc, res)
+    
+    # update iterate
+    x .-= d
+    
+    # compute new residual
     mul!(res, H, x)
     res .+= l
     res .*= gamma
-    update!(acc, x, res)
-    mul!(d, acc, res)
-    x .-= d
+    
+    # update operator
+    update!(acc, x - x_prev, res - res_prev)    
 
-    # Test that iterates satisfy Thm 4.4 from Beck, Teboulle (2009)
+    # test that iterates satisfy Thm 4.4 from Beck, Teboulle (2009)
     @test f(x) - f_star <= 2/(gamma * (it+1)^2) * norm_x_star^2
 end
 

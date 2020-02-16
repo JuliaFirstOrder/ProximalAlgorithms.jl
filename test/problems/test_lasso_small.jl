@@ -3,9 +3,6 @@
     using ProximalOperators
     using ProximalAlgorithms
     using LinearAlgebra
-    using Random
-
-    Random.seed!(0)
 
     A = T[  1.0  -2.0   3.0  -4.0  5.0;
             2.0  -1.0   0.0  -1.0  3.0;
@@ -123,6 +120,21 @@
         @test norm(y - x_star, Inf) <= TOL
         @test norm(z - x_star, Inf) <= TOL
         @test it < 30
+
+    end
+
+    @testset "DouglasRachford line search" begin
+
+        # Douglas-Rachford line search
+
+        x0 = zeros(T, n)
+        solver = ProximalAlgorithms.DRLS{R}(tol=10*TOL)
+        y, z, it = solver(x0, f=f2, g=g, L=opnorm(A)^2)
+        @test eltype(y) == T
+        @test eltype(z) == T
+        @test norm(y - x_star, Inf) <= 10*TOL
+        @test norm(z - x_star, Inf) <= 10*TOL
+        @test it < 26
 
     end
 

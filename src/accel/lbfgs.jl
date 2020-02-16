@@ -3,8 +3,6 @@ using LinearAlgebra
 mutable struct LBFGS{R <: Real, C <: Union{R, Complex{R}}, I <: Integer, T <: AbstractArray{C}, M}
     currmem::I
     curridx::I
-    x_prev::Union{T, Nothing}
-    r_prev::Union{T, Nothing}
     s::T
     y::T
     s_M::Vector{T}
@@ -21,17 +19,12 @@ function LBFGS(x::T, M::I) where {R <: Real, C <: Union{R, Complex{R}}, I <: Int
     y = zero(x)
     ys_M = zeros(R, M)
     alphas = zeros(R, M)
-    LBFGS{R, C, I, T, M}(0, 0, nothing, nothing, s, y, s_M, y_M, ys_M, alphas, one(R))
+    LBFGS{R, C, I, T, M}(0, 0, s, y, s_M, y_M, ys_M, alphas, one(R))
 end
 
-function update!(L::LBFGS{R, C, I, T, M}, x, r) where {R, C, I, T, M}
-    if L.x_prev === nothing || L.r_prev === nothing
-        L.x_prev = copy(x)
-        L.r_prev = copy(r)
-        return L
-    end
-    L.s .= x .- L.x_prev
-    L.y .= r .- L.r_prev
+function update!(L::LBFGS{R, C, I, T, M}, s, y) where {R, C, I, T, M}
+    L.s .= s
+    L.y .= y
     ys = real(dot(L.s, L.y))
     if ys > 0
         L.curridx += 1
@@ -43,23 +36,20 @@ function update!(L::LBFGS{R, C, I, T, M}, x, r) where {R, C, I, T, M}
         copyto!(L.y_M[L.curridx], L.y)
         yty = real(dot(L.y, L.y))
         L.H = ys/yty
-        L.x_prev .= x
-        L.r_prev .= r
     end
     return L
 end
 
 function reset!(L::LBFGS{R, C, I, T, M}) where {R, C, I, T, M}
     L.currmem, L.curridx = zero(I), zero(I)
-    L.x_prev, L.r_prev = nothing, nothing
     L.H = one(R)
 end
 
 import Base: *
 
-function (*)(L::LBFGS, x)
-    y = similar(x)
-    mul!(y, L, x)
+function (*)(L::LBFGS, v)
+    w = similar(v)
+    mul!(w, L, v)
 end
 
 # Two-loop recursion
@@ -71,6 +61,7 @@ function mul!(d::T, L::LBFGS{R, C, I, T, M}, v::T) where {R, C, I, T, M}
     idx = loop1!(d, L)
     d .*= L.H
     d = loop2!(d, idx, L)
+    return d
 end
 
 function loop1!(d::T, L::LBFGS{R, C, I, T, M}) where {R, C, I, T, M}

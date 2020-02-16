@@ -16,6 +16,7 @@ include("utilities/iterationtools.jl")
 include("accel/lbfgs.jl")
 include("accel/anderson.jl")
 include("accel/nesterov.jl")
+include("accel/broyden.jl")
 
 # algorithms
 
@@ -23,6 +24,7 @@ include("algorithms/forwardbackward.jl")
 include("algorithms/zerofpr.jl")
 include("algorithms/panoc.jl")
 include("algorithms/douglasrachford.jl")
+include("algorithms/drls.jl")
 include("algorithms/primaldual.jl")
 include("algorithms/davisyin.jl")
 include("algorithms/lilin.jl")

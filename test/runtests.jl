@@ -8,6 +8,7 @@ include("utilities/conjugate.jl")
 include("accel/lbfgs.jl")
 include("accel/anderson.jl")
 include("accel/nesterov.jl")
+include("accel/broyden.jl")
 
 include("problems/test_elasticnet.jl")
 include("problems/test_lasso_small.jl")

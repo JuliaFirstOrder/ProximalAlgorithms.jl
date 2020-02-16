@@ -1,9 +1,9 @@
 using Test
 
-@testset "Anderson accel. ($R)" for R in [Float32, Float64]
+@testset "Broyden ($R)" for R in [Float32, Float64]
 
 using LinearAlgebra
-using ProximalAlgorithms: AndersonAcceleration, update!
+using ProximalAlgorithms: Broyden, update!
 
 n, k = 20, 10
 
@@ -24,7 +24,7 @@ res = zeros(n)
 x_prev = zeros(n)
 res_prev = zeros(n)
 
-acc = AndersonAcceleration(x, 5)
+acc = Broyden(x)
 
 mul!(res, H, x)
 res .+= l
@@ -32,7 +32,7 @@ res .*= gamma
 
 d = acc * res
 
-for it in 1:30
+for it in 1:20
     # store iterate and residual for the operator update later
     res_prev .= res
     x_prev .= x
@@ -52,6 +52,6 @@ for it in 1:30
     update!(acc, x - x_prev, res - res_prev)
 end
 
-@test f(x) <= f_star + (1 + abs(f_star)) * 1e-6
+@test f(x) <= f_star + (1 + abs(f_star)) * 1e-4
 
 end

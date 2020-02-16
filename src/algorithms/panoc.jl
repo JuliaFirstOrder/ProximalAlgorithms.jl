@@ -8,7 +8,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct PANOC_iterable{R <: Real, C <: Union{R, Complex{R}}, Tx <: AbstractArray{C}, Tf, TA, Tg}
+struct PANOC_iterable{R <: Real, C <: Union{R, Complex{R}}, Tx <: AbstractArray{C}, Tf, TA, Tg, TH}
     f::Tf             # smooth term
     A::TA             # matrix/linear operator
     g::Tg             # (possibly) nonsmooth, proximable term
@@ -17,10 +17,10 @@ struct PANOC_iterable{R <: Real, C <: Union{R, Complex{R}}, Tx <: AbstractArray{
     beta::R           # in (0, 1), e.g.: 0.5
     gamma::Maybe{R}   # stepsize parameter of forward and backward steps
     adaptive::Bool    # enforce adaptive stepsize even if L is provided
-    memory::Int       # memory parameter for L-BFGS
+    H::TH
 end
 
-mutable struct PANOC_state{R <: Real, Tx, TAx}
+mutable struct PANOC_state{R <: Real, Tx, TAx, TH}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
@@ -31,9 +31,11 @@ mutable struct PANOC_state{R <: Real, Tx, TAx}
     z::Tx             # forward-backward point
     g_z::R            # value of nonsmooth term (at z)
     res::Tx           # fixed-point residual at iterate (= x - z)
-    H::LBFGS{R}       # variable metric
+    H::TH             # variable metric
     tau::Maybe{R}     # stepsize (can be nothing since the initial state doesn't have it)
     # some additional storage:
+    x_prev::Tx
+    res_prev::Tx
     d::Tx
     Ad::TAx
     x_d::Tx
@@ -45,11 +47,11 @@ mutable struct PANOC_state{R <: Real, Tx, TAx}
 end
 
 PANOC_state(
-    x::Tx, Ax::TAx, f_Ax::R, grad_f_Ax, At_grad_f_Ax, gamma::R, y, z, g_z, res, H, tau
-) where {R, Tx, TAx} =
-    PANOC_state{R, Tx, TAx}(
+    x::Tx, Ax::TAx, f_Ax::R, grad_f_Ax, At_grad_f_Ax, gamma::R, y, z, g_z, res, H::TH, tau
+) where {R, Tx, TAx, TH} =
+    PANOC_state{R, Tx, TAx, TH}(
         x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res, H, tau,
-        zero(x), zero(Ax), zero(x), zero(Ax), zero(R), zero(Ax), zero(x), zero(x)
+        zero(x), zero(x), zero(x), zero(Ax), zero(x), zero(Ax), zero(R), zero(Ax), zero(x), zero(x)
     )
 
 f_model(state::PANOC_state) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
@@ -77,10 +79,7 @@ function Base.iterate(iter::PANOC_iterable{R}) where R
     # compute initial fixed-point residual
     res = x - z
 
-    # initialize variable metric
-    H = LBFGS(x, iter.memory)
-
-    state = PANOC_state(x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res, H, nothing)
+    state = PANOC_state(x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res, iter.H, nothing)
 
     return state, state
 end
@@ -112,11 +111,12 @@ function Base.iterate(iter::PANOC_iterable{R}, state::PANOC_state{R, Tx, TAx}) w
     # compute FBE
     FBE_x = f_Az_upp + state.g_z
 
-    # update metric
-    update!(state.H, state.x, state.res)
-
     # compute direction
     mul!(state.d, state.H, -state.res)
+    
+    # store iterate and residual for metric update later on
+    state.x_prev .= state.x
+    state.res_prev .= state.res
 
     # backtrack tau 1 → 0
     tau = R(1)
@@ -146,6 +146,8 @@ function Base.iterate(iter::PANOC_iterable{R}, state::PANOC_state{R, Tx, TAx}) w
         FBE_x_new = f_model(state) + state.g_z
 
         if FBE_x_new <= threshold
+            # update metric
+            update!(state.H, state.x - state.x_prev, state.res - state.res_prev)
             state.tau = tau
             return state, state
         end
@@ -229,7 +231,7 @@ function (solver::PANOC{R})(
 
     iter = PANOC_iterable(
         f, A, g, x0,
-        solver.alpha, solver.beta, gamma, solver.adaptive, solver.memory
+        solver.alpha, solver.beta, gamma, solver.adaptive, LBFGS(x0, solver.memory)
     )
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
