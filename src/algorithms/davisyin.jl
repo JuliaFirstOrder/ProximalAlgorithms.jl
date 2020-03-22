@@ -18,6 +18,8 @@ struct DYS_iterable{R <: Real, C <: Union{R, Complex{R}}, T <: AbstractArray{C},
     lambda::R
 end
 
+Iterators.IteratorSize(::DYS_iterable) = Iterators.IsInfinite()
+
 mutable struct DYS_state{T, S}
     z::T
     xg::T

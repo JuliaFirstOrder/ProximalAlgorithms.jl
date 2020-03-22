@@ -36,6 +36,8 @@ struct AFBA_iterable{R, Tx, Ty, Tf, Tg, Th, Tl, TL}
     gamma2::R
 end
 
+Iterators.IteratorSize(::AFBA_iterable) = Iterators.IsInfinite()
+
 struct AFBA_state{Tx, Ty}
     x::Tx
     y::Ty

@@ -15,6 +15,8 @@ struct DRS_iterable{R <: Real, C <: Union{R, Complex{R}}, T <: AbstractArray{C},
     gamma::R
 end
 
+Iterators.IteratorSize(::DRS_iterable) = Iterators.IsInfinite()
+
 mutable struct DRS_state{T}
     x::T
     y::T
