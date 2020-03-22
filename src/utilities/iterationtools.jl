@@ -11,9 +11,10 @@ struct HaltingIterable{I, F}
     fun::F
 end
 
-Base.IteratorSize(::Type{HaltingIterable{I, F}}) where {I, F} = Base.SizeUnknown()
+Base.IteratorSize(::Type{HaltingIterable{I, F}}) where {I, F} = Base.IteratorSize(I)
 Base.IteratorEltype(::Type{HaltingIterable{I, F}}) where {I, F} = Base.IteratorEltype(I)
 
+Base.length(iter::HaltingIterable{I, F}) where {I, F} = length(iter.iter)
 Base.eltype(iter::HaltingIterable{I, F}) where {I, F} = eltype(iter.iter)
 
 function Base.iterate(iter::HaltingIterable)

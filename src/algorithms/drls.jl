@@ -19,7 +19,7 @@ struct DRLS_iterable{
     H::TH
 end
 
-Iterators.IteratorSize(::DRLS_iterable) = Iterators.IsInfinite()
+Base.IteratorSize(::Type{<:DRLS_iterable}) = Base.IsInfinite()
 
 mutable struct DRLS_state{R, Tx, TH}
     x::Tx

@@ -18,7 +18,7 @@ struct LiLin_iterable{R <: Real, C <: Union{R, Complex{R}}, Tx <: AbstractArray{
     eta::R            #
 end
 
-Iterators.IteratorSize(::LiLin_iterable) = Iterators.IsInfinite()
+Base.IteratorSize(::Type{<:LiLin_iterable}) = Base.IsInfinite()
 
 mutable struct LiLin_state{R <: Real, Tx, TAx}
     x::Tx             # iterate
