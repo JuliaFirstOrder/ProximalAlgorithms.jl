@@ -21,6 +21,8 @@ struct ZeroFPR_iterable{R <: Real, C <: Union{R, Complex{R}}, Tx <: AbstractArra
     H::TH
 end
 
+Iterators.IteratorSize(::ZeroFPR_iterable) = Iterators.IsInfinite()
+
 mutable struct ZeroFPR_state{R <: Real, Tx, TAx, TH}
     x::Tx             # iterate
     Ax::TAx           # A times x

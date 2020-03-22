@@ -18,6 +18,8 @@ struct LiLin_iterable{R <: Real, C <: Union{R, Complex{R}}, Tx <: AbstractArray{
     eta::R            #
 end
 
+Iterators.IteratorSize(::LiLin_iterable) = Iterators.IsInfinite()
+
 mutable struct LiLin_state{R <: Real, Tx, TAx}
     x::Tx             # iterate
     y::Tx             # extrapolated point
