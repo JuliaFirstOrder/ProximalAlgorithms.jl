@@ -21,7 +21,7 @@ struct FBS_iterable{R <: Real, C <: Union{R, Complex{R}}, Tx <: AbstractArray{C}
     fast::Bool
 end
 
-Iterators.IteratorSize(::FBS_iterable) = Iterators.IsInfinite()
+Base.IteratorSize(::Type{<:FBS_iterable}) = Base.IsInfinite()
 
 mutable struct FBS_state{R <: Real, Tx, TAx}
     x::Tx             # iterate

@@ -20,7 +20,7 @@ struct PANOC_iterable{R <: Real, C <: Union{R, Complex{R}}, Tx <: AbstractArray{
     H::TH
 end
 
-Iterators.IteratorSize(::PANOC_iterable) = Iterators.IsInfinite()
+Base.IteratorSize(::Type{<:PANOC_iterable}) = Base.IsInfinite()
 
 mutable struct PANOC_state{R <: Real, Tx, TAx, TH}
     x::Tx             # iterate
