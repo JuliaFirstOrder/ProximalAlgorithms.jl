@@ -3,16 +3,14 @@
     using ProximalOperators
     using ProximalAlgorithms
     using LinearAlgebra
-    using Random
 
-    Random.seed!(0)
+    A = T[  1.0  -2.0   3.0  -4.0  5.0;
+            2.0  -1.0   0.0  -1.0  3.0;
+           -1.0   0.0   4.0  -3.0  2.0;
+           -1.0  -1.0  -1.0   1.0  3.0]
+    b = T[1.0, 2.0, 3.0, 4.0]
 
-    # TODO: generate problem with known solution instead
-
-    m, n = 50, 200
-
-    A = randn(T, m, n)
-    b = randn(T, m)
+    m, n = size(A)
 
     R = real(T)
 
@@ -23,11 +21,11 @@
 
     L = opnorm(A)^2
 
-    x0 = zeros(T, n)
-    solver = ProximalAlgorithms.PANOC{R}(tol=eps(R))
-    x_panoc, it = solver(x0, f=loss, A=A, g=reg)
+    x_star = T[-0.6004983388704322, 0.0, 0.0, 0.195182724252491, 0.764119601328903]
 
     @testset "DavisYin" begin
+        
+        # with known initial iterate
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.DavisYin{R}(tol=R(1e-6))
@@ -36,9 +34,11 @@
         )
         @test eltype(xf_dys) == T
         @test eltype(xg_dys) == T
-        @test norm(xf_dys - x_panoc, Inf) <= 1e-3
-        @test norm(xg_dys - x_panoc, Inf) <= 1e-3
-        @test it_dys <= 1900
+        @test norm(xf_dys - x_star, Inf) <= 1e-3
+        @test norm(xg_dys - x_star, Inf) <= 1e-3
+        @test it_dys <= 140
+        
+        # with random initial iterate
 
         x0 = randn(T, n)
         solver = ProximalAlgorithms.DavisYin{R}(tol=R(1e-6))
@@ -47,21 +47,36 @@
         )
         @test eltype(xf_dys) == T
         @test eltype(xg_dys) == T
-        @test norm(xf_dys - x_panoc, Inf) <= 1e-3
-        @test norm(xg_dys - x_panoc, Inf) <= 1e-3
-        @test it_dys <= 2600
+        @test norm(xf_dys - x_star, Inf) <= 1e-3
+        @test norm(xg_dys - x_star, Inf) <= 1e-3
 
     end
 
     afba_test_params = [
-        (R(2), R(0), 230),
-        (R(1), R(1), 230),
-        (R(0), R(1), 470),
-        (R(0), R(0), 500),
-        (R(1), R(0), 230)
+        (R(2), R(0), 130),
+        (R(1), R(1), 120),
+        (R(0), R(1), 320),
+        (R(0), R(0), 160),
+        (R(1), R(0), 130)
     ]
 
     @testset "AFBA" for (theta, mu, maxit) in afba_test_params
+        
+        # with known initial iterates
+        
+        x0 = zeros(T, n)
+        y0 = zeros(T, m)
+
+        solver = ProximalAlgorithms.AFBA{R}(theta=theta, mu=mu, tol=R(1e-6))
+        x_afba, y_afba, it_afba = solver(
+            x0, y0, f=reg2, g=reg1, h=loss, L=A, betaQ=R(1),
+        )
+        @test eltype(x_afba) == T
+        @test eltype(y_afba) == T
+        @test norm(x_afba - x_star, Inf) <= 1e-4
+        @test it_afba <= maxit
+        
+        # with random initial iterates
 
         x0 = randn(T, n)
         y0 = randn(T, m)
@@ -72,8 +87,7 @@
         )
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
-        @test norm(x_afba - x_panoc, Inf) <= 1e-4
-        @test it_afba <= maxit
+        @test norm(x_afba - x_star, Inf) <= 1e-4
 
     end
 end
