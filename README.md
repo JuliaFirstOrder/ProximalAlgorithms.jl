@@ -31,6 +31,7 @@ Davis-Yin splitting algorithm         | [`DavisYin`](src/algorithms/davisyin.jl)
 Asymmetric forward-backward-adjoint algorithm | [`AFBA`](src/algorithms/primaldual.jl) | [[10]][latafat_2017]
 PANOC (L-BFGS)                        | [`PANOC`](src/algorithms/panoc.jl) | [[11]][stella_2017]
 ZeroFPR (L-BFGS)                      | [`ZeroFPR`](src/algorithms/zerofpr.jl) | [[12]][themelis_2018]
+Douglas-Rachford line-search (L-BFGS) | [`DRLS`](src/algorithms/drls.jl) | [[13]][themelis_2020]
 
 ### Contributing
 
@@ -62,6 +63,8 @@ Contributions are welcome in the form of [issues notification](https://github.co
 
 [[12]][themelis_2018] Themelis, Stella, Patrinos, *Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms*, SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
 
+[[13]][themelis_2020] Themelis, Stella, Patrinos, *Douglas-Rachford splitting and ADMM for nonconvex optimization: Accelerated and Newton-type algorithms*, arXiv preprint (2020).
+
 
 [eckstein_1989]: https://link.springer.com/article/10.1007/BF01581204
 [tseng_2008]: http://www.mit.edu/~dimitrib/PTseng/papers/apgm.pdf
@@ -75,3 +78,4 @@ Contributions are welcome in the form of [issues notification](https://github.co
 [condat_2013]: https://link.springer.com/article/10.1007/s10957-012-0245-9
 [vu_2013]: https://link.springer.com/article/10.1007/s10444-011-9254-8
 [davis_2017]: https://link.springer.com/article/10.1007/s11228-017-0421-z
+[themelis_2020]: https://arxiv.org/abs/2005.10230
