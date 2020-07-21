@@ -1,21 +1,20 @@
-using ProximalOperators
-using ProximalAlgorithms
-using AbstractOperators.BlockArrays
-using Base.Test
+using Test
 
-@testset "ProximalAlgorithms" begin
+include("definitions/arraypartition.jl")
 
-@testset "Utilities" begin
-    include("test_block.jl")
-    include("test_conjugate.jl")
-end
+include("utilities/iterationtools.jl")
+include("utilities/conjugate.jl")
 
-@testset "Algorithms" begin
-    include("test_template.jl")
-    include("test_lasso_small.jl")
-    include("test_lasso_small_split_x.jl")
-    include("test_lasso_small_split_f.jl")
-    include("test_l1logreg_small.jl")
-    include("test_afba.jl")
-end
-end
+include("accel/lbfgs.jl")
+include("accel/anderson.jl")
+include("accel/nesterov.jl")
+include("accel/broyden.jl")
+
+include("problems/test_elasticnet.jl")
+include("problems/test_lasso_small.jl")
+include("problems/test_lasso_small_v_split.jl")
+include("problems/test_lasso_small_h_split.jl")
+include("problems/test_linear_programs.jl")
+include("problems/test_sparse_logistic_small.jl")
+include("problems/test_verbose.jl")
+include("problems/test_nonconvex_qp.jl")

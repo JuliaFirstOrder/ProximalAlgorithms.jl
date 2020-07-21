@@ -1,53 +1,13 @@
 module ProximalAlgorithms
 
-using ProximalOperators
-using AbstractOperators
-using AbstractOperators.BlockArrays
-using ProximalOperators
+const RealOrComplex{R} = Union{R, Complex{R}}
+const Maybe{T} = Union{T, Nothing}
 
-import Base: start, next, done
+include("compat.jl")
 
-include("utilities/identity.jl")
-include("utilities/zero.jl")
-include("utilities/conjugate.jl")
+# utilities
 
-abstract type ProximalAlgorithm{I, T} end
-
-# The following methods give `ProximalAlgorithm` objects the iterable behavior.
-
-function start(solver::ProximalAlgorithm{I, T})::I where {I, T}
-    initialize(solver)
-    return zero(I)
-end
-
-function next(solver::ProximalAlgorithm{I, T}, it::I)::Tuple{T, I} where {I, T}
-    point::T = iterate(solver, it)
-    return (point, it + one(I))
-end
-
-function done(solver::ProximalAlgorithm{I, T}, it::I)::Bool where {I, T}
-    return it >= maxit(solver) || converged(solver, it)
-end
-
-# Running a `ProximalAlgorithm` unrolls the iterations
-
-function run(solver::ProximalAlgorithm{I, T})::Tuple{I, T} where {I, T}
-    local it, point
-    if verbose(solver) display(solver) end
-    # NOTE: the following loop is translated into:
-    #   it = start(solver)
-    #   while !done(solver, it)
-    #       (point, it) = next(solver, it)
-    #       [...]
-    #   end
-    # See: https://docs.julialang.org/en/stable/manual/interfaces
-    for (it, point) in enumerate(solver)
-        if verbose(solver, it) display(solver, it) end
-    end
-    if verbose(solver) display(solver, it) end
-    return (it, point)
-end
-
+<<<<<<< HEAD
 # Functions `verbose` and `display` are used for inspecting the iterations.
 # Here we provide their default behavior (no output).
 
@@ -72,5 +32,28 @@ include("algorithms/AsymmetricForwardBackwardAdjoint.jl")
 # The following template can be copy-pasted to implement new algorithms.
 
 include("algorithms/Template.jl")
+=======
+include("utilities/conjugate.jl")
+include("utilities/fbetools.jl")
+include("utilities/iterationtools.jl")
+
+# acceleration operators
+
+include("accel/lbfgs.jl")
+include("accel/anderson.jl")
+include("accel/nesterov.jl")
+include("accel/broyden.jl")
+
+# algorithms
+
+include("algorithms/forwardbackward.jl")
+include("algorithms/zerofpr.jl")
+include("algorithms/panoc.jl")
+include("algorithms/douglasrachford.jl")
+include("algorithms/drls.jl")
+include("algorithms/primaldual.jl")
+include("algorithms/davisyin.jl")
+include("algorithms/lilin.jl")
+>>>>>>> upstreamPA/master
 
 end # module
