@@ -2,11 +2,6 @@
 # solving monotone inclusions involving three operators", Computational
 # Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
 #
-# Latafat, Patrinos, "Primal-dual proximal algorithms for structured convex
-# optimization : a unifying framework", In Large-Scale and Distributed 
-# Optimization, Giselsson and Rantzer, Eds. Springer International Publishing,
-# pp. 97–120 ( 2018).
-#
 # Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems
 # with Applications to Imaging", Journal of Mathematical Imaging and Vision,
 # vol. 40, no. 1, pp. 120-145 (2011).
@@ -22,7 +17,7 @@
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
-using ProximalOperators: Zero, Linear, is_singleton
+using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
@@ -95,105 +90,69 @@ function Base.iterate(iter::AFBA_iterable, state::AFBA_state=AFBA_state(iter))
     state.temp_x .= ((1-iter.mu) * (2-iter.theta) * iter.gamma2) .* state.FPR_x
     mul!(state.temp_y, iter.L, state.temp_x)
     state.y .+= iter.lambda .* (state.FPR_y .+ state.temp_y)
+
     return state, state
 end
 
-function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) where {R <: Real}
-    # lambda = 1
-    if isa(h, Zero)
-        gamma1 = R(1.99)/beta_f 
-        gamma2 = R(1) # does not matter
+function AFBA_default_stepsizes(L, h, theta::R, mu::R, betaQ::R, betaR::R) where {R <: Real}
+    par = R(4) #  scale parameter for comparing Lipschitz constant and opnorm(L)
+    nmL = R(opnorm(L))
+    alpha = R(1)
+
+    if isa(h, ProximalOperators.Zero)
+        # mu=0 is the only case where stepsizes matter
+        alpha = R(1000)/(betaQ+R(1e-5)) # the speed is determined by gamma1 since bary=0
+        temp = theta^2-3*theta+R(3)
+        gamma1 = R(0.99)/(betaQ/2 + temp*nmL/alpha) # in this case R=0
+        gamma2 = R(1)/(nmL*alpha)
     else
-	    par = R(5) #  scale parameter for comparing Lipschitz constant and opnorm(L)
-    	par2 = R(100)   # scaling parameter for α
-    	alpha = R(1)
-	    nmL = R(opnorm(L))
-        if theta == 2 # default stepsize for Vu-Condat
-            if nmL > par * max(beta_l, beta_f)
+        if theta==2 # default stepsize for Vu-Condat
+            if betaQ > par*nmL && betaR > par*nmL
                 alpha = R(1)
-            elseif beta_f > par*beta_l
-                alpha = par2*nmL/beta_f
-            elseif beta_l > par*beta_f
-                alpha = beta_l/(par2*nmL)
-                #other cases α = 1 
+            elseif betaQ > par*nmL
+                alpha = 2*nmL/betaQ
+            elseif betaR > par*nmL
+                alpha = betaR/(2*nmL)
             end
-            gamma1 = R(1)/(beta_f/2+nmL/alpha)
-            gamma2 = R(0.99)/(beta_l/2+nmL*alpha)
-        elseif theta == 1 && mu == 1 # default stepsize for theta=1, mu=1 (SPCA)
-            if nmL > par2*beta_l # for the case beta_f = 0
+            gamma1 = R(1)/(betaQ/2+nmL/alpha)
+            gamma2 = R(0.99)/(betaR/2+nmL*alpha)
+        elseif theta == 1 && mu == 1 # default stepsize for theta=1, mu=1
+            if betaQ > par*nmL && betaR > par*nmL
                 alpha = R(1)
-            elseif beta_l > par*beta_f 
-                alpha =  beta_l/(par2*nmL)    
+            elseif betaQ > par*nmL
+                alpha = 2*nmL/betaQ
+            elseif betaR > par*nmL
+                alpha = betaR/(2*nmL)
             end
-            gamma1 = beta_f > R(0) ?  R(1.99)/beta_f : R(1)/(nmL/alpha)
-            gamma2 = R(0.99)/(beta_l/2 + gamma1*nmL^2)
-        elseif theta == 0 && mu == 1 # default stepsize for theta=0, mu=1 (PPCA)
-            temp = R(3)
-            if beta_f == 0
-                nmL *= sqrt(temp)
-                 if nmL > par *beta_l
-                    alpha = R(1)
-                else 
-                    alpha = beta_l/(par2*nmL)
-                end
-                gamma1 = R(1)/(beta_f/2+nmL/alpha)
-                gamma2 = R(0.99)/(beta_l/2+nmL*alpha)
-            else  
-                if nmL > par * max(beta_l, beta_f)
-                    alpha = R(1)
-                elseif beta_f > par*beta_l
-                    alpha = par2*nmL/beta_f
-                elseif beta_l > par*beta_f
-                    alpha = beta_l/(par2*nmL)
-                    #other case α = 1 
-                end
-                xi = 1+ 2*nmL/(nmL+alpha*beta_f/2)
-                gamma1 = R(1)/(beta_f/2+nmL/alpha)
-                gamma2 = R(0.99)/(beta_l/2+xi*nmL*alpha)
+            gamma1 = R(1)/(betaQ/2+nmL/alpha)
+            gamma2 = R(0.99)/(betaR/2 + gamma1*nmL^2)
+        elseif theta == 0 && mu == 1 # default stepsize for theta=0, mu=1
+            temp=3
+            if betaQ > par*nmL && betaR > temp*par*nmL # denominator for Sigma involves 3α opnorm(L) in this case
+                alpha = R(1)
+            elseif betaQ > par*nmL
+                alpha = 2*nmL/betaQ
+            elseif betaR > temp*par*nmL # denominator for Sigma involves 3α opnorm(L) in this case
+                alpha = betaR/(temp*2*nmL)
             end
-        elseif mu == 0 # default stepsize for  mu=0 (SDCA & PDCA)
+            gamma1 = R(1)/(betaQ/2+nmL/alpha)
+            gamma2 = R(0.99)/(betaR/2 + 2*gamma1*nmL^2 + alpha*nmL)
+        elseif mu == 0 # default stepsize for  mu=0
             temp = theta^2-3*theta+3
-            if beta_l == R(0)
-                nmL *= sqrt(temp)
-                 if nmL > par *beta_f
-                    alpha = R(1)
-                else 
-                    alpha = par2*nmL/beta_f
-                end
-                gamma1 = R(1)/(beta_f/2+nmL/alpha)
-                gamma2 = R(0.99)/(beta_l/2+nmL*alpha)
-            else # the condition is more involved in this case 
-                if nmL > par * max(beta_l, beta_f)
-                    alpha = R(1)
-                elseif beta_f > par*beta_l
-                    alpha = par2*nmL/beta_f
-                elseif beta_l > par*beta_f
-                    alpha = beta_l/(par2*nmL)
-                    #other case α = 1 
-                end
-                eta = 1+ (temp-1)*alpha*nmL/(alpha*nmL+beta_l/2)
-                gamma1 = R(1)/(beta_f/2+eta*nmL/alpha)
-                gamma2 = R(0.99)/(beta_l/2+nmL*alpha)
-            end 
-        elseif theta == 0 && mu == 0.5 # PPDCA
-            if beta_l == 0 || beta_f == 0
-                 if nmL > par * max(beta_l, beta_f)
-                    alpha = R(1)
-                elseif beta_f > par*beta_l
-                    alpha = par2*nmL/beta_f
-                elseif beta_l > par*beta_f
-                    alpha = beta_l/(par2*nmL)
-                    #other cases α = 1 
-                end
-            else 
-                alpha = sqrt(beta_l/beta_f)/2
+            if betaQ > temp*par*nmL && betaR > par*nmL
+                alpha = R(1)
+            elseif betaR > par*nmL
+                alpha = betaR/(2*nmL)
+            elseif betaQ > temp*par*nmL # denominator for Sigma involves 3α opnorm(L) in this case
+                alpha = 2*nmL*temp/betaQ
             end
-            gamma1 = R(1)/(beta_f/2+nmL/alpha)
-            gamma2 = R(0.99)/(beta_l/2+nmL*alpha)
+            gamma2 = R(1)/(betaR/2+ alpha*nmL)
+            gamma1 = R(0.99)/(betaQ/2 + (temp-1)*gamma2*nmL^2 + nmL/alpha)
         else
             error("this choice of theta and mu is not supported!")
         end
     end
+
     return gamma1, gamma2
 end
 
@@ -227,37 +186,25 @@ struct AFBA{R}
 end
 
 function (solver::AFBA{R})(x0::AbstractArray{C}, y0::AbstractArray{C};
-    f=Zero(), g=Zero(), h=Zero(), l=IndZero(), L=I, beta_f::R=R(0), beta_l::R=R(0)
+    f=Zero(), g=Zero(), h=Zero(), l=IndZero(), L=I, betaQ::R=R(0), betaR::R=R(0)
 ) where {R, C <: Union{R, Complex{R}}}
 
     stop(state::AFBA_state) = norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= solver.tol
     disp((it, state)) = @printf(
         "%6d | %7.4e\n",
-        it, norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf)
+        it, norm(state.FPR_x, Inf)+norm(state.FPR_y, Inf)
     )
 
-    if (beta_f == 0 && ~( isa(f,Linear) || isa(f,Zero)) ) || (beta_l == 0 && ~is_singleton(l))
-        @warn "using Lipschiz constant zero"
-    end
-
-    if isa(h, Zero) L = R(0)*I; y0 = zero(x0) end # case h(Lx) equiv 0
-
-	lambda = solver.lambda
     if solver.gamma1 === nothing || solver.gamma2 === nothing
-        if solver.lambda != 1 
-            @warn "default stepsizes are not supported with this choice of lamdba,"*
-            " reverted to default lambda"
-            lambda = R(1)              
-        end
         gamma1, gamma2 = AFBA_default_stepsizes(
-            L, h, solver.theta, solver.mu, beta_f, beta_l
-            )
+            L, h, solver.theta, solver.mu, betaQ, betaR
+        )
     else
         gamma1, gamma2 = solver.gamma1, solver.gamma2
     end
 
     iter = AFBA_iterable(f, g, h, l, L, x0, y0,
-        solver.theta, solver.mu, lambda, gamma1, gamma2
+        solver.theta, solver.mu, solver.lambda, gamma1, gamma2
     )
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
@@ -265,7 +212,7 @@ function (solver::AFBA{R})(x0::AbstractArray{C}, y0::AbstractArray{C};
 
     num_iters, state_final = loop(iter)
 
-    return state_final.xbar, state_final.y, num_iters
+    return state_final.x, state_final.y, num_iters
 end
 
 # Outer constructors
@@ -282,15 +229,15 @@ where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly
 convex. Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
 If `solver = AFBA(args...)`, then the above problem is solved with
 
-    solver(x0, y0; [f, g, h, l, L, beta_f, beta_l])
+    solver(x0, y0; [f, g, h, l, L, betaQ, betaR])
 
 Points `x0` and `y0` are the initial primal and dual iterates, respectively.
 If unspecified, functions `f`, `g`, and `h` default to the identically zero
 function, `l` defaults to the indicator of the set `{0}`, and `L` defaults to
 the identity. Important keyword arguments, in case `f` and `l` are set, are:
 
-* `beta_f`: Lipschitz constant of gradient of `f` (default: zero)
-* `beta_l`: Lipschitz constant of gradient of the conjugate of `l` (default: zero)
+* `betaQ`: Lipschitz constant of gradient of `f` (default: zero)
+* `betaR`: Lipschitz constant of gradient of the conjugate of `l` (default: zero)
 
 These are used to determine the algorithm default stepsizes, `gamma1` and `gamma2`,
 in case they are not directly specified.
@@ -313,8 +260,7 @@ for several prominant special cases:
 3) θ = 0, μ=1
 4) θ ∈ [0,∞), μ=0
 
-See [2, Section 5.2] and [1, Figure 1] for stepsize conditions, special cases,
-and relation to other algorithms.
+See [1, Figure 1] for other special cases and relation to other algorithms.
 
 References:
 
@@ -322,17 +268,12 @@ References:
 solving monotone inclusions involving three operators", Computational
 Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
 
-[2] Latafat, Patrinos, "Primal-dual proximal algorithms for structured convex
-optimization : a unifying framework", In Large-Scale and Distributed 
-Optimization, Giselsson and Rantzer, Eds. Springer International Publishing,
-pp. 97–120 ( 2018).
-
-[3] Condat, "A primal–dual splitting method for convex optimization
+[2] Condat, "A primal–dual splitting method for convex optimization
 involving Lipschitzian, proximable and linear composite terms",
 Journal of Optimization Theory and Applications, vol. 158, no. 2,
 pp 460-479 (2013).
 
-[4] Vũ, "A splitting algorithm for dual monotone inclusions involving
+[3] Vũ, "A splitting algorithm for dual monotone inclusions involving
 cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
 pp. 667-681 (2013).
 """
@@ -351,7 +292,7 @@ where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly
 convex. Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
 If `solver = VuCondat(args...)`, then the above problem is solved with
 
-    solver(x0, y0; [f, g, h, l, L, beta_f, beta_l])
+    solver(x0, y0; [f, g, h, l, L, betaQ, betaR])
 
 See documentation of `AFBA` for the list of keyword arguments.
 

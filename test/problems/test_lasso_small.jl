@@ -145,21 +145,12 @@
 
         solver = ProximalAlgorithms.AFBA{R}(theta=R(1), mu=R(1), tol=R(1e-6))
         x_afba, y_afba, it_afba = solver(
-            x0, y0, f=f2, g=g, beta_f=opnorm(A)^2,
+            x0, y0, f=f2, g=g, betaQ=opnorm(A)^2,
         )
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
         @test it_afba <= 80
-
-        solver = ProximalAlgorithms.AFBA{R}(theta=R(1), mu=R(1), tol=R(1e-6))
-        x_afba, y_afba, it_afba = solver(
-            x0, y0, f=f2, h=g, beta_f=opnorm(A)^2,
-        )
-        @test eltype(x_afba) == T
-        @test eltype(y_afba) == T
-        @test norm(x_afba - x_star, Inf) <= 1e-4
-        @test it_afba <= 100
 
     end
 

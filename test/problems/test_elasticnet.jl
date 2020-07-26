@@ -54,9 +54,9 @@
 
     afba_test_params = [
         (R(2), R(0), 130),
-        (R(1), R(1), 1890),
+        (R(1), R(1), 120),
         (R(0), R(1), 320),
-        (R(0), R(0), 194),
+        (R(0), R(0), 160),
         (R(1), R(0), 130)
     ]
 
@@ -69,7 +69,7 @@
 
         solver = ProximalAlgorithms.AFBA{R}(theta=theta, mu=mu, tol=R(1e-6))
         x_afba, y_afba, it_afba = solver(
-            x0, y0, f=reg2, g=reg1, h=loss, L=A, beta_f=R(1),
+            x0, y0, f=reg2, g=reg1, h=loss, L=A, betaQ=R(1),
         )
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
@@ -83,7 +83,7 @@
 
         solver = ProximalAlgorithms.AFBA{R}(theta=theta, mu=mu, tol=R(1e-6))
         x_afba, y_afba, it_afba = solver(
-            x0, y0, f=reg2, g=reg1, h=loss, L=A, beta_f=R(1),
+            x0, y0, f=reg2, g=reg1, h=loss, L=A, betaQ=R(1),
         )
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
