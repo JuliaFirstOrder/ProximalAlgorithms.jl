@@ -95,6 +95,7 @@ function Base.iterate(iter::AFBA_iterable, state::AFBA_state=AFBA_state(iter))
     state.temp_x .= ((1-iter.mu) * (2-iter.theta) * iter.gamma2) .* state.FPR_x
     mul!(state.temp_y, iter.L, state.temp_x)
     state.y .+= iter.lambda .* (state.FPR_y .+ state.temp_y)
+
     return state, state
 end
 
@@ -194,6 +195,7 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
             error("this choice of theta and mu is not supported!")
         end
     end
+
     return gamma1, gamma2
 end
 
@@ -265,7 +267,7 @@ function (solver::AFBA{R})(x0::AbstractArray{C}, y0::AbstractArray{C};
 
     num_iters, state_final = loop(iter)
 
-    return state_final.xbar, state_final.y, num_iters
+    return state_final.xbar, state_final.ybar, num_iters
 end
 
 # Outer constructors
