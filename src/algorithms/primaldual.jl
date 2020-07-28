@@ -252,7 +252,7 @@ function (solver::AFBA{R})(x0::AbstractArray{C}, y0::AbstractArray{C};
         end
         gamma1, gamma2 = AFBA_default_stepsizes(
             L, h, solver.theta, solver.mu, beta_f, beta_l
-            )
+        )
     else
         gamma1, gamma2 = solver.gamma1, solver.gamma2
     end
