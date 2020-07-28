@@ -3,7 +3,7 @@
 # Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
 #
 # Latafat, Patrinos, "Primal-dual proximal algorithms for structured convex
-# optimization : a unifying framework", In Large-Scale and Distributed 
+# optimization: a unifying framework", In Large-Scale and Distributed 
 # Optimization, Giselsson and Rantzer, Eds. Springer International Publishing,
 # pp. 97–120 ( 2018).
 #
@@ -22,7 +22,7 @@
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
-using ProximalOperators: Zero, Linear, is_singleton
+using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
@@ -105,10 +105,10 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
         gamma1 = R(1.99)/beta_f 
         gamma2 = R(1) # does not matter
     else
-	    par = R(5) #  scale parameter for comparing Lipschitz constant and opnorm(L)
-    	par2 = R(100)   # scaling parameter for α
-    	alpha = R(1)
-	    nmL = R(opnorm(L))
+        par = R(5) # scale parameter for comparing Lipschitz constant and opnorm(L)
+        par2 = R(100)   # scaling parameter for α
+        alpha = R(1)
+        nmL = R(opnorm(L))
         if theta == 2 # default stepsize for Vu-Condat
             if nmL > par * max(beta_l, beta_f)
                 alpha = R(1)
@@ -116,7 +116,7 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
                 alpha = par2*nmL/beta_f
             elseif beta_l > par*beta_f
                 alpha = beta_l/(par2*nmL)
-                #other cases α = 1 
+                # other cases α = 1 
             end
             gamma1 = R(1)/(beta_f/2+nmL/alpha)
             gamma2 = R(0.99)/(beta_l/2+nmL*alpha)
@@ -126,13 +126,13 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
             elseif beta_l > par*beta_f 
                 alpha =  beta_l/(par2*nmL)    
             end
-            gamma1 = beta_f > R(0) ?  R(1.99)/beta_f : R(1)/(nmL/alpha)
+            gamma1 = beta_f > 0 ?  R(1.99)/beta_f : R(1)/(nmL/alpha)
             gamma2 = R(0.99)/(beta_l/2 + gamma1*nmL^2)
         elseif theta == 0 && mu == 1 # default stepsize for theta=0, mu=1 (PPCA)
             temp = R(3)
             if beta_f == 0
                 nmL *= sqrt(temp)
-                 if nmL > par *beta_l
+                if nmL > par *beta_l
                     alpha = R(1)
                 else 
                     alpha = beta_l/(par2*nmL)
@@ -146,7 +146,7 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
                     alpha = par2*nmL/beta_f
                 elseif beta_l > par*beta_f
                     alpha = beta_l/(par2*nmL)
-                    #other case α = 1 
+                    # other case α = 1 
                 end
                 xi = 1+ 2*nmL/(nmL+alpha*beta_f/2)
                 gamma1 = R(1)/(beta_f/2+nmL/alpha)
@@ -170,7 +170,7 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
                     alpha = par2*nmL/beta_f
                 elseif beta_l > par*beta_f
                     alpha = beta_l/(par2*nmL)
-                    #other case α = 1 
+                    # other case α = 1 
                 end
                 eta = 1+ (temp-1)*alpha*nmL/(alpha*nmL+beta_l/2)
                 gamma1 = R(1)/(beta_f/2+eta*nmL/alpha)
@@ -184,7 +184,7 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
                     alpha = par2*nmL/beta_f
                 elseif beta_l > par*beta_f
                     alpha = beta_l/(par2*nmL)
-                    #other cases α = 1 
+                    # other cases α = 1 
                 end
             else 
                 alpha = sqrt(beta_l/beta_f)/2
@@ -238,13 +238,12 @@ function (solver::AFBA{R})(x0::AbstractArray{C}, y0::AbstractArray{C};
         it, norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf)
     )
 
-    if (beta_f == 0 && ~( isa(f,Linear) || isa(f,Zero)) ) || (beta_l == 0 && ~is_singleton(l))
-        @warn "using Lipschiz constant zero"
-    end
+    if isa(h, Zero) # case h(Lx) equiv 0
+        L = R(0)*I
+        y0 = zero(x0)
+    end 
 
-    if isa(h, Zero) L = R(0)*I; y0 = zero(x0) end # case h(Lx) equiv 0
-
-	lambda = solver.lambda
+    lambda = solver.lambda
     if solver.gamma1 === nothing || solver.gamma2 === nothing
         if solver.lambda != 1 
             @warn "default stepsizes are not supported with this choice of lamdba,"*
