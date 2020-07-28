@@ -105,7 +105,7 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
         gamma1 = R(1.99)/beta_f 
         gamma2 = R(1) # does not matter
     else
-        par = R(5) # scale parameter for comparing Lipschitz constant and opnorm(L)
+        par = R(5) # scaling parameter for comparing Lipschitz constants and \|L\|
         par2 = R(100)   # scaling parameter for α
         alpha = R(1)
         nmL = R(opnorm(L))
@@ -116,11 +116,10 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
                 alpha = par2*nmL/beta_f
             elseif beta_l > par*beta_f
                 alpha = beta_l/(par2*nmL)
-                # other cases α = 1 
             end
             gamma1 = R(1)/(beta_f/2+nmL/alpha)
             gamma2 = R(0.99)/(beta_l/2+nmL*alpha)
-        elseif theta == 1 && mu == 1 # default stepsize for theta=1, mu=1 (SPCA)
+        elseif theta == 1 && mu == 1 # SPCA
             if nmL > par2*beta_l # for the case beta_f = 0
                 alpha = R(1)
             elseif beta_l > par*beta_f 
@@ -128,7 +127,7 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
             end
             gamma1 = beta_f > 0 ?  R(1.99)/beta_f : R(1)/(nmL/alpha)
             gamma2 = R(0.99)/(beta_l/2 + gamma1*nmL^2)
-        elseif theta == 0 && mu == 1 # default stepsize for theta=0, mu=1 (PPCA)
+        elseif theta == 0 && mu == 1 # PPCA
             temp = R(3)
             if beta_f == 0
                 nmL *= sqrt(temp)
@@ -146,13 +145,12 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
                     alpha = par2*nmL/beta_f
                 elseif beta_l > par*beta_f
                     alpha = beta_l/(par2*nmL)
-                    # other case α = 1 
                 end
                 xi = 1+ 2*nmL/(nmL+alpha*beta_f/2)
                 gamma1 = R(1)/(beta_f/2+nmL/alpha)
                 gamma2 = R(0.99)/(beta_l/2+xi*nmL*alpha)
             end
-        elseif mu == 0 # default stepsize for  mu=0 (SDCA & PDCA)
+        elseif mu == 0 # SDCA & PDCA
             temp = theta^2-3*theta+3
             if beta_l == R(0)
                 nmL *= sqrt(temp)
@@ -163,14 +161,13 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
                 end
                 gamma1 = R(1)/(beta_f/2+nmL/alpha)
                 gamma2 = R(0.99)/(beta_l/2+nmL*alpha)
-            else # the condition is more involved in this case 
+            else 
                 if nmL > par * max(beta_l, beta_f)
                     alpha = R(1)
                 elseif beta_f > par*beta_l
                     alpha = par2*nmL/beta_f
                 elseif beta_l > par*beta_f
                     alpha = beta_l/(par2*nmL)
-                    # other case α = 1 
                 end
                 eta = 1+ (temp-1)*alpha*nmL/(alpha*nmL+beta_l/2)
                 gamma1 = R(1)/(beta_f/2+eta*nmL/alpha)
@@ -184,7 +181,6 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
                     alpha = par2*nmL/beta_f
                 elseif beta_l > par*beta_f
                     alpha = beta_l/(par2*nmL)
-                    # other cases α = 1 
                 end
             else 
                 alpha = sqrt(beta_l/beta_f)/2
