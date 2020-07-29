@@ -26,7 +26,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct AFBA_iterable{R, Tx, Ty, Tf, Tg, Th, Tl, TL}
+struct AFBA_iterable{R,Tx,Ty,Tf,Tg,Th,Tl,TL}
     f::Tf
     g::Tg
     h::Th
@@ -43,7 +43,7 @@ end
 
 Base.IteratorSize(::Type{<:AFBA_iterable}) = Base.IsInfinite()
 
-struct AFBA_state{Tx, Ty}
+struct AFBA_state{Tx,Ty}
     x::Tx
     y::Ty
     xbar::Tx
@@ -57,14 +57,19 @@ struct AFBA_state{Tx, Ty}
 end
 
 AFBA_state(iter::AFBA_iterable) = AFBA_state(
-    copy(iter.x0), copy(iter.y0),
-    zero(iter.x0), zero(iter.y0),
-    zero(iter.x0), zero(iter.y0),
-    zero(iter.x0), zero(iter.y0),
-    zero(iter.x0), zero(iter.y0)
+    copy(iter.x0),
+    copy(iter.y0),
+    zero(iter.x0),
+    zero(iter.y0),
+    zero(iter.x0),
+    zero(iter.y0),
+    zero(iter.x0),
+    zero(iter.y0),
+    zero(iter.x0),
+    zero(iter.y0),
 )
 
-function Base.iterate(iter::AFBA_iterable, state::AFBA_state=AFBA_state(iter))
+function Base.iterate(iter::AFBA_iterable, state::AFBA_state = AFBA_state(iter))
     # perform xbar-update step
     gradient!(state.gradf, iter.f, state.x)
     mul!(state.temp_x, iter.L', state.y)
@@ -75,7 +80,7 @@ function Base.iterate(iter::AFBA_iterable, state::AFBA_state=AFBA_state(iter))
 
     # perform ybar-update step
     gradient!(state.gradl, Conjugate(iter.l), state.y)
-    state.temp_x .= iter.theta .* state.xbar .+ (1-iter.theta) .* state.x
+    state.temp_x .= iter.theta .* state.xbar .+ (1 - iter.theta) .* state.x
     mul!(state.temp_y, iter.L, state.temp_x)
     state.temp_y .-= state.gradl
     state.temp_y .*= iter.gamma2
@@ -87,22 +92,22 @@ function Base.iterate(iter::AFBA_iterable, state::AFBA_state=AFBA_state(iter))
     state.FPR_y .= state.ybar .- state.y
 
     # perform x-update step
-    state.temp_y .= (iter.mu * (2-iter.theta) * iter.gamma1) .* state.FPR_y
+    state.temp_y .= (iter.mu * (2 - iter.theta) * iter.gamma1) .* state.FPR_y
     mul!(state.temp_x, iter.L', state.temp_y)
     state.x .+= iter.lambda .* (state.FPR_x .- state.temp_x)
 
     # perform y-update step
-    state.temp_x .= ((1-iter.mu) * (2-iter.theta) * iter.gamma2) .* state.FPR_x
+    state.temp_x .= ((1 - iter.mu) * (2 - iter.theta) * iter.gamma2) .* state.FPR_x
     mul!(state.temp_y, iter.L, state.temp_x)
     state.y .+= iter.lambda .* (state.FPR_y .+ state.temp_y)
 
     return state, state
 end
 
-function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) where {R <: Real}
+function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) where {R<:Real}
     # lambda = 1
     if isa(h, Zero)
-        gamma1 = R(1.99)/beta_f 
+        gamma1 = R(1.99) / beta_f
         gamma2 = R(1) # does not matter
     else
         par = R(5) # scaling parameter for comparing Lipschitz constants and \|L\|
@@ -112,81 +117,81 @@ function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) whe
         if theta == 2 # default stepsize for Vu-Condat
             if nmL > par * max(beta_l, beta_f)
                 alpha = R(1)
-            elseif beta_f > par*beta_l
-                alpha = par2*nmL/beta_f
-            elseif beta_l > par*beta_f
-                alpha = beta_l/(par2*nmL)
+            elseif beta_f > par * beta_l
+                alpha = par2 * nmL / beta_f
+            elseif beta_l > par * beta_f
+                alpha = beta_l / (par2 * nmL)
             end
-            gamma1 = R(1)/(beta_f/2+nmL/alpha)
-            gamma2 = R(0.99)/(beta_l/2+nmL*alpha)
+            gamma1 = R(1) / (beta_f / 2 + nmL / alpha)
+            gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
         elseif theta == 1 && mu == 1 # SPCA
-            if nmL > par2*beta_l # for the case beta_f = 0
+            if nmL > par2 * beta_l # for the case beta_f = 0
                 alpha = R(1)
-            elseif beta_l > par*beta_f 
-                alpha =  beta_l/(par2*nmL)    
+            elseif beta_l > par * beta_f
+                alpha = beta_l / (par2 * nmL)
             end
-            gamma1 = beta_f > 0 ?  R(1.99)/beta_f : R(1)/(nmL/alpha)
-            gamma2 = R(0.99)/(beta_l/2 + gamma1*nmL^2)
+            gamma1 = beta_f > 0 ? R(1.99) / beta_f : R(1) / (nmL / alpha)
+            gamma2 = R(0.99) / (beta_l / 2 + gamma1 * nmL^2)
         elseif theta == 0 && mu == 1 # PPCA
             temp = R(3)
             if beta_f == 0
                 nmL *= sqrt(temp)
-                if nmL > par *beta_l
+                if nmL > par * beta_l
                     alpha = R(1)
-                else 
-                    alpha = beta_l/(par2*nmL)
+                else
+                    alpha = beta_l / (par2 * nmL)
                 end
-                gamma1 = R(1)/(beta_f/2+nmL/alpha)
-                gamma2 = R(0.99)/(beta_l/2+nmL*alpha)
-            else  
+                gamma1 = R(1) / (beta_f / 2 + nmL / alpha)
+                gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
+            else
                 if nmL > par * max(beta_l, beta_f)
                     alpha = R(1)
-                elseif beta_f > par*beta_l
-                    alpha = par2*nmL/beta_f
-                elseif beta_l > par*beta_f
-                    alpha = beta_l/(par2*nmL)
+                elseif beta_f > par * beta_l
+                    alpha = par2 * nmL / beta_f
+                elseif beta_l > par * beta_f
+                    alpha = beta_l / (par2 * nmL)
                 end
-                xi = 1+ 2*nmL/(nmL+alpha*beta_f/2)
-                gamma1 = R(1)/(beta_f/2+nmL/alpha)
-                gamma2 = R(0.99)/(beta_l/2+xi*nmL*alpha)
+                xi = 1 + 2 * nmL / (nmL + alpha * beta_f / 2)
+                gamma1 = R(1) / (beta_f / 2 + nmL / alpha)
+                gamma2 = R(0.99) / (beta_l / 2 + xi * nmL * alpha)
             end
         elseif mu == 0 # SDCA & PDCA
-            temp = theta^2-3*theta+3
+            temp = theta^2 - 3 * theta + 3
             if beta_l == R(0)
                 nmL *= sqrt(temp)
-                 if nmL > par *beta_f
+                if nmL > par * beta_f
                     alpha = R(1)
-                else 
-                    alpha = par2*nmL/beta_f
+                else
+                    alpha = par2 * nmL / beta_f
                 end
-                gamma1 = R(1)/(beta_f/2+nmL/alpha)
-                gamma2 = R(0.99)/(beta_l/2+nmL*alpha)
-            else 
+                gamma1 = R(1) / (beta_f / 2 + nmL / alpha)
+                gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
+            else
                 if nmL > par * max(beta_l, beta_f)
                     alpha = R(1)
-                elseif beta_f > par*beta_l
-                    alpha = par2*nmL/beta_f
-                elseif beta_l > par*beta_f
-                    alpha = beta_l/(par2*nmL)
+                elseif beta_f > par * beta_l
+                    alpha = par2 * nmL / beta_f
+                elseif beta_l > par * beta_f
+                    alpha = beta_l / (par2 * nmL)
                 end
-                eta = 1+ (temp-1)*alpha*nmL/(alpha*nmL+beta_l/2)
-                gamma1 = R(1)/(beta_f/2+eta*nmL/alpha)
-                gamma2 = R(0.99)/(beta_l/2+nmL*alpha)
-            end 
+                eta = 1 + (temp - 1) * alpha * nmL / (alpha * nmL + beta_l / 2)
+                gamma1 = R(1) / (beta_f / 2 + eta * nmL / alpha)
+                gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
+            end
         elseif theta == 0 && mu == 0.5 # PPDCA
             if beta_l == 0 || beta_f == 0
-                 if nmL > par * max(beta_l, beta_f)
+                if nmL > par * max(beta_l, beta_f)
                     alpha = R(1)
-                elseif beta_f > par*beta_l
-                    alpha = par2*nmL/beta_f
-                elseif beta_l > par*beta_f
-                    alpha = beta_l/(par2*nmL)
+                elseif beta_f > par * beta_l
+                    alpha = par2 * nmL / beta_f
+                elseif beta_l > par * beta_f
+                    alpha = beta_l / (par2 * nmL)
                 end
-            else 
-                alpha = sqrt(beta_l/beta_f)/2
+            else
+                alpha = sqrt(beta_l / beta_f) / 2
             end
-            gamma1 = R(1)/(beta_f/2+nmL/alpha)
-            gamma2 = R(0.99)/(beta_l/2+nmL*alpha)
+            gamma1 = R(1) / (beta_f / 2 + nmL / alpha)
+            gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
         else
             error("this choice of theta and mu is not supported!")
         end
@@ -208,10 +213,17 @@ struct AFBA{R}
     verbose::Bool
     freq::Int
 
-    function AFBA{R}(; gamma1::Maybe{R}=nothing, gamma2::Maybe{R}=nothing,
-        theta::R=R(1), mu::R=R(1), lambda::R=R(1), maxit::Int=10000,
-        tol::R=R(1e-5), verbose::Bool=false, freq::Int=100
-    ) where R
+    function AFBA{R}(;
+        gamma1::Maybe{R} = nothing,
+        gamma2::Maybe{R} = nothing,
+        theta::R = R(1),
+        mu::R = R(1),
+        lambda::R = R(1),
+        maxit::Int = 10000,
+        tol::R = R(1e-5),
+        verbose::Bool = false,
+        freq::Int = 100,
+    ) where {R}
         @assert gamma1 === nothing || gamma1 > 0
         @assert gamma2 === nothing || gamma2 > 0
         @assert theta >= 0
@@ -224,41 +236,59 @@ struct AFBA{R}
     end
 end
 
-function (solver::AFBA{R})(x0::AbstractArray{C}, y0::AbstractArray{C};
-    f=Zero(), g=Zero(), h=Zero(), l=IndZero(), L=I, beta_f::R=R(0), beta_l::R=R(0)
-) where {R, C <: Union{R, Complex{R}}}
+function (solver::AFBA{R})(
+    x0::AbstractArray{C},
+    y0::AbstractArray{C};
+    f = Zero(),
+    g = Zero(),
+    h = Zero(),
+    l = IndZero(),
+    L = I,
+    beta_f::R = R(0),
+    beta_l::R = R(0),
+) where {R,C<:Union{R,Complex{R}}}
 
     stop(state::AFBA_state) = norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= solver.tol
-    disp((it, state)) = @printf(
-        "%6d | %7.4e\n",
-        it, norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf)
-    )
+    disp((it, state)) =
+        @printf("%6d | %7.4e\n", it, norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf))
 
     if isa(h, Zero) # case h(Lx) equiv 0
-        L = R(0)*I
+        L = R(0) * I
         y0 = zero(x0)
-    end 
+    end
 
     lambda = solver.lambda
     if solver.gamma1 === nothing || solver.gamma2 === nothing
-        if solver.lambda != 1 
-            @warn "default stepsizes are not supported with this choice of lamdba,"*
-            " reverted to default lambda"
-            lambda = R(1)              
+        if solver.lambda != 1
+            @warn "default stepsizes are not supported with this choice of lamdba," *
+                  " reverted to default lambda"
+            lambda = R(1)
         end
-        gamma1, gamma2 = AFBA_default_stepsizes(
-            L, h, solver.theta, solver.mu, beta_f, beta_l
-        )
+        gamma1, gamma2 =
+            AFBA_default_stepsizes(L, h, solver.theta, solver.mu, beta_f, beta_l)
     else
         gamma1, gamma2 = solver.gamma1, solver.gamma2
     end
 
-    iter = AFBA_iterable(f, g, h, l, L, x0, y0,
-        solver.theta, solver.mu, lambda, gamma1, gamma2
+    iter = AFBA_iterable(
+        f,
+        g,
+        h,
+        l,
+        L,
+        x0,
+        y0,
+        solver.theta,
+        solver.mu,
+        lambda,
+        gamma1,
+        gamma2,
     )
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
-    if solver.verbose iter = tee(sample(iter, solver.freq), disp) end
+    if solver.verbose
+        iter = tee(sample(iter, solver.freq), disp)
+    end
 
     num_iters, state_final = loop(iter)
 
@@ -333,7 +363,7 @@ pp 460-479 (2013).
 cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
 pp. 667-681 (2013).
 """
-AFBA(::Type{R}; kwargs...) where R = AFBA{R}(; kwargs...)
+AFBA(::Type{R}; kwargs...) where {R} = AFBA{R}(; kwargs...)
 AFBA(; kwargs...) = AFBA(Float64; kwargs...)
 
 """
@@ -367,5 +397,5 @@ pp 460-479 (2013).
 cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
 pp. 667-681 (2013).
 """
-VuCondat(::Type{R}; kwargs...) where R = AFBA{R}(; kwargs..., theta=R(2.0))
+VuCondat(::Type{R}; kwargs...) where {R} = AFBA{R}(; kwargs..., theta = R(2.0))
 VuCondat(; kwargs...) = VuCondat(Float64; kwargs...)

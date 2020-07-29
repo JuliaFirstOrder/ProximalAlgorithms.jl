@@ -8,7 +8,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct DYS_iterable{R <: Real, C <: Union{R, Complex{R}}, T <: AbstractArray{C}, Tf, Tg, Th, TA}
+struct DYS_iterable{R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg,Th,TA}
     f::Tf
     g::Tg
     h::Th
@@ -20,7 +20,7 @@ end
 
 Base.IteratorSize(::Type{<:DYS_iterable}) = Base.IsInfinite()
 
-mutable struct DYS_state{T, S}
+mutable struct DYS_state{T,S}
     z::T
     xg::T
     y::S
@@ -30,7 +30,7 @@ mutable struct DYS_state{T, S}
     res::T
 end
 
-function Base.iterate(iter::DYS_iterable{R, C, T}) where {R, C, T}
+function Base.iterate(iter::DYS_iterable{R,C,T}) where {R,C,T}
     z = copy(iter.x0)
     xg, = prox(iter.g, z, iter.gamma)
     y = iter.A * xg
@@ -45,7 +45,7 @@ function Base.iterate(iter::DYS_iterable{R, C, T}) where {R, C, T}
 
     res = xf - xg
     z .+= iter.lambda .* res
-    state = DYS_state{T, typeof(y)}(z, xg, y, grad_h_y, z_half, xf, res)
+    state = DYS_state{T,typeof(y)}(z, xg, y, grad_h_y, z_half, xf, res)
     return state, state
 end
 
@@ -72,9 +72,14 @@ struct DavisYin{R}
     verbose::Bool
     freq::Int
 
-    function DavisYin{R}(; gamma::Maybe{R}=nothing, lambda::R=R(1.0),
-        maxit::Int=10000, tol::R=R(1e-8), verbose::Bool=false, freq::Int=100
-    ) where R
+    function DavisYin{R}(;
+        gamma::Maybe{R} = nothing,
+        lambda::R = R(1.0),
+        maxit::Int = 10000,
+        tol::R = R(1e-8),
+        verbose::Bool = false,
+        freq::Int = 100,
+    ) where {R}
         @assert gamma === nothing || gamma > 0
         @assert lambda > 0
         @assert maxit > 0
@@ -84,16 +89,21 @@ struct DavisYin{R}
     end
 end
 
-function (solver::DavisYin{R})(x0::AbstractArray{C};
-    f=Zero(), g=Zero(), h=Zero(), A=I, L::Maybe{R}=nothing
-) where {R, C <: Union{R, Complex{R}}}
+function (solver::DavisYin{R})(
+    x0::AbstractArray{C};
+    f = Zero(),
+    g = Zero(),
+    h = Zero(),
+    A = I,
+    L::Maybe{R} = nothing,
+) where {R,C<:Union{R,Complex{R}}}
 
     stop(state::DYS_state) = norm(state.res, Inf) <= solver.tol
     disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf))
 
     if solver.gamma === nothing
         if L !== nothing
-            gamma = R(1)/L
+            gamma = R(1) / L
         else
             error("You must specify either L or gamma")
         end
@@ -104,7 +114,9 @@ function (solver::DavisYin{R})(x0::AbstractArray{C};
     iter = DYS_iterable(f, g, h, A, x0, gamma, solver.lambda)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
-    if solver.verbose iter = tee(sample(iter, solver.freq), disp) end
+    if solver.verbose
+        iter = tee(sample(iter, solver.freq), disp)
+    end
 
     num_iters, state_final = loop(iter)
 
@@ -147,5 +159,5 @@ References:
 Applications", Set-Valued and Variational Analysis, vol. 25, no. 4,
 pp. 829–858 (2017).
 """
-DavisYin(::Type{R}; kwargs...) where R = DavisYin{R}(; kwargs...)
+DavisYin(::Type{R}; kwargs...) where {R} = DavisYin{R}(; kwargs...)
 DavisYin(; kwargs...) = DavisYin(Float64; kwargs...)

@@ -23,6 +23,6 @@
     lam = 2
     l = Conjugate(SqrNormL2(lam))
     grad_l_x, l_x = gradient(l, x)
-    @test isequal(grad_l_x, x/lam)
-    
+    @test isequal(grad_l_x, x / lam)
+
 end

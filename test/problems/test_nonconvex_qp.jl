@@ -21,41 +21,38 @@ using Test
     @testset "PANOC" begin
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.PANOC{T}()
-        x, it = solver(x0, f=f, g=g)
-        z = min.(upp, max.(low, x .- gamma .* (Q*x + q)))
-        # println(it, " ", 0.5*dot(x, Q*x) + dot(q, x))
-        @test norm(x - z, Inf)/gamma <= solver.tol
+        x, it = solver(x0, f = f, g = g)
+        z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
+        @test norm(x - z, Inf) / gamma <= solver.tol
     end
 
     @testset "ZeroFPR" begin
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.ZeroFPR{T}()
-        x, it = solver(x0, f=f, g=g)
-        z = min.(upp, max.(low, x .- gamma .* (Q*x + q)))
-        # println(it, " ", 0.5*dot(x, Q*x) + dot(q, x))
-        @test norm(x - z, Inf)/gamma <= solver.tol
+        x, it = solver(x0, f = f, g = g)
+        z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
+        @test norm(x - z, Inf) / gamma <= solver.tol
     end
 
     @testset "LiLin" begin
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.LiLin{T}(gamma=gamma)
-        x, it = solver(x0, f=f, g=g)
-        z = min.(upp, max.(low, x .- gamma .* (Q*x + q)))
-        # println(it, " ", 0.5*dot(x, Q*x) + dot(q, x))
-        @test norm(x - z, Inf)/gamma <= solver.tol
+        solver = ProximalAlgorithms.LiLin{T}(gamma = gamma)
+        x, it = solver(x0, f = f, g = g)
+        z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
+        @test norm(x - z, Inf) / gamma <= solver.tol
     end
 end
 
 @testset "Nonconvex QP (small, $T)" for T in [Float64]
-    @testset "Random problem $k" for k in 1:5
+    @testset "Random problem $k" for k = 1:5
         Random.seed!(k)
 
         n = 100
         A = randn(T, n, n)
         U, R = qr(A)
         eigenvalues = T(2) .* rand(T, n) .- T(1)
-        Q = U*Diagonal(eigenvalues)*U'
-        Q = 0.5*(Q + Q')
+        Q = U * Diagonal(eigenvalues) * U'
+        Q = 0.5 * (Q + Q')
         q = randn(T, n)
 
         low = T(-1.0)
@@ -71,29 +68,26 @@ end
 
         @testset "PANOC" begin
             x0 = zeros(T, n)
-            solver = ProximalAlgorithms.PANOC{T}(tol=TOL)
-            x, it = solver(x0, f=f, g=g)
-            z = min.(upp, max.(low, x .- gamma .* (Q*x + q)))
-            # println(it, " ", 0.5*dot(x, Q*x) + dot(q, x))
-            @test norm(x - z, Inf)/gamma <= solver.tol
+            solver = ProximalAlgorithms.PANOC{T}(tol = TOL)
+            x, it = solver(x0, f = f, g = g)
+            z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
+            @test norm(x - z, Inf) / gamma <= solver.tol
         end
 
         @testset "ZeroFPR" begin
             x0 = zeros(T, n)
-            solver = ProximalAlgorithms.ZeroFPR{T}(tol=TOL)
-            x, it = solver(x0, f=f, g=g)
-            z = min.(upp, max.(low, x .- gamma .* (Q*x + q)))
-            # println(it, " ", 0.5*dot(x, Q*x) + dot(q, x))
-            @test norm(x - z, Inf)/gamma <= solver.tol
+            solver = ProximalAlgorithms.ZeroFPR{T}(tol = TOL)
+            x, it = solver(x0, f = f, g = g)
+            z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
+            @test norm(x - z, Inf) / gamma <= solver.tol
         end
 
         @testset "LiLin" begin
             x0 = zeros(T, n)
-            solver = ProximalAlgorithms.LiLin(gamma=gamma, tol=TOL)
-            x, it = solver(x0, f=f, g=g)
-            z = min.(upp, max.(low, x .- gamma .* (Q*x + q)))
-            # println(it, " ", 0.5*dot(x, Q*x) + dot(q, x))
-            @test norm(x - z, Inf)/gamma <= solver.tol
+            solver = ProximalAlgorithms.LiLin(gamma = gamma, tol = TOL)
+            x, it = solver(x0, f = f, g = g)
+            z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
+            @test norm(x - z, Inf) / gamma <= solver.tol
         end
     end
 end

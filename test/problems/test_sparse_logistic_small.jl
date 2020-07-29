@@ -1,13 +1,14 @@
 @testset "Sparse logistic small ($T)" for T in [Float32, Float64]
-
     using ProximalOperators
     using ProximalAlgorithms
     using LinearAlgebra
 
-    A = T[  1.0  -2.0   3.0  -4.0  5.0;
-           2.0  -1.0   0.0  -1.0  3.0;
-          -1.0   0.0   4.0  -3.0  2.0;
-          -1.0  -1.0  -1.0   1.0  3.0]
+    A = T[
+        1.0 -2.0 3.0 -4.0 5.0
+        2.0 -1.0 0.0 -1.0 3.0
+        -1.0 0.0 4.0 -3.0 2.0
+        -1.0 -1.0 -1.0 1.0 3.0
+    ]
     b = T[1.0, 2.0, 3.0, 4.0]
 
     m, n = size(A)
@@ -25,8 +26,8 @@
     # Nonfast/Adaptive
 
     x0 = zeros(T, n)
-    solver = ProximalAlgorithms.ForwardBackward{R}(tol=TOL, adaptive=true, fast=false)
-    x, it = solver(x0, f=f, A=A, g=g)
+    solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL, adaptive = true, fast = false)
+    x, it = solver(x0, f = f, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 1100
@@ -34,8 +35,8 @@
     # Fast/Adaptive
 
     x0 = zeros(T, n)
-    solver = ProximalAlgorithms.ForwardBackward{R}(tol=TOL, adaptive=true, fast=true)
-    x, it = solver(x0, f=f, A=A, g=g)
+    solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL, adaptive = true, fast = true)
+    x, it = solver(x0, f = f, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 500
@@ -43,8 +44,8 @@
     # ZeroFPR/Adaptive
 
     x0 = zeros(T, n)
-    solver = ProximalAlgorithms.ZeroFPR{R}(adaptive=true, tol=TOL)
-    x, it = solver(x0, f=f, A=A, g=g)
+    solver = ProximalAlgorithms.ZeroFPR{R}(adaptive = true, tol = TOL)
+    x, it = solver(x0, f = f, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 25
@@ -52,8 +53,8 @@
     # PANOC/Adaptive
 
     x0 = zeros(T, n)
-    solver = ProximalAlgorithms.PANOC{R}(adaptive=true, tol=TOL)
-    x, it = solver(x0, f=f, A=A, g=g)
+    solver = ProximalAlgorithms.PANOC{R}(adaptive = true, tol = TOL)
+    x, it = solver(x0, f = f, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 50

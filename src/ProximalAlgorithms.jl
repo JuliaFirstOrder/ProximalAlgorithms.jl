@@ -1,7 +1,7 @@
 module ProximalAlgorithms
 
-const RealOrComplex{R} = Union{R, Complex{R}}
-const Maybe{T} = Union{T, Nothing}
+const RealOrComplex{R} = Union{R,Complex{R}}
+const Maybe{T} = Union{T,Nothing}
 
 include("compat.jl")
 

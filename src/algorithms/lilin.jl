@@ -7,7 +7,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct LiLin_iterable{R <: Real, C <: Union{R, Complex{R}}, Tx <: AbstractArray{C}, Tf, TA, Tg}
+struct LiLin_iterable{R<:Real,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
     f::Tf             # smooth term
     A::TA             # matrix/linear operator
     g::Tg             # (possibly) nonsmooth, proximable term
@@ -20,7 +20,7 @@ end
 
 Base.IteratorSize(::Type{<:LiLin_iterable}) = Base.IsInfinite()
 
-mutable struct LiLin_state{R <: Real, Tx, TAx}
+mutable struct LiLin_state{R<:Real,Tx,TAx}
     x::Tx             # iterate
     y::Tx             # extrapolated point
     Ay::TAx           # A times y
@@ -38,7 +38,7 @@ mutable struct LiLin_state{R <: Real, Tx, TAx}
     q::R              # auxiliary sequence to compute moving average
 end
 
-function Base.iterate(iter::LiLin_iterable{R}) where R
+function Base.iterate(iter::LiLin_iterable{R}) where {R}
     y = iter.x0
     Ay = iter.A * y
     grad_f_Ay, f_Ay = gradient(iter.f, Ay)
@@ -60,19 +60,34 @@ function Base.iterate(iter::LiLin_iterable{R}) where R
     res = y - z
 
     state = LiLin_state(
-        copy(iter.x0), y, Ay, f_Ay, grad_f_Ay, At_grad_f_Ay,
-        iter.gamma, y_forward, z, g_z, res, R(1), Fy, R(1)
+        copy(iter.x0),
+        y,
+        Ay,
+        f_Ay,
+        grad_f_Ay,
+        At_grad_f_Ay,
+        iter.gamma,
+        y_forward,
+        z,
+        g_z,
+        res,
+        R(1),
+        Fy,
+        R(1),
     )
 
     return state, state
 end
 
-function Base.iterate(iter::LiLin_iterable{R}, state::LiLin_state{R, Tx, TAx}) where {R, Tx, TAx}
+function Base.iterate(
+    iter::LiLin_iterable{R},
+    state::LiLin_state{R,Tx,TAx},
+) where {R,Tx,TAx}
     # TODO: backtrack gamma at y
 
     Fz = iter.f(state.z) + state.g_z
 
-    theta1 = (R(1)+sqrt(R(1)+4*state.theta^2))/R(2)
+    theta1 = (R(1) + sqrt(R(1) + 4 * state.theta^2)) / R(2)
 
     if Fz <= state.F_average - iter.delta * norm(state.res)^2
         case = 1
@@ -93,7 +108,9 @@ function Base.iterate(iter::LiLin_iterable{R}, state::LiLin_state{R, Tx, TAx}) w
         state.x, state.z = state.z, state.x
         Fx = Fz
     elseif case == 2
-        state.y .= state.z .+ (state.theta / theta1) .* (state.z .- v) .+ ((state.theta - R(1)) / theta1) .* (v .- state.x)
+        state.y .=
+            state.z .+ (state.theta / theta1) .* (state.z .- v) .+
+            ((state.theta - R(1)) / theta1) .* (v .- state.x)
         state.x = v
         Fx = Fv
     end
@@ -110,7 +127,7 @@ function Base.iterate(iter::LiLin_iterable{R}, state::LiLin_state{R, Tx, TAx}) w
 
     # NOTE: the following can be simplified
     q1 = iter.eta * state.q + 1
-    state.F_average = (iter.eta * state.q * state.F_average + Fx)/q1
+    state.F_average = (iter.eta * state.q * state.F_average + Fx) / q1
     state.q = q1
 
     return state, state
@@ -118,7 +135,7 @@ end
 
 # Solver
 
-struct LiLin{R <: Real}
+struct LiLin{R<:Real}
     gamma::Maybe{R}
     adaptive::Bool
     delta::R
@@ -128,10 +145,16 @@ struct LiLin{R <: Real}
     verbose::Bool
     freq::Int
 
-    function LiLin{R}(; gamma::Maybe{R}=nothing, adaptive::Bool=false,
-        delta::R=R(1e-3), eta::R=R(0.8), maxit::Int=10000, tol::R=R(1e-8),
-        verbose::Bool=false, freq::Int=100
-    ) where R
+    function LiLin{R}(;
+        gamma::Maybe{R} = nothing,
+        adaptive::Bool = false,
+        delta::R = R(1e-3),
+        eta::R = R(0.8),
+        maxit::Int = 10000,
+        tol::R = R(1e-8),
+        verbose::Bool = false,
+        freq::Int = 100,
+    ) where {R}
         @assert gamma === nothing || gamma > 0
         @assert delta > 0
         @assert 0 < eta < 1
@@ -143,17 +166,19 @@ struct LiLin{R <: Real}
 end
 
 function (solver::LiLin{R})(
-    x0::AbstractArray{C}; f=Zero(), A=I, g=Zero(), L::Maybe{R}=nothing
-) where {R, C <: Union{R, Complex{R}}}
+    x0::AbstractArray{C};
+    f = Zero(),
+    A = I,
+    g = Zero(),
+    L::Maybe{R} = nothing,
+) where {R,C<:Union{R,Complex{R}}}
 
-    stop(state::LiLin_state) = norm(state.res, Inf)/state.gamma <= solver.tol
-    disp((it, state)) = @printf(
-        "%5d | %.3e | %.3e\n",
-        it, state.gamma, norm(state.res, Inf)/state.gamma
-    )
+    stop(state::LiLin_state) = norm(state.res, Inf) / state.gamma <= solver.tol
+    disp((it, state)) =
+        @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
 
     if solver.gamma === nothing && L !== nothing
-        gamma = R(1)/L
+        gamma = R(1) / L
     elseif solver.gamma !== nothing
         gamma = solver.gamma
     else
@@ -163,7 +188,9 @@ function (solver::LiLin{R})(
     iter = LiLin_iterable(f, A, g, x0, gamma, solver.adaptive, solver.delta, solver.eta)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
-    if solver.verbose iter = tee(sample(iter, solver.freq), disp) end
+    if solver.verbose
+        iter = tee(sample(iter, solver.freq), disp)
+    end
 
     num_iters, state_final = loop(iter)
 
@@ -206,5 +233,5 @@ References:
 [1] Li, Lin, "Accelerated Proximal Gradient Methods for Nonconvex Programming",
 Proceedings of NIPS 2015 (2015).
 """
-LiLin(::Type{R}; kwargs...) where R = LiLin{R}(; kwargs...)
+LiLin(::Type{R}; kwargs...) where {R} = LiLin{R}(; kwargs...)
 LiLin(; kwargs...) = LiLin(Float64; kwargs...)
