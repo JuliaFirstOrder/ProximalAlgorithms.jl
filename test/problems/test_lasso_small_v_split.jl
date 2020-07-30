@@ -1,14 +1,17 @@
 @testset "Lasso small (v. split, $T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
-
     using ProximalOperators
     using ProximalAlgorithms
     using LinearAlgebra
     using AbstractOperators: MatrixOp
 
-    A1 = T[  1.0  -2.0   3.0  -4.0  5.0;
-             2.0  -1.0   0.0  -1.0  3.0]
-    A2 = T[ -1.0   0.0   4.0  -3.0  2.0;
-            -1.0  -1.0  -1.0   1.0  3.0]
+    A1 = T[
+        1.0 -2.0 3.0 -4.0 5.0
+        2.0 -1.0 0.0 -1.0 3.0
+    ]
+    A2 = T[
+        -1.0 0.0 4.0 -3.0 2.0
+        -1.0 -1.0 -1.0 1.0 3.0
+    ]
     A = vcat(MatrixOp(A1), MatrixOp(A2))
     b1 = T[1.0, 2.0]
     b2 = T[3.0, 4.0]
@@ -19,7 +22,7 @@
 
     R = real(T)
 
-    lam = R(0.1)*norm([A1; A2]'*[b1; b2], Inf)
+    lam = R(0.1) * norm([A1; A2]' * [b1; b2], Inf)
     @test typeof(lam) == R
 
     f = SeparableSum(Translate(SqrNormL2(R(1)), -b1), Translate(SqrNormL2(R(1)), -b2))
@@ -34,8 +37,8 @@
         ## Nonfast/Nonadaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ForwardBackward{R}(tol=TOL)
-        x, it = solver(x0, f=f, A=A, g=g, L=opnorm([A1; A2])^2)
+        solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, L = opnorm([A1; A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 150
@@ -43,8 +46,8 @@
         # Nonfast/Adaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ForwardBackward{R}(tol=TOL, adaptive=true)
-        x, it = solver(x0, f=f, A=A, g=g)
+        solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL, adaptive = true)
+        x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 300
@@ -52,8 +55,8 @@
         # Fast/Nonadaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ForwardBackward{R}(tol=TOL, fast=true)
-        x, it = solver(x0, f=f, A=A, g=g, L=opnorm([A1; A2])^2)
+        solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL, fast = true)
+        x, it = solver(x0, f = f, A = A, g = g, L = opnorm([A1; A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100
@@ -61,8 +64,9 @@
         # Fast/Adaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ForwardBackward{R}(tol=TOL, adaptive=true, fast=true)
-        x, it = solver(x0, f=f, A=A, g=g)
+        solver =
+            ProximalAlgorithms.ForwardBackward{R}(tol = TOL, adaptive = true, fast = true)
+        x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 200
@@ -73,8 +77,8 @@
         # ZeroFPR/Nonadaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ZeroFPR{R}(tol=TOL)
-        x, it = solver(x0, f=f, A=A, g=g, L=opnorm([A1; A2])^2)
+        solver = ProximalAlgorithms.ZeroFPR{R}(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, L = opnorm([A1; A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -82,8 +86,8 @@
         # ZeroFPR/Adaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ZeroFPR{R}(adaptive=true, tol=TOL)
-        x, it = solver(x0, f=f, A=A, g=g)
+        solver = ProximalAlgorithms.ZeroFPR{R}(adaptive = true, tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -95,8 +99,8 @@
         # PANOC/Nonadaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.PANOC{R}(tol=TOL)
-        x, it = solver(x0, f=f, A=A, g=g, L=opnorm([A1; A2])^2)
+        solver = ProximalAlgorithms.PANOC{R}(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, L = opnorm([A1; A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -104,8 +108,8 @@
         ## PANOC/Adaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.PANOC{R}(adaptive=true, tol=TOL)
-        x, it = solver(x0, f=f, A=A, g=g)
+        solver = ProximalAlgorithms.PANOC{R}(adaptive = true, tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20

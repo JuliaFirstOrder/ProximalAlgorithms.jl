@@ -21,7 +21,29 @@ end
     end
 
     @testset "Halting" begin
-        iter = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765]
+        iter = [
+            0,
+            1,
+            1,
+            2,
+            3,
+            5,
+            8,
+            13,
+            21,
+            34,
+            55,
+            89,
+            144,
+            233,
+            377,
+            610,
+            987,
+            1597,
+            2584,
+            4181,
+            6765,
+        ]
         truncated = IterationTools.halt(iter, x -> x >= 1000)
         @test Base.IteratorSize(truncated) == Base.IteratorSize(iter)
         @test eltype(truncated) == eltype(iter)
@@ -37,7 +59,7 @@ end
         fib = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
 
         _, state = @test_logs (:info, "$(fib[1])") iterate(iter)
-        for k in 2:10
+        for k = 2:10
             _, state = @test_logs (:info, "$(fib[k])") iterate(iter, state)
         end
     end
@@ -49,9 +71,9 @@ end
         @test length(sample) == 15
         k = 0
         for x in sample
-            idx = min(147, (k+1)*10)
+            idx = min(147, (k + 1) * 10)
             @test x == iter[idx]
-            k = k+1
+            k = k + 1
         end
     end
 
@@ -66,7 +88,7 @@ end
             @test x == iter[k+1]
             @test t >= k * 1e8 * 0.9 # 1e8 ns = 0.1 s, factor 0.9 is for safety
             sleep(0.1)
-            k = k+1
+            k = k + 1
         end
     end
 

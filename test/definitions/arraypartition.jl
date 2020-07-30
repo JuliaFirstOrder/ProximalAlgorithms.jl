@@ -4,7 +4,7 @@ import RecursiveArrayTools
 @inline function ProximalOperators.prox(
     h::ProximalOperators.ProximableFunction,
     x::RecursiveArrayTools.ArrayPartition,
-    gamma...
+    gamma...,
 )
     # unwrap
     y, fy = ProximalOperators.prox(h, x.x, gamma...)
@@ -14,7 +14,7 @@ end
 
 @inline function ProximalOperators.gradient(
     h::ProximalOperators.ProximableFunction,
-    x::RecursiveArrayTools.ArrayPartition
+    x::RecursiveArrayTools.ArrayPartition,
 )
     # unwrap
     grad, fx = ProximalOperators.gradient(h, x.x)
@@ -26,11 +26,11 @@ end
     y::RecursiveArrayTools.ArrayPartition,
     h::ProximalOperators.ProximableFunction,
     x::RecursiveArrayTools.ArrayPartition,
-    gamma...
+    gamma...,
 ) = ProximalOperators.prox!(y.x, h, x.x, gamma...)
 
 @inline ProximalOperators.gradient!(
     y::RecursiveArrayTools.ArrayPartition,
     h::ProximalOperators.ProximableFunction,
-    x::RecursiveArrayTools.ArrayPartition
+    x::RecursiveArrayTools.ArrayPartition,
 ) = ProximalOperators.gradient!(y.x, h, x.x)

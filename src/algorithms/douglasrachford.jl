@@ -8,7 +8,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct DRS_iterable{R <: Real, C <: Union{R, Complex{R}}, T <: AbstractArray{C}, Tf, Tg}
+struct DRS_iterable{R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg}
     f::Tf
     g::Tg
     x::T
@@ -25,11 +25,12 @@ mutable struct DRS_state{T}
     res::T
 end
 
-DRS_state(iter::DRS_iterable) = DRS_state(copy(iter.x), zero(iter.x), zero(iter.x), zero(iter.x), zero(iter.x))
+DRS_state(iter::DRS_iterable) =
+    DRS_state(copy(iter.x), zero(iter.x), zero(iter.x), zero(iter.x), zero(iter.x))
 
-function Base.iterate(iter::DRS_iterable, state::DRS_state=DRS_state(iter))
+function Base.iterate(iter::DRS_iterable, state::DRS_state = DRS_state(iter))
     prox!(state.y, iter.f, state.x, iter.gamma)
-    state.r .= 2 .*state.y .- state.x
+    state.r .= 2 .* state.y .- state.x
     prox!(state.z, iter.g, state.r, iter.gamma)
     state.res .= state.y .- state.z
     state.x .-= state.res
@@ -45,9 +46,13 @@ struct DouglasRachford{R}
     verbose::Bool
     freq::Int
 
-    function DouglasRachford{R}(; gamma::R, maxit::Int=1000, tol::R=R(1e-8),
-        verbose::Bool=false, freq::Int=100
-    ) where R
+    function DouglasRachford{R}(;
+        gamma::R,
+        maxit::Int = 1000,
+        tol::R = R(1e-8),
+        verbose::Bool = false,
+        freq::Int = 100,
+    ) where {R}
         @assert gamma > 0
         @assert maxit > 0
         @assert tol > 0
@@ -57,8 +62,10 @@ struct DouglasRachford{R}
 end
 
 function (solver::DouglasRachford{R})(
-    x0::AbstractArray{C}; f=Zero(), g=Zero()
-) where {R, C <: Union{R, Complex{R}}}
+    x0::AbstractArray{C};
+    f = Zero(),
+    g = Zero(),
+) where {R,C<:Union{R,Complex{R}}}
 
     stop(state::DRS_state) = norm(state.res, Inf) / solver.gamma <= solver.tol
     disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf) / solver.gamma)
@@ -66,7 +73,9 @@ function (solver::DouglasRachford{R})(
     iter = DRS_iterable(f, g, x0, solver.gamma)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
-    if solver.verbose iter = tee(sample(iter, solver.freq), disp) end
+    if solver.verbose
+        iter = tee(sample(iter, solver.freq), disp)
+    end
 
     num_iters, state_final = loop(iter)
 
@@ -102,5 +111,5 @@ References:
 Proximal Point Algorithm for Maximal Monotone Operators",
 Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 """
-DouglasRachford(::Type{R}; kwargs...) where R = DouglasRachford{R}(; kwargs...)
+DouglasRachford(::Type{R}; kwargs...) where {R} = DouglasRachford{R}(; kwargs...)
 DouglasRachford(; kwargs...) = DouglasRachford(Float64; kwargs...)
