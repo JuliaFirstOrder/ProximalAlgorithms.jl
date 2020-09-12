@@ -1,4 +1,8 @@
-# Douglas-Rachford line-search method
+# Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM
+# for nonconvex optimization: Accelerated and Newton-type algorithms",
+# arXiv:2005.10230, 2020.
+#
+# https://arxiv.org/abs/2005.10230
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
