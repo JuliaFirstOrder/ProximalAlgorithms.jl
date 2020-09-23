@@ -1,4 +1,4 @@
-name: CI
+name: CI nightly
 
 on:
   push:
@@ -13,8 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.0'
-          - '1.5'
+          - 'nightly'
         os:
           - ubuntu-latest
           - macOS-latest
