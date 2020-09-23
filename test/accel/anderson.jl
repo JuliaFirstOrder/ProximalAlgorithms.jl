@@ -36,7 +36,7 @@ using Test
 
     d = acc * res
 
-    for it = 1:5
+    for it = 1:10
         # store iterate and residual for the operator update later
         res_prev .= res
         x_prev .= x
