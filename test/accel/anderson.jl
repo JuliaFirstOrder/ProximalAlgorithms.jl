@@ -4,11 +4,16 @@ using Test
     using LinearAlgebra
     using ProximalAlgorithms: AndersonAcceleration, update!
 
-    n, k = 20, 10
+    H = R[
+        0.63287    0.330934   -0.156908   -0.294776    0.10761;
+        0.330934   0.673201    0.0459778   0.231011   -0.235265;
+       -0.156908   0.0459778   0.635812   -0.232261   -0.388775;
+       -0.294776   0.231011   -0.232261    0.726854   -0.0691783;
+        0.10761   -0.235265   -0.388775   -0.0691783   0.336262;
+    ]
+    l = R[1.0, 2.0, 3.0, 4.0, 5.0]
 
-    Q = randn(R, n, k)
-    H = Q * Q' + I
-    l = randn(R, n)
+    n = length(l)
 
     f(x) = dot(x, H * x) / 2 + dot(x, l)
 
@@ -31,7 +36,7 @@ using Test
 
     d = acc * res
 
-    for it = 1:30
+    for it = 1:10
         # store iterate and residual for the operator update later
         res_prev .= res
         x_prev .= x
@@ -51,6 +56,6 @@ using Test
         update!(acc, x - x_prev, res - res_prev)
     end
 
-    @test f(x) <= f_star + (1 + abs(f_star)) * 1e-6
+    @test f(x) <= f_star + (1 + abs(f_star)) * sqrt(eps(R))
 
 end
