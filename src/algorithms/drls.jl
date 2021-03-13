@@ -14,10 +14,10 @@ struct DRLS_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg,TH}
     f::Tf
     g::Tg
     x0::Tx
-    lambda::R
     gamma::R
+    lambda::R
     c::R
-    N::Int
+    max_backtracks::Int
     H::TH
 end
 
@@ -85,7 +85,7 @@ function Base.iterate(iter::DRLS_iterable{R}, state::DRLS_state) where {R}
     state.tau = R(1)
     state.x .= state.x_d
 
-    for k = 1:iter.N
+    for k = 1:iter.max_backtracks
         state.f_u = prox!(state.u, iter.f, state.x, iter.gamma)
         state.w .= 2 .* state.u .- state.x
         state.g_v = prox!(state.v, iter.g, state.w, iter.gamma)
@@ -117,7 +117,7 @@ struct DRLS{R}
     beta::R
     gamma::Maybe{R}
     lambda::R
-    N::Int
+    max_backtracks::Int
     memory::Int
     maxit::Int
     tol::R
@@ -129,7 +129,7 @@ struct DRLS{R}
         beta::R = R(0.5),
         gamma::Maybe{R} = nothing,
         lambda::R = R(1),
-        N::Int = 20,
+        max_backtracks::Int = 20,
         memory::Int = 5,
         maxit::Int = 1000,
         tol::R = R(1e-8),
@@ -140,12 +140,12 @@ struct DRLS{R}
         @assert 0 < beta < 1
         @assert gamma === nothing || gamma > 0
         @assert 0 < lambda < 2
-        @assert N > 0
+        @assert max_backtracks > 0
         @assert memory >= 0
         @assert maxit > 0
         @assert tol > 0
         @assert freq > 0
-        new(alpha, beta, gamma, lambda, N, memory, maxit, tol, verbose, freq)
+        new(alpha, beta, gamma, lambda, max_backtracks, memory, maxit, tol, verbose, freq)
     end
 end
 
@@ -184,7 +184,7 @@ function (solver::DRLS{R})(
     c = solver.beta * C_gamma_lambda
 
     iter =
-        DRLS_iterable(f, g, x0, solver.lambda, gamma, c, solver.N, LBFGS(x0, solver.memory))
+        DRLS_iterable(f, g, x0, gamma, solver.lambda, c, solver.max_backtracks, LBFGS(x0, solver.memory))
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose

@@ -8,14 +8,14 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"
 
 [compat]
-julia = "1.0.0"
 ProximalOperators = "0.14"
+julia = "1.0.0"
 
 [extras]
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 AbstractOperators = "d9c5613a-d543-52d8-9afd-8f241a8c3f1c"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Random", "Test", "RecursiveArrayTools", "AbstractOperators"]

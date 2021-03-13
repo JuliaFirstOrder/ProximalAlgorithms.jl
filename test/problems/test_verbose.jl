@@ -125,7 +125,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.DouglasRachford{R}(
-            gamma = R(10.0) / opnorm(A)^2,
+            gamma = R(10) / opnorm(A)^2,
             tol = TOL,
             verbose = true,
         )
