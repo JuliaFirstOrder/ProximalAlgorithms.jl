@@ -1,8 +1,10 @@
-@testset "Lasso small ($T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
-    using ProximalOperators
-    using ProximalAlgorithms
-    using LinearAlgebra
+using LinearAlgebra
+using Test
 
+using ProximalOperators
+using ProximalAlgorithms
+
+@testset "Lasso small ($T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
     A = T[
         1.0 -2.0 3.0 -4.0 5.0
         2.0 -1.0 0.0 -1.0 3.0
@@ -116,7 +118,7 @@
 
         x0 = zeros(T, n)
         solver =
-            ProximalAlgorithms.DouglasRachford{R}(gamma = R(10.0) / opnorm(A)^2, tol = TOL)
+            ProximalAlgorithms.DouglasRachford{R}(gamma = R(10) / opnorm(A)^2, tol = TOL)
         y, z, it = solver(x0, f = f2, g = g)
         @test eltype(y) == T
         @test eltype(z) == T
