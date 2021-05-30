@@ -84,8 +84,8 @@
         # ZeroFPR/Nonadaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.ZeroFPR{R}(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, L = opnorm([A1 A2])^2)
+        solver = ProximalAlgorithms.ZeroFPR(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm([A1 A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -93,7 +93,7 @@
         # ZeroFPR/Adaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.ZeroFPR{R}(adaptive = true, tol = TOL)
+        solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL

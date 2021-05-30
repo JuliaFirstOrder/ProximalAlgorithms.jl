@@ -135,11 +135,13 @@ stopwatch(iter::I) where {I} = StopwatchIterable{I}(iter)
 # Looping
 
 function loop(iter)
-    x = nothing
-    for y in iter
-        x = y
+    output, state = iterate(iter)
+    res = iterate(iter, state)
+    while res !== nothing
+        output, state = res
+        res = iterate(iter, state)
     end
-    return x
+    return output
 end
 
 end # module

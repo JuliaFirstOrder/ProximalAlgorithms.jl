@@ -9,21 +9,22 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct ZeroFPR_iterable{R<:Real,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
-    f::Tf             # smooth term
-    A::TA             # matrix/linear operator
-    g::Tg             # (possibly) nonsmooth, proximable term
-    x0::Tx            # initial point
-    alpha::R          # in (0, 1), e.g.: 0.95
-    beta::R           # in (0, 1), e.g.: 0.5
-    gamma::Maybe{R}   # stepsize parameter of forward and backward steps
-    adaptive::Bool    # enforce adaptive stepsize even if L is provided
-    H::TH
+Base.@kwdef struct ZeroFPR_iterable{R,Tx,Tf,TA,Tg,TH}
+    f::Tf = Zero()
+    A::TA = I
+    g::Tg = Zero()
+    x0::Tx
+    alpha::R = real(eltype(x0))(0.95)
+    beta::R = real(eltype(x0))(0.5)
+    Lf::Maybe{R} = nothing
+    gamma::Maybe{R} = Lf === nothing ? nothing : alpha / Lf
+    adaptive::Bool = false
+    H::TH = LBFGS(x0, 5)
 end
 
 Base.IteratorSize(::Type{<:ZeroFPR_iterable}) = Base.IsInfinite()
 
-mutable struct ZeroFPR_state{R<:Real,Tx,TAx,TH}
+mutable struct ZeroFPR_state{R,Tx,TAx,TH}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
@@ -216,47 +217,15 @@ end
 
 # Solver
 
-struct ZeroFPR{R<:Real}
-    alpha::R
-    beta::R
-    gamma::Maybe{R}
-    adaptive::Bool
-    memory::Int
+struct ZeroFPR{R, K}
     maxit::Int
     tol::R
     verbose::Bool
     freq::Int
-
-    function ZeroFPR{R}(;
-        alpha::R = R(0.95),
-        beta::R = R(0.5),
-        gamma::Maybe{R} = nothing,
-        adaptive::Bool = false,
-        memory::Int = 5,
-        maxit::Int = 1000,
-        tol::R = R(1e-8),
-        verbose::Bool = false,
-        freq::Int = 10,
-    ) where {R}
-        @assert 0 < alpha < 1
-        @assert 0 < beta < 1
-        @assert gamma === nothing || gamma > 0
-        @assert memory >= 0
-        @assert maxit > 0
-        @assert tol > 0
-        @assert freq > 0
-        new(alpha, beta, gamma, adaptive, memory, maxit, tol, verbose, freq)
-    end
+    kwargs::K
 end
 
-function (solver::ZeroFPR{R})(
-    x0::AbstractArray{C};
-    f = Zero(),
-    A = I,
-    g = Zero(),
-    L::Maybe{R} = nothing,
-) where {R,C<:Union{R,Complex{R}}}
-
+function (solver::ZeroFPR{R, K})(x0; kwargs...) where {R, K}
     stop(state::ZeroFPR_state) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) = @printf(
         "%5d | %.3e | %.3e | %.3e\n",
@@ -265,34 +234,14 @@ function (solver::ZeroFPR{R})(
         norm(state.res, Inf) / state.gamma,
         (state.tau === nothing ? 0.0 : state.tau)
     )
-
-    gamma = if solver.gamma === nothing && L !== nothing
-        solver.alpha / L
-    else
-        solver.gamma
-    end
-
-    iter = ZeroFPR_iterable(
-        f,
-        A,
-        g,
-        x0,
-        solver.alpha,
-        solver.beta,
-        gamma,
-        solver.adaptive,
-        LBFGS(x0, solver.memory),
-    )
+    iter = ZeroFPR_iterable(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose
         iter = tee(sample(iter, solver.freq), disp)
     end
-
     num_iters, state_final = loop(iter)
-
     return state_final.xbar, num_iters
-
 end
 
 # Outer constructors
@@ -333,5 +282,5 @@ References:
 nonconvex functions: Further properties and nonmonotone line-search algorithms",
 SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
 """
-ZeroFPR(::Type{R}; kwargs...) where {R} = ZeroFPR{R}(; kwargs...)
-ZeroFPR(; kwargs...) = ZeroFPR(Float64; kwargs...)
+ZeroFPR(; maxit=1000, tol=1e-8, verbose=false, freq=10, kwargs...) = 
+    ZeroFPR(maxit, tol, verbose, freq, kwargs)

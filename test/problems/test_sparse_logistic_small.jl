@@ -44,7 +44,7 @@
     # ZeroFPR/Adaptive
 
     x0 = zeros(T, n)
-    solver = ProximalAlgorithms.ZeroFPR{R}(adaptive = true, tol = TOL)
+    solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL)
     x, it = solver(x0, f = f, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
