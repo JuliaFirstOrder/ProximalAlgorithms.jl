@@ -8,21 +8,22 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct PANOC_iterable{R<:Real,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
-    f::Tf             # smooth term
-    A::TA             # matrix/linear operator
-    g::Tg             # (possibly) nonsmooth, proximable term
-    x0::Tx            # initial point
-    alpha::R          # in (0, 1), e.g.: 0.95
-    beta::R           # in (0, 1), e.g.: 0.5
-    gamma::Maybe{R}   # stepsize parameter of forward and backward steps
-    adaptive::Bool    # enforce adaptive stepsize even if L is provided
-    H::TH
+@Base.kwdef struct PANOC_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
+    f::Tf = Zero()
+    A::TA = I
+    g::Tg = Zero()
+    x0::Tx
+    alpha::R = real(eltype(x0))(0.95)
+    beta::R = real(eltype(x0))(0.5)
+    Lf::Maybe{R} = nothing
+    gamma::Maybe{R} = Lf === nothing ? nothing : (alpha / Lf)
+    adaptive::Bool = false
+    H::TH = LBFGS(x0, 5)
 end
 
 Base.IteratorSize(::Type{<:PANOC_iterable}) = Base.IsInfinite()
 
-mutable struct PANOC_state{R<:Real,Tx,TAx,TH}
+mutable struct PANOC_state{R,Tx,TAx,TH}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
@@ -241,47 +242,15 @@ end
 
 # Solver
 
-struct PANOC{R<:Real}
-    alpha::R
-    beta::R
-    gamma::Maybe{R}
-    adaptive::Bool
-    memory::Int
+struct PANOC{R, K}
     maxit::Int
     tol::R
     verbose::Bool
     freq::Int
-
-    function PANOC{R}(;
-        alpha::R = R(0.95),
-        beta::R = R(0.5),
-        gamma::Maybe{R} = nothing,
-        adaptive::Bool = false,
-        memory::Int = 5,
-        maxit::Int = 1000,
-        tol::R = R(1e-8),
-        verbose::Bool = false,
-        freq::Int = 10,
-    ) where {R}
-        @assert 0 < alpha < 1
-        @assert 0 < beta < 1
-        @assert gamma === nothing || gamma > 0
-        @assert memory >= 0
-        @assert maxit > 0
-        @assert tol > 0
-        @assert freq > 0
-        new(alpha, beta, gamma, adaptive, memory, maxit, tol, verbose, freq)
-    end
+    kwargs::K
 end
 
-function (solver::PANOC{R})(
-    x0::AbstractArray{C};
-    f = Zero(),
-    A = I,
-    g = Zero(),
-    L::Maybe{R} = nothing,
-) where {R,C<:Union{R,Complex{R}}}
-
+function (solver::PANOC)(x0; kwargs...)
     stop(state::PANOC_state) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) = @printf(
         "%5d | %.3e | %.3e | %.3e\n",
@@ -290,34 +259,14 @@ function (solver::PANOC{R})(
         norm(state.res, Inf) / state.gamma,
         (state.tau === nothing ? 0.0 : state.tau)
     )
-
-    gamma = if solver.gamma === nothing && L !== nothing
-        solver.alpha / L
-    else
-        solver.gamma
-    end
-
-    iter = PANOC_iterable(
-        f,
-        A,
-        g,
-        x0,
-        solver.alpha,
-        solver.beta,
-        gamma,
-        solver.adaptive,
-        LBFGS(x0, solver.memory),
-    )
+    iter = PANOC_iterable(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose
         iter = tee(sample(iter, solver.freq), disp)
     end
-
     num_iters, state_final = loop(iter)
-
     return state_final.z, num_iters
-
 end
 
 # Outer constructors
@@ -358,5 +307,5 @@ References:
 for nonlinear model predictive control", 56th IEEE Conference on Decision
 and Control (2017).
 """
-PANOC(::Type{R}; kwargs...) where {R} = PANOC{R}(; kwargs...)
-PANOC(; kwargs...) = PANOC(Float64; kwargs...)
+PANOC(; maxit=1_000, tol=1e-8, verbose=false, freq=10, kwargs...) = 
+    PANOC(maxit, tol, verbose, freq, kwargs)

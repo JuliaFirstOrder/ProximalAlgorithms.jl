@@ -105,7 +105,7 @@
 
         x0 = zeros(T, n)
 
-        solver = ProximalAlgorithms.DavisYin{T}(gamma = T(1), tol = tol, maxit = maxit)
+        solver = ProximalAlgorithms.DavisYin(gamma = T(1), tol = tol, maxit = maxit)
         xf, xg, it = solver(x0, f = f, g = g, h = h)
 
         @test eltype(xf) == T

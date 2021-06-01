@@ -29,7 +29,7 @@
         # with known initial iterate
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.DavisYin{R}(tol = R(1e-6))
+        solver = ProximalAlgorithms.DavisYin(tol = R(1e-6))
         xf_dys, xg_dys, it_dys = solver(x0, f = reg1, g = reg2, h = loss, A = A, L = L)
         @test eltype(xf_dys) == T
         @test eltype(xg_dys) == T
@@ -40,7 +40,7 @@
         # with random initial iterate
 
         x0 = randn(T, n)
-        solver = ProximalAlgorithms.DavisYin{R}(tol = R(1e-6))
+        solver = ProximalAlgorithms.DavisYin(tol = R(1e-6))
         xf_dys, xg_dys, it_dys = solver(x0, f = reg1, g = reg2, h = loss, A = A, L = L)
         @test eltype(xf_dys) == T
         @test eltype(xg_dys) == T

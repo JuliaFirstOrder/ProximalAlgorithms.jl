@@ -20,7 +20,7 @@ using Test
 
     @testset "PANOC" begin
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.PANOC{T}()
+        solver = ProximalAlgorithms.PANOC()
         x, it = solver(x0, f = f, g = g)
         z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
         @test norm(x - z, Inf) / gamma <= solver.tol
@@ -68,7 +68,7 @@ end
 
         @testset "PANOC" begin
             x0 = zeros(T, n)
-            solver = ProximalAlgorithms.PANOC{T}(tol = TOL)
+            solver = ProximalAlgorithms.PANOC(tol = TOL)
             x, it = solver(x0, f = f, g = g)
             z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
             @test norm(x - z, Inf) / gamma <= solver.tol

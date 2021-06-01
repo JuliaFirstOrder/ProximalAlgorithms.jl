@@ -9,7 +9,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-Base.@kwdef struct ZeroFPR_iterable{R,Tx,Tf,TA,Tg,TH}
+Base.@kwdef struct ZeroFPR_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()
@@ -17,7 +17,7 @@ Base.@kwdef struct ZeroFPR_iterable{R,Tx,Tf,TA,Tg,TH}
     alpha::R = real(eltype(x0))(0.95)
     beta::R = real(eltype(x0))(0.5)
     Lf::Maybe{R} = nothing
-    gamma::Maybe{R} = Lf === nothing ? nothing : alpha / Lf
+    gamma::Maybe{R} = Lf === nothing ? nothing : (alpha / Lf)
     adaptive::Bool = false
     H::TH = LBFGS(x0, 5)
 end
@@ -225,7 +225,7 @@ struct ZeroFPR{R, K}
     kwargs::K
 end
 
-function (solver::ZeroFPR{R, K})(x0; kwargs...) where {R, K}
+function (solver::ZeroFPR)(x0; kwargs...)
     stop(state::ZeroFPR_state) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) = @printf(
         "%5d | %.3e | %.3e | %.3e\n",
@@ -282,5 +282,5 @@ References:
 nonconvex functions: Further properties and nonmonotone line-search algorithms",
 SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
 """
-ZeroFPR(; maxit=1000, tol=1e-8, verbose=false, freq=10, kwargs...) = 
+ZeroFPR(; maxit=1_000, tol=1e-8, verbose=false, freq=10, kwargs...) = 
     ZeroFPR(maxit, tol, verbose, freq, kwargs)

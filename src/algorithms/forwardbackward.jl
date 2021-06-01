@@ -11,19 +11,20 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct FBS_iterable{R<:Real,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
-    f::Tf             # smooth term
-    A::TA             # matrix/linear operator
-    g::Tg             # (possibly) nonsmooth, proximable term
-    x0::Tx            # initial point
-    gamma::Maybe{R}   # stepsize parameter of forward and backward steps
-    adaptive::Bool    # enforce adaptive stepsize even if L is provided
-    fast::Bool
+@Base.kwdef struct FBS_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
+    f::Tf = Zero()
+    A::TA = I
+    g::Tg = Zero()
+    x0::Tx
+    Lf::Maybe{R} = nothing
+    gamma::Maybe{R} = Lf === nothing ? nothing : (1 / Lf)
+    adaptive::Bool = false
+    fast::Bool = false
 end
 
 Base.IteratorSize(::Type{<:FBS_iterable}) = Base.IsInfinite()
 
-mutable struct FBS_state{R<:Real,Tx,TAx}
+mutable struct FBS_state{R,Tx,TAx}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
@@ -137,61 +138,26 @@ end
 
 # Solver
 
-struct ForwardBackward{R<:Real}
-    gamma::Maybe{R}
-    adaptive::Bool
-    fast::Bool
+struct ForwardBackward{R, K}
     maxit::Int
     tol::R
     verbose::Bool
     freq::Int
-
-    function ForwardBackward{R}(;
-        gamma::Maybe{R} = nothing,
-        adaptive::Bool = false,
-        fast::Bool = false,
-        maxit::Int = 10000,
-        tol::R = R(1e-8),
-        verbose::Bool = false,
-        freq::Int = 100,
-    ) where {R}
-        @assert gamma === nothing || gamma > 0
-        @assert maxit > 0
-        @assert tol > 0
-        @assert freq > 0
-        new(gamma, adaptive, fast, maxit, tol, verbose, freq)
-    end
+    kwargs::K
 end
 
-function (solver::ForwardBackward{R})(
-    x0::AbstractArray{C};
-    f = Zero(),
-    A = I,
-    g = Zero(),
-    L::Maybe{R} = nothing,
-) where {R,C<:Union{R,Complex{R}}}
-
+function (solver::ForwardBackward)(x0; kwargs...)
     stop(state::FBS_state) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) =
         @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
-
-    gamma = if solver.gamma === nothing && L !== nothing
-        R(1) / L
-    else
-        solver.gamma
-    end
-
-    iter = FBS_iterable(f, A, g, x0, gamma, solver.adaptive, solver.fast)
+    iter = FBS_iterable(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose
         iter = tee(sample(iter, solver.freq), disp)
     end
-
     num_iters, state_final = loop(iter)
-
     return state_final.z, num_iters
-
 end
 
 # Outer constructors
@@ -233,5 +199,5 @@ Optimization" (2008).
 for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
 pp. 183-202 (2009).
 """
-ForwardBackward(::Type{R}; kwargs...) where {R} = ForwardBackward{R}(; kwargs...)
-ForwardBackward(; kwargs...) = ForwardBackward(Float64; kwargs...)
+ForwardBackward(; maxit=10_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
+    ForwardBackward(maxit, tol, verbose, freq, kwargs)

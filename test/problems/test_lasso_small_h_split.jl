@@ -44,8 +44,8 @@
         ## Nonfast/Nonadaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, L = opnorm([A1 A2])^2)
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm([A1 A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 150
@@ -53,7 +53,7 @@
         # Nonfast/Adaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL, adaptive = true)
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
@@ -62,8 +62,8 @@
         # Fast/Nonadaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL, fast = true)
-        x, it = solver(x0, f = f, A = A, g = g, L = opnorm([A1 A2])^2)
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, fast = true)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm([A1 A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100
@@ -72,7 +72,7 @@
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
         solver =
-            ProximalAlgorithms.ForwardBackward{R}(tol = TOL, adaptive = true, fast = true)
+            ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, fast = true)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
@@ -106,8 +106,8 @@
         # PANOC/Nonadaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.PANOC{R}(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, L = opnorm([A1 A2])^2)
+        solver = ProximalAlgorithms.PANOC(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm([A1 A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -115,7 +115,7 @@
         ## PANOC/Adaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.PANOC{R}(adaptive = true, tol = TOL)
+        solver = ProximalAlgorithms.PANOC(adaptive = true, tol = TOL)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL

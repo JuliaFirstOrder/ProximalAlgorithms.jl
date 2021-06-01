@@ -8,14 +8,15 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct DYS_iterable{R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg,Th,TA}
-    f::Tf
-    g::Tg
-    h::Th
-    A::TA
+@Base.kwdef struct DYS_iterable{R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg,Th,TA}
+    f::Tf = Zero()
+    g::Tg = Zero()
+    h::Th = Zero()
+    A::TA = I
     x0::T
-    gamma::R
-    lambda::R
+    lambda::R = real(eltype(x0))(1)
+    L::Maybe{R} = nothing
+    gamma::Maybe{R} = L !== nothing ? (1 / L) : error("You must specify either L or gamma")
 end
 
 Base.IteratorSize(::Type{<:DYS_iterable}) = Base.IsInfinite()
@@ -64,64 +65,25 @@ end
 
 # Solver
 
-struct DavisYin{R}
-    gamma::Maybe{R}
-    lambda::R
+struct DavisYin{R, K}
     maxit::Int
     tol::R
     verbose::Bool
     freq::Int
-
-    function DavisYin{R}(;
-        gamma::Maybe{R} = nothing,
-        lambda::R = R(1.0),
-        maxit::Int = 10000,
-        tol::R = R(1e-8),
-        verbose::Bool = false,
-        freq::Int = 100,
-    ) where {R}
-        @assert gamma === nothing || gamma > 0
-        @assert lambda > 0
-        @assert maxit > 0
-        @assert tol > 0
-        @assert freq > 0
-        new(gamma, lambda, maxit, tol, verbose, freq)
-    end
+    kwargs::K
 end
 
-function (solver::DavisYin{R})(
-    x0::AbstractArray{C};
-    f = Zero(),
-    g = Zero(),
-    h = Zero(),
-    A = I,
-    L::Maybe{R} = nothing,
-) where {R,C<:Union{R,Complex{R}}}
-
+function (solver::DavisYin)(x0; kwargs...)
     stop(state::DYS_state) = norm(state.res, Inf) <= solver.tol
     disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf))
-
-    if solver.gamma === nothing
-        if L !== nothing
-            gamma = R(1) / L
-        else
-            error("You must specify either L or gamma")
-        end
-    else
-        gamma = solver.gamma
-    end
-
-    iter = DYS_iterable(f, g, h, A, x0, gamma, solver.lambda)
+    iter = DYS_iterable(; x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose
         iter = tee(sample(iter, solver.freq), disp)
     end
-
     num_iters, state_final = loop(iter)
-
     return state_final.xf, state_final.xg, num_iters
-
 end
 
 # Outer constructors
@@ -159,5 +121,5 @@ References:
 Applications", Set-Valued and Variational Analysis, vol. 25, no. 4,
 pp. 829–858 (2017).
 """
-DavisYin(::Type{R}; kwargs...) where {R} = DavisYin{R}(; kwargs...)
-DavisYin(; kwargs...) = DavisYin(Float64; kwargs...)
+DavisYin(; maxit=10_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
+    DavisYin(maxit, tol, verbose, freq, kwargs)
