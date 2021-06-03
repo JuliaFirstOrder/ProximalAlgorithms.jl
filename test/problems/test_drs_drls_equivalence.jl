@@ -24,8 +24,8 @@ using ProximalAlgorithms
 
     x0 = zeros(R, n)
 
-    drs_iter = ProximalAlgorithms.DRS_iterable(f, g, x0, R(10) / opnorm(A)^2)
-    drls_iter = ProximalAlgorithms.DRLS_iterable(f, g, x0, R(10) / opnorm(A)^2, R(1), -R(Inf), 1, ProximalAlgorithms.Noaccel())
+    drs_iter = ProximalAlgorithms.DRS_iterable(f=f, g=g, x0=x0, gamma=R(10) / opnorm(A)^2)
+    drls_iter = ProximalAlgorithms.DRLS_iterable(f=f, g=g, x0=x0, gamma=R(10) / opnorm(A)^2, lambda=R(1), c=-R(Inf), max_backtracks=1, H=ProximalAlgorithms.Noaccel())
 
     for (state_drs, state_drls) in Iterators.take(zip(drs_iter, drls_iter), 10)
         @test isapprox(state_drs.x, state_drls.xbar)

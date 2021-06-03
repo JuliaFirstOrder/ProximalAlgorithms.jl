@@ -7,15 +7,16 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct LiLin_iterable{R<:Real,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
-    f::Tf             # smooth term
-    A::TA             # matrix/linear operator
-    g::Tg             # (possibly) nonsmooth, proximable term
-    x0::Tx            # initial point
-    gamma::Maybe{R}   # stepsize parameter of forward and backward steps
-    adaptive::Bool    # enforce adaptive stepsize even if L is provided
-    delta::R          #
-    eta::R            #
+Base.@kwdef struct LiLin_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
+    f::Tf = Zero()
+    A::TA = I
+    g::Tg = Zero()
+    x0::Tx
+    Lf::Maybe{R} = nothing
+    gamma::Maybe{R} = Lf === nothing ? nothing : (1 / Lf)
+    adaptive::Bool = false
+    delta::R = real(eltype(x0))(1e-3)
+    eta::R = real(eltype(x0))(0.8)
 end
 
 Base.IteratorSize(::Type{<:LiLin_iterable}) = Base.IsInfinite()
@@ -135,67 +136,26 @@ end
 
 # Solver
 
-struct LiLin{R<:Real}
-    gamma::Maybe{R}
-    adaptive::Bool
-    delta::R
-    eta::R
+struct LiLin{R, K}
     maxit::Int
     tol::R
     verbose::Bool
     freq::Int
-
-    function LiLin{R}(;
-        gamma::Maybe{R} = nothing,
-        adaptive::Bool = false,
-        delta::R = R(1e-3),
-        eta::R = R(0.8),
-        maxit::Int = 10000,
-        tol::R = R(1e-8),
-        verbose::Bool = false,
-        freq::Int = 100,
-    ) where {R}
-        @assert gamma === nothing || gamma > 0
-        @assert delta > 0
-        @assert 0 < eta < 1
-        @assert maxit > 0
-        @assert tol > 0
-        @assert freq > 0
-        new(gamma, adaptive, delta, eta, maxit, tol, verbose, freq)
-    end
+    kwargs::K
 end
 
-function (solver::LiLin{R})(
-    x0::AbstractArray{C};
-    f = Zero(),
-    A = I,
-    g = Zero(),
-    L::Maybe{R} = nothing,
-) where {R,C<:Union{R,Complex{R}}}
-
+function (solver::LiLin)(x0; kwargs...)
     stop(state::LiLin_state) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) =
         @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
-
-    if solver.gamma === nothing && L !== nothing
-        gamma = R(1) / L
-    elseif solver.gamma !== nothing
-        gamma = solver.gamma
-    else
-        gamma = nothing
-    end
-
-    iter = LiLin_iterable(f, A, g, x0, gamma, solver.adaptive, solver.delta, solver.eta)
+    iter = LiLin_iterable(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose
         iter = tee(sample(iter, solver.freq), disp)
     end
-
     num_iters, state_final = loop(iter)
-
     return state_final.z, num_iters
-
 end
 
 # Outer constructors
@@ -233,5 +193,5 @@ References:
 [1] Li, Lin, "Accelerated Proximal Gradient Methods for Nonconvex Programming",
 Proceedings of NIPS 2015 (2015).
 """
-LiLin(::Type{R}; kwargs...) where {R} = LiLin{R}(; kwargs...)
-LiLin(; kwargs...) = LiLin(Float64; kwargs...)
+LiLin(; maxit=10_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
+    LiLin(maxit, tol, verbose, freq, kwargs)

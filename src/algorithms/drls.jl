@@ -10,15 +10,32 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct DRLS_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg,TH}
-    f::Tf
-    g::Tg
+Base.@kwdef struct DRLS_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg,TH}
+    f::Tf = Zero()
+    g::Tg = Zero()
     x0::Tx
-    gamma::R
-    lambda::R
-    c::R
-    max_backtracks::Int
-    H::TH
+    alpha::R = real(eltype(x0))(0.95)
+    beta::R = real(eltype(x0))(0.5)
+    Lf::Maybe{R} = nothing
+    gamma::Maybe{R} = begin
+        if ProximalOperators.is_convex(f)
+            alpha / Lf
+        else
+            alpha * (2 - lambda) / (2 * Lf)
+        end
+    end
+    lambda::R = real(eltype(x0))(1)
+    c::R = begin
+        m = if ProximalOperators.is_convex(f)
+            max(gamma * Lf - lambda / 2, 0)
+        else
+            1
+        end
+        C_gamma_lambda = (lambda / ((1 + gamma * Lf)^2) * ((2 - lambda) / 2 - gamma * Lf * m))
+        c = beta * C_gamma_lambda
+    end
+    max_backtracks::Int = 20
+    H::TH = LBFGS(x0, 5)
 end
 
 Base.IteratorSize(::Type{<:DRLS_iterable}) = Base.IsInfinite()
@@ -112,49 +129,15 @@ end
 
 # Solver
 
-struct DRLS{R}
-    alpha::R
-    beta::R
-    gamma::Maybe{R}
-    lambda::R
-    max_backtracks::Int
-    memory::Int
+struct DRLS{R, K}
     maxit::Int
     tol::R
     verbose::Bool
     freq::Int
-
-    function DRLS{R}(;
-        alpha::R = R(0.95),
-        beta::R = R(0.5),
-        gamma::Maybe{R} = nothing,
-        lambda::R = R(1),
-        max_backtracks::Int = 20,
-        memory::Int = 5,
-        maxit::Int = 1000,
-        tol::R = R(1e-8),
-        verbose::Bool = false,
-        freq::Int = 10,
-    ) where {R}
-        @assert 0 < alpha < 1
-        @assert 0 < beta < 1
-        @assert gamma === nothing || gamma > 0
-        @assert 0 < lambda < 2
-        @assert max_backtracks > 0
-        @assert memory >= 0
-        @assert maxit > 0
-        @assert tol > 0
-        @assert freq > 0
-        new(alpha, beta, gamma, lambda, max_backtracks, memory, maxit, tol, verbose, freq)
-    end
+    kwargs::K
 end
 
-function (solver::DRLS{R})(
-    x0::AbstractArray{C};
-    f = Zero(),
-    g = Zero(),
-    L::Maybe{R} = nothing,
-) where {R,C<:Union{R,Complex{R}}}
+function (solver::DRLS)(x0; kwargs...)
     stop(state::DRLS_state) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) = @printf(
         "%5d | %.3e | %.3e | %.3e\n",
@@ -163,38 +146,15 @@ function (solver::DRLS{R})(
         norm(state.res, Inf),
         (state.tau === nothing ? 0.0 : state.tau)
     )
-
-    gamma = if solver.gamma === nothing && L !== nothing
-        if ProximalOperators.is_convex(f)
-            solver.alpha / L
-        else
-            solver.alpha * (2 - solver.lambda) / (2 * L)
-        end
-    else
-        solver.gamma
-    end
-
-    m = if ProximalOperators.is_convex(f)
-        max(gamma * L - solver.lambda / 2, 0)
-    else
-        1
-    end
-    C_gamma_lambda =
-        (solver.lambda / ((1 + gamma * L)^2) * ((2 - solver.lambda) / 2 - gamma * L * m))
-    c = solver.beta * C_gamma_lambda
-
-    iter =
-        DRLS_iterable(f, g, x0, gamma, solver.lambda, c, solver.max_backtracks, LBFGS(x0, solver.memory))
+    iter = DRLS_iterable(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose
         iter = tee(sample(iter, solver.freq), disp)
     end
-
     num_iters, state_final = loop(iter)
-
     return state_final.u, state_final.v, num_iters
 end
 
-DRLS(::Type{R}; kwargs...) where {R} = DRLS{R}(; kwargs...)
-DRLS(; kwargs...) = DRLS(Float64; kwargs...)
+DRLS(; maxit=1_000, tol=1e-8, verbose=false, freq=10, kwargs...) = 
+    DRLS(maxit, tol, verbose, freq, kwargs)

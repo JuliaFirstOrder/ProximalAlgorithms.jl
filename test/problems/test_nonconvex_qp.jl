@@ -36,7 +36,7 @@ using Test
 
     @testset "LiLin" begin
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.LiLin{T}(gamma = gamma)
+        solver = ProximalAlgorithms.LiLin(gamma = gamma)
         x, it = solver(x0, f = f, g = g)
         z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
         @test norm(x - z, Inf) / gamma <= solver.tol

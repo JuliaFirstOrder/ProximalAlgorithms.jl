@@ -133,8 +133,8 @@ using ProximalAlgorithms
         # Douglas-Rachford line search
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.DRLS{R}(tol = 10 * TOL)
-        y, z, it = solver(x0, f = f2, g = g, L = opnorm(A)^2)
+        solver = ProximalAlgorithms.DRLS(tol = 10 * TOL)
+        y, z, it = solver(x0, f = f2, g = g, Lf = opnorm(A)^2)
         @test eltype(y) == T
         @test eltype(z) == T
         @test norm(y - x_star, Inf) <= 10 * TOL
