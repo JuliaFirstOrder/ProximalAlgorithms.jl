@@ -9,7 +9,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-Base.@kwdef struct ZeroFPR_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
+Base.@kwdef struct ZeroFPRIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()
@@ -22,9 +22,9 @@ Base.@kwdef struct ZeroFPR_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C
     H::TH = LBFGS(x0, 5)
 end
 
-Base.IteratorSize(::Type{<:ZeroFPR_iterable}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:ZeroFPRIteration}) = Base.IsInfinite()
 
-mutable struct ZeroFPR_state{R,Tx,TAx,TH}
+mutable struct ZeroFPRState{R,Tx,TAx,TH}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
@@ -49,7 +49,7 @@ mutable struct ZeroFPR_state{R,Tx,TAx,TH}
     Ad::TAx
 end
 
-ZeroFPR_state(
+ZeroFPRState(
     x::Tx,
     Ax::TAx,
     f_Ax::R,
@@ -62,7 +62,7 @@ ZeroFPR_state(
     res,
     H::TH,
     tau,
-) where {R,Tx,TAx,TH} = ZeroFPR_state{R,Tx,TAx,TH}(
+) where {R,Tx,TAx,TH} = ZeroFPRState{R,Tx,TAx,TH}(
     x,
     Ax,
     f_Ax,
@@ -86,10 +86,10 @@ ZeroFPR_state(
     zero(Ax),
 )
 
-f_model(state::ZeroFPR_state) =
+f_model(state::ZeroFPRState) =
     f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
 
-function Base.iterate(iter::ZeroFPR_iterable{R}) where {R}
+function Base.iterate(iter::ZeroFPRIteration{R}) where {R}
     x = iter.x0
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
@@ -112,7 +112,7 @@ function Base.iterate(iter::ZeroFPR_iterable{R}) where {R}
     # compute initial fixed-point residual
     res = x - xbar
 
-    state = ZeroFPR_state(
+    state = ZeroFPRState(
         x,
         Ax,
         f_Ax,
@@ -131,8 +131,8 @@ function Base.iterate(iter::ZeroFPR_iterable{R}) where {R}
 end
 
 function Base.iterate(
-    iter::ZeroFPR_iterable{R},
-    state::ZeroFPR_state{R,Tx,TAx},
+    iter::ZeroFPRIteration{R},
+    state::ZeroFPRState{R,Tx,TAx},
 ) where {R,Tx,TAx}
     f_Axbar_upp = f_model(state)
     # These need to be performed anyway (to compute xbarbar later on)
@@ -226,7 +226,7 @@ struct ZeroFPR{R, K}
 end
 
 function (solver::ZeroFPR)(x0; kwargs...)
-    stop(state::ZeroFPR_state) = norm(state.res, Inf) / state.gamma <= solver.tol
+    stop(state::ZeroFPRState) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) = @printf(
         "%5d | %.3e | %.3e | %.3e\n",
         it,
@@ -234,7 +234,7 @@ function (solver::ZeroFPR)(x0; kwargs...)
         norm(state.res, Inf) / state.gamma,
         (state.tau === nothing ? 0.0 : state.tau)
     )
-    iter = ZeroFPR_iterable(; x0=x0, solver.kwargs..., kwargs...)
+    iter = ZeroFPRIteration(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose

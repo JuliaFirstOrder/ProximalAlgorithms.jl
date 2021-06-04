@@ -8,7 +8,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-@Base.kwdef struct PANOC_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
+@Base.kwdef struct PANOCIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()
@@ -21,9 +21,9 @@ using Printf
     H::TH = LBFGS(x0, 5)
 end
 
-Base.IteratorSize(::Type{<:PANOC_iterable}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:PANOCIteration}) = Base.IsInfinite()
 
-mutable struct PANOC_state{R,Tx,TAx,TH}
+mutable struct PANOCState{R,Tx,TAx,TH}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
@@ -49,7 +49,7 @@ mutable struct PANOC_state{R,Tx,TAx,TH}
     z_curr::Tx
 end
 
-PANOC_state(
+PANOCState(
     x::Tx,
     Ax::TAx,
     f_Ax::R,
@@ -62,7 +62,7 @@ PANOC_state(
     res,
     H::TH,
     tau,
-) where {R,Tx,TAx,TH} = PANOC_state{R,Tx,TAx,TH}(
+) where {R,Tx,TAx,TH} = PANOCState{R,Tx,TAx,TH}(
     x,
     Ax,
     f_Ax,
@@ -87,10 +87,10 @@ PANOC_state(
     zero(x),
 )
 
-f_model(state::PANOC_state) =
+f_model(state::PANOCState) =
     f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
 
-function Base.iterate(iter::PANOC_iterable{R}) where {R}
+function Base.iterate(iter::PANOCIteration{R}) where {R}
     x = iter.x0
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
@@ -113,7 +113,7 @@ function Base.iterate(iter::PANOC_iterable{R}) where {R}
     # compute initial fixed-point residual
     res = x - z
 
-    state = PANOC_state(
+    state = PANOCState(
         x,
         Ax,
         f_Ax,
@@ -132,8 +132,8 @@ function Base.iterate(iter::PANOC_iterable{R}) where {R}
 end
 
 function Base.iterate(
-    iter::PANOC_iterable{R},
-    state::PANOC_state{R,Tx,TAx},
+    iter::PANOCIteration{R},
+    state::PANOCState{R,Tx,TAx},
 ) where {R,Tx,TAx}
     Az, f_Az, grad_f_Az, At_grad_f_Az = nothing, nothing, nothing, nothing
     a, b, c = nothing, nothing, nothing
@@ -251,7 +251,7 @@ struct PANOC{R, K}
 end
 
 function (solver::PANOC)(x0; kwargs...)
-    stop(state::PANOC_state) = norm(state.res, Inf) / state.gamma <= solver.tol
+    stop(state::PANOCState) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) = @printf(
         "%5d | %.3e | %.3e | %.3e\n",
         it,
@@ -259,7 +259,7 @@ function (solver::PANOC)(x0; kwargs...)
         norm(state.res, Inf) / state.gamma,
         (state.tau === nothing ? 0.0 : state.tau)
     )
-    iter = PANOC_iterable(; x0=x0, solver.kwargs..., kwargs...)
+    iter = PANOCIteration(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose

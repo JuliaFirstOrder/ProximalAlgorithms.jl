@@ -8,16 +8,16 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-@Base.kwdef struct DRS_iterable{R<:Real,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
+@Base.kwdef struct DouglasRachfordIteration{R<:Real,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
     f::Tf = Zero()
     g::Tg = Zero()
     x0::Tx
     gamma::R
 end
 
-Base.IteratorSize(::Type{<:DRS_iterable}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:DouglasRachfordIteration}) = Base.IsInfinite()
 
-mutable struct DRS_state{Tx}
+mutable struct DouglasRachfordState{Tx}
     x::Tx
     y::Tx
     r::Tx
@@ -25,10 +25,10 @@ mutable struct DRS_state{Tx}
     res::Tx
 end
 
-DRS_state(iter::DRS_iterable) =
-    DRS_state(copy(iter.x0), zero(iter.x0), zero(iter.x0), zero(iter.x0), zero(iter.x0))
+DouglasRachfordState(iter::DouglasRachfordIteration) =
+    DouglasRachfordState(copy(iter.x0), zero(iter.x0), zero(iter.x0), zero(iter.x0), zero(iter.x0))
 
-function Base.iterate(iter::DRS_iterable, state::DRS_state = DRS_state(iter))
+function Base.iterate(iter::DouglasRachfordIteration, state::DouglasRachfordState = DouglasRachfordState(iter))
     prox!(state.y, iter.f, state.x, iter.gamma)
     state.r .= 2 .* state.y .- state.x
     prox!(state.z, iter.g, state.r, iter.gamma)
@@ -48,9 +48,9 @@ struct DouglasRachford{R, K}
 end
 
 function (solver::DouglasRachford)(x0; kwargs...)
-    iter = DRS_iterable(; x0=x0, solver.kwargs..., kwargs...)
+    iter = DouglasRachfordIteration(; x0=x0, solver.kwargs..., kwargs...)
     gamma = iter.gamma
-    stop(state::DRS_state) = norm(state.res, Inf) / gamma <= solver.tol
+    stop(state::DouglasRachfordState) = norm(state.res, Inf) / gamma <= solver.tol
     disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf) / gamma)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)

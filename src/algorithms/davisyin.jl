@@ -8,7 +8,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-@Base.kwdef struct DYS_iterable{R,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg,Th,TA}
+@Base.kwdef struct DavisYinIteration{R,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg,Th,TA}
     f::Tf = Zero()
     g::Tg = Zero()
     h::Th = Zero()
@@ -19,9 +19,9 @@ using Printf
     gamma::Maybe{R} = L !== nothing ? (1 / L) : error("You must specify either L or gamma")
 end
 
-Base.IteratorSize(::Type{<:DYS_iterable}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:DavisYinIteration}) = Base.IsInfinite()
 
-mutable struct DYS_state{T,S}
+mutable struct DavisYinState{T,S}
     z::T
     xg::T
     y::S
@@ -31,7 +31,7 @@ mutable struct DYS_state{T,S}
     res::T
 end
 
-function Base.iterate(iter::DYS_iterable{R,C,T}) where {R,C,T}
+function Base.iterate(iter::DavisYinIteration{R,C,T}) where {R,C,T}
     z = copy(iter.x0)
     xg, = prox(iter.g, z, iter.gamma)
     y = iter.A * xg
@@ -46,11 +46,11 @@ function Base.iterate(iter::DYS_iterable{R,C,T}) where {R,C,T}
 
     res = xf - xg
     z .+= iter.lambda .* res
-    state = DYS_state{T,typeof(y)}(z, xg, y, grad_h_y, z_half, xf, res)
+    state = DavisYinState{T,typeof(y)}(z, xg, y, grad_h_y, z_half, xf, res)
     return state, state
 end
 
-function Base.iterate(iter::DYS_iterable, state::DYS_state)
+function Base.iterate(iter::DavisYinIteration, state::DavisYinState)
     prox!(state.xg, iter.g, state.z, iter.gamma)
     mul!(state.y, iter.A, state.xg)
     gradient!(state.grad_h_y, iter.h, state.y)
@@ -74,9 +74,9 @@ struct DavisYin{R, K}
 end
 
 function (solver::DavisYin)(x0; kwargs...)
-    stop(state::DYS_state) = norm(state.res, Inf) <= solver.tol
+    stop(state::DavisYinState) = norm(state.res, Inf) <= solver.tol
     disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf))
-    iter = DYS_iterable(; x0=x0, solver.kwargs..., kwargs...)
+    iter = DavisYinIteration(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose

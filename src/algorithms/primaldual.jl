@@ -26,7 +26,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-Base.@kwdef struct AFBA_iterable{R,Tx,Ty,Tf,Tg,Th,Tl,TL}
+Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL}
     f::Tf = Zero()
     g::Tg = Zero()
     h::Th = Zero()
@@ -48,9 +48,9 @@ Base.@kwdef struct AFBA_iterable{R,Tx,Ty,Tf,Tg,Th,Tl,TL}
     end
 end
 
-Base.IteratorSize(::Type{<:AFBA_iterable}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:AFBAIteration}) = Base.IsInfinite()
 
-struct AFBA_state{Tx,Ty}
+struct AFBAState{Tx,Ty}
     x::Tx
     y::Ty
     xbar::Tx
@@ -63,7 +63,7 @@ struct AFBA_state{Tx,Ty}
     temp_y::Ty
 end
 
-AFBA_state(iter::AFBA_iterable) = AFBA_state(
+AFBAState(iter::AFBAIteration) = AFBAState(
     copy(iter.x0),
     copy(iter.y0),
     zero(iter.x0),
@@ -76,7 +76,7 @@ AFBA_state(iter::AFBA_iterable) = AFBA_state(
     zero(iter.y0),
 )
 
-function Base.iterate(iter::AFBA_iterable, state::AFBA_state = AFBA_state(iter))
+function Base.iterate(iter::AFBAIteration, state::AFBAState = AFBAState(iter))
     # perform xbar-update step
     gradient!(state.gradf, iter.f, state.x)
     mul!(state.temp_x, iter.L', state.y)
@@ -122,10 +122,10 @@ struct AFBA{R, K}
 end
 
 function (solver::AFBA)(x0, y0; kwargs...)
-    stop(state::AFBA_state) = norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= solver.tol
+    stop(state::AFBAState) = norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= solver.tol
     disp((it, state)) =
         @printf("%6d | %7.4e\n", it, norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf))
-    iter = AFBA_iterable(; x0=x0, y0=y0, solver.kwargs..., kwargs...)
+    iter = AFBAIteration(; x0=x0, y0=y0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose

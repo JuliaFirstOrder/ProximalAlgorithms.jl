@@ -10,7 +10,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-Base.@kwdef struct DRLS_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg,TH}
+Base.@kwdef struct DRLSIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg,TH}
     f::Tf = Zero()
     g::Tg = Zero()
     x0::Tx
@@ -38,9 +38,9 @@ Base.@kwdef struct DRLS_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},T
     H::TH = LBFGS(x0, 5)
 end
 
-Base.IteratorSize(::Type{<:DRLS_iterable}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:DRLSIteration}) = Base.IsInfinite()
 
-mutable struct DRLS_state{R,Tx,TH}
+mutable struct DRLSState{R,Tx,TH}
     x::Tx
     u::Tx
     v::Tx
@@ -58,21 +58,21 @@ mutable struct DRLS_state{R,Tx,TH}
     tau::Maybe{R}
 end
 
-function DRE(state::DRLS_state)
+function DRE(state::DRLSState)
     return (
         state.f_u + state.g_v - real(dot(state.x - state.u, state.res)) / state.gamma +
         1 / (2 * state.gamma) * norm(state.res)^2
     )
 end
 
-function Base.iterate(iter::DRLS_iterable)
+function Base.iterate(iter::DRLSIteration)
     x = iter.x0
     u, f_u = prox(iter.f, x, iter.gamma)
     w = 2 * u - x
     v, g_v = prox(iter.g, w, iter.gamma)
     res = u - v
     xbar = x - iter.lambda * res
-    state = DRLS_state(
+    state = DRLSState(
         x,
         u,
         v,
@@ -92,7 +92,7 @@ function Base.iterate(iter::DRLS_iterable)
     return state, state
 end
 
-function Base.iterate(iter::DRLS_iterable{R}, state::DRLS_state) where {R}
+function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where {R}
     DRE_curr = DRE(state)
 
     mul!(state.d, iter.H, -state.res)
@@ -138,7 +138,7 @@ struct DRLS{R, K}
 end
 
 function (solver::DRLS)(x0; kwargs...)
-    stop(state::DRLS_state) = norm(state.res, Inf) / state.gamma <= solver.tol
+    stop(state::DRLSState) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) = @printf(
         "%5d | %.3e | %.3e | %.3e\n",
         it,
@@ -146,7 +146,7 @@ function (solver::DRLS)(x0; kwargs...)
         norm(state.res, Inf),
         (state.tau === nothing ? 0.0 : state.tau)
     )
-    iter = DRLS_iterable(; x0=x0, solver.kwargs..., kwargs...)
+    iter = DRLSIteration(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose

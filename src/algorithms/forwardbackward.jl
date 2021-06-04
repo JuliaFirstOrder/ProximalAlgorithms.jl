@@ -11,7 +11,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-@Base.kwdef struct FBS_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
+@Base.kwdef struct ForwardBackwardIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()
@@ -22,9 +22,9 @@ using Printf
     fast::Bool = false
 end
 
-Base.IteratorSize(::Type{<:FBS_iterable}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:ForwardBackwardIteration}) = Base.IsInfinite()
 
-mutable struct FBS_state{R,Tx,TAx}
+mutable struct ForwardBackwardState{R,Tx,TAx}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
@@ -39,9 +39,9 @@ mutable struct FBS_state{R,Tx,TAx}
     z_prev::Tx
 end
 
-f_model(state::FBS_state) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
+f_model(state::ForwardBackwardState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
 
-function Base.iterate(iter::FBS_iterable{R}) where {R}
+function Base.iterate(iter::ForwardBackwardIteration{R}) where {R}
     x = iter.x0
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
@@ -64,7 +64,7 @@ function Base.iterate(iter::FBS_iterable{R}) where {R}
     # compute initial fixed-point residual
     res = x - z
 
-    state = FBS_state(
+    state = ForwardBackwardState(
         x,
         Ax,
         f_Ax,
@@ -82,7 +82,7 @@ function Base.iterate(iter::FBS_iterable{R}) where {R}
     return state, state
 end
 
-function Base.iterate(iter::FBS_iterable{R}, state::FBS_state{R,Tx,TAx}) where {R,Tx,TAx}
+function Base.iterate(iter::ForwardBackwardIteration{R}, state::ForwardBackwardState{R,Tx,TAx}) where {R,Tx,TAx}
     Az, f_Az, grad_f_Az, At_grad_f_Az = nothing, nothing, nothing, nothing
     a, b, c = nothing, nothing, nothing
 
@@ -147,10 +147,10 @@ struct ForwardBackward{R, K}
 end
 
 function (solver::ForwardBackward)(x0; kwargs...)
-    stop(state::FBS_state) = norm(state.res, Inf) / state.gamma <= solver.tol
+    stop(state::ForwardBackwardState) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) =
         @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
-    iter = FBS_iterable(; x0=x0, solver.kwargs..., kwargs...)
+    iter = ForwardBackwardIteration(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose

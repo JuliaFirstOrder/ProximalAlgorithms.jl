@@ -7,7 +7,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-Base.@kwdef struct LiLin_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
+Base.@kwdef struct LiLinIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()
@@ -19,9 +19,9 @@ Base.@kwdef struct LiLin_iterable{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},
     eta::R = real(eltype(x0))(0.8)
 end
 
-Base.IteratorSize(::Type{<:LiLin_iterable}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:LiLinIteration}) = Base.IsInfinite()
 
-mutable struct LiLin_state{R<:Real,Tx,TAx}
+mutable struct LiLinState{R<:Real,Tx,TAx}
     x::Tx             # iterate
     y::Tx             # extrapolated point
     Ay::TAx           # A times y
@@ -39,7 +39,7 @@ mutable struct LiLin_state{R<:Real,Tx,TAx}
     q::R              # auxiliary sequence to compute moving average
 end
 
-function Base.iterate(iter::LiLin_iterable{R}) where {R}
+function Base.iterate(iter::LiLinIteration{R}) where {R}
     y = iter.x0
     Ay = iter.A * y
     grad_f_Ay, f_Ay = gradient(iter.f, Ay)
@@ -60,7 +60,7 @@ function Base.iterate(iter::LiLin_iterable{R}) where {R}
     # compute initial fixed-point residual
     res = y - z
 
-    state = LiLin_state(
+    state = LiLinState(
         copy(iter.x0),
         y,
         Ay,
@@ -81,8 +81,8 @@ function Base.iterate(iter::LiLin_iterable{R}) where {R}
 end
 
 function Base.iterate(
-    iter::LiLin_iterable{R},
-    state::LiLin_state{R,Tx,TAx},
+    iter::LiLinIteration{R},
+    state::LiLinState{R,Tx,TAx},
 ) where {R,Tx,TAx}
     # TODO: backtrack gamma at y
 
@@ -145,10 +145,10 @@ struct LiLin{R, K}
 end
 
 function (solver::LiLin)(x0; kwargs...)
-    stop(state::LiLin_state) = norm(state.res, Inf) / state.gamma <= solver.tol
+    stop(state::LiLinState) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) =
         @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
-    iter = LiLin_iterable(; x0=x0, solver.kwargs..., kwargs...)
+    iter = LiLinIteration(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose
