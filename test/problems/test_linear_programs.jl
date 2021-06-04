@@ -62,7 +62,7 @@
         x0 = zeros(T, n)
         y0 = zeros(T, m)
 
-        solver = ProximalAlgorithms.AFBA{T}(tol = tol, maxit = maxit)
+        solver = ProximalAlgorithms.AFBA(tol = tol, maxit = maxit)
         x, y, it = solver(x0, y0, f = f, g = g, h = h, L = A)
 
         @test eltype(x) == T
@@ -83,7 +83,7 @@
         x0 = zeros(T, n)
         y0 = zeros(T, m)
 
-        solver = ProximalAlgorithms.VuCondat(T, tol = tol, maxit = maxit)
+        solver = ProximalAlgorithms.VuCondat(tol = tol, maxit = maxit)
         x, y, it = solver(x0, y0, f = f, g = g, h = h, L = A)
 
         @test eltype(x) == T

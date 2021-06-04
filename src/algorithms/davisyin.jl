@@ -8,7 +8,7 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-@Base.kwdef struct DYS_iterable{R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg,Th,TA}
+@Base.kwdef struct DYS_iterable{R,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg,Th,TA}
     f::Tf = Zero()
     g::Tg = Zero()
     h::Th = Zero()
@@ -76,7 +76,7 @@ end
 function (solver::DavisYin)(x0; kwargs...)
     stop(state::DYS_state) = norm(state.res, Inf) <= solver.tol
     disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf))
-    iter = DYS_iterable(; x0, solver.kwargs..., kwargs...)
+    iter = DYS_iterable(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose

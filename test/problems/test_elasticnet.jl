@@ -64,7 +64,7 @@
         x0 = zeros(T, n)
         y0 = zeros(T, m)
 
-        solver = ProximalAlgorithms.AFBA{R}(theta = theta, mu = mu, tol = R(1e-6))
+        solver = ProximalAlgorithms.AFBA(theta = theta, mu = mu, tol = R(1e-6))
         x_afba, y_afba, it_afba =
             solver(x0, y0, f = reg2, g = reg1, h = loss, L = A, beta_f = R(1))
         @test eltype(x_afba) == T
@@ -77,7 +77,7 @@
         x0 = randn(T, n)
         y0 = randn(T, m)
 
-        solver = ProximalAlgorithms.AFBA{R}(theta = theta, mu = mu, tol = R(1e-6))
+        solver = ProximalAlgorithms.AFBA(theta = theta, mu = mu, tol = R(1e-6))
         x_afba, y_afba, it_afba =
             solver(x0, y0, f = reg2, g = reg1, h = loss, L = A, beta_f = R(1))
         @test eltype(x_afba) == T
