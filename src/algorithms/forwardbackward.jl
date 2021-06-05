@@ -24,7 +24,7 @@ end
 
 Base.IteratorSize(::Type{<:ForwardBackwardIteration}) = Base.IsInfinite()
 
-mutable struct ForwardBackwardState{R,Tx,TAx}
+Base.@kwdef mutable struct ForwardBackwardState{R,Tx,TAx}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
@@ -35,14 +35,14 @@ mutable struct ForwardBackwardState{R,Tx,TAx}
     z::Tx             # forward-backward point
     g_z::R            # value of nonsmooth term (at z)
     res::Tx           # fixed-point residual at iterate (= z - x)
-    theta::R
-    z_prev::Tx
+    theta::R = one(real(eltype(x)))
+    z_prev::Tx = copy(x)
 end
 
 f_model(state::ForwardBackwardState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
 
 function Base.iterate(iter::ForwardBackwardIteration{R}) where {R}
-    x = iter.x0
+    x = copy(iter.x0)
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
 
@@ -64,20 +64,7 @@ function Base.iterate(iter::ForwardBackwardIteration{R}) where {R}
     # compute initial fixed-point residual
     res = x - z
 
-    state = ForwardBackwardState(
-        x,
-        Ax,
-        f_Ax,
-        grad_f_Ax,
-        At_grad_f_Ax,
-        gamma,
-        y,
-        z,
-        g_z,
-        res,
-        R(1),
-        copy(x),
-    )
+    state = ForwardBackwardState(; x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res)
 
     return state, state
 end

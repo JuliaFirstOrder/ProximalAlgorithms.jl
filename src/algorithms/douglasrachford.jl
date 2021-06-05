@@ -17,18 +17,15 @@ end
 
 Base.IteratorSize(::Type{<:DouglasRachfordIteration}) = Base.IsInfinite()
 
-mutable struct DouglasRachfordState{Tx}
+Base.@kwdef struct DouglasRachfordState{Tx}
     x::Tx
-    y::Tx
-    r::Tx
-    z::Tx
-    res::Tx
+    y::Tx = zero(x)
+    r::Tx = zero(x)
+    z::Tx = zero(x)
+    res::Tx = zero(x)
 end
 
-DouglasRachfordState(iter::DouglasRachfordIteration) =
-    DouglasRachfordState(copy(iter.x0), zero(iter.x0), zero(iter.x0), zero(iter.x0), zero(iter.x0))
-
-function Base.iterate(iter::DouglasRachfordIteration, state::DouglasRachfordState = DouglasRachfordState(iter))
+function Base.iterate(iter::DouglasRachfordIteration, state::DouglasRachfordState = DouglasRachfordState(x=copy(iter.x0)))
     prox!(state.y, iter.f, state.x, iter.gamma)
     state.r .= 2 .* state.y .- state.x
     prox!(state.z, iter.g, state.r, iter.gamma)

@@ -25,7 +25,7 @@ end
 
 Base.IteratorSize(::Type{<:ZeroFPRIteration}) = Base.IsInfinite()
 
-mutable struct ZeroFPRState{R,Tx,TAx,TH}
+Base.@kwdef mutable struct ZeroFPRState{R,Tx,TAx,TH}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
@@ -37,55 +37,17 @@ mutable struct ZeroFPRState{R,Tx,TAx,TH}
     g_xbar::R         # value of nonsmooth term (at xbar)
     res::Tx           # fixed-point residual at iterate (= x - xbar)
     H::TH             # variable metric
-    tau::Maybe{R}     # stepsize (can be nothing since the initial state doesn't have it)
-    # some additional storage:
-    Axbar::TAx
-    grad_f_Axbar::TAx
-    At_grad_f_Axbar::Tx
-    xbarbar::Tx
-    res_xbar::Tx
-    xbar_prev::Maybe{Tx}
-    res_xbar_prev::Maybe{Tx}
-    d::Tx
-    Ad::TAx
+    tau::Maybe{R} = nothing
+    Axbar::TAx = zero(Ax)
+    grad_f_Axbar::TAx = zero(Ax)
+    At_grad_f_Axbar::Tx = zero(x)
+    xbarbar::Tx = zero(x)
+    res_xbar::Tx = zero(x)
+    xbar_prev::Maybe{Tx} = nothing
+    res_xbar_prev::Maybe{Tx} = nothing
+    d::Tx = zero(x)
+    Ad::TAx = zero(Ax)
 end
-
-ZeroFPRState(
-    x::Tx,
-    Ax::TAx,
-    f_Ax::R,
-    grad_f_Ax,
-    At_grad_f_Ax,
-    gamma::R,
-    y,
-    xbar,
-    g_xbar,
-    res,
-    H::TH,
-    tau,
-) where {R,Tx,TAx,TH} = ZeroFPRState{R,Tx,TAx,TH}(
-    x,
-    Ax,
-    f_Ax,
-    grad_f_Ax,
-    At_grad_f_Ax,
-    gamma,
-    y,
-    xbar,
-    g_xbar,
-    res,
-    H,
-    tau,
-    zero(Ax),
-    zero(Ax),
-    zero(x),
-    zero(x),
-    zero(x),
-    nothing,
-    nothing,
-    zero(x),
-    zero(Ax),
-)
 
 f_model(state::ZeroFPRState) =
     f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
@@ -113,20 +75,7 @@ function Base.iterate(iter::ZeroFPRIteration{R}) where {R}
     # compute initial fixed-point residual
     res = x - xbar
 
-    state = ZeroFPRState(
-        x,
-        Ax,
-        f_Ax,
-        grad_f_Ax,
-        At_grad_f_Ax,
-        gamma,
-        y,
-        xbar,
-        g_xbar,
-        res,
-        iter.H,
-        nothing,
-    )
+    state = ZeroFPRState(; x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, xbar, g_xbar, res, iter.H)
 
     return state, state
 end

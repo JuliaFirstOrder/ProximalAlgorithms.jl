@@ -40,7 +40,7 @@ mutable struct LiLinState{R<:Real,Tx,TAx}
 end
 
 function Base.iterate(iter::LiLinIteration{R}) where {R}
-    y = iter.x0
+    y = copy(iter.x0)
     Ay = iter.A * y
     grad_f_Ay, f_Ay = gradient(iter.f, Ay)
 
@@ -61,7 +61,7 @@ function Base.iterate(iter::LiLinIteration{R}) where {R}
     res = y - z
 
     state = LiLinState(
-        copy(iter.x0),
+        iter.x0,
         y,
         Ay,
         f_Ay,

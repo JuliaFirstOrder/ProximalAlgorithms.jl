@@ -50,33 +50,20 @@ end
 
 Base.IteratorSize(::Type{<:AFBAIteration}) = Base.IsInfinite()
 
-struct AFBAState{Tx,Ty}
+Base.@kwdef struct AFBAState{Tx,Ty}
     x::Tx
     y::Ty
-    xbar::Tx
-    ybar::Ty
-    gradf::Tx
-    gradl::Ty
-    FPR_x::Tx
-    FPR_y::Ty
-    temp_x::Tx
-    temp_y::Ty
+    xbar::Tx = zero(x)
+    ybar::Ty = zero(y)
+    gradf::Tx = zero(x)
+    gradl::Ty = zero(y)
+    FPR_x::Tx = zero(x)
+    FPR_y::Ty = zero(y)
+    temp_x::Tx = zero(x)
+    temp_y::Ty = zero(y)
 end
 
-AFBAState(iter::AFBAIteration) = AFBAState(
-    copy(iter.x0),
-    copy(iter.y0),
-    zero(iter.x0),
-    zero(iter.y0),
-    zero(iter.x0),
-    zero(iter.y0),
-    zero(iter.x0),
-    zero(iter.y0),
-    zero(iter.x0),
-    zero(iter.y0),
-)
-
-function Base.iterate(iter::AFBAIteration, state::AFBAState = AFBAState(iter))
+function Base.iterate(iter::AFBAIteration, state::AFBAState = AFBAState(x=copy(iter.x0), y=copy(iter.y0)))
     # perform xbar-update step
     gradient!(state.gradf, iter.f, state.x)
     mul!(state.temp_x, iter.L', state.y)

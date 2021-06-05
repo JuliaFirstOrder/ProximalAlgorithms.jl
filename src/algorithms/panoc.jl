@@ -24,7 +24,7 @@ end
 
 Base.IteratorSize(::Type{<:PANOCIteration}) = Base.IsInfinite()
 
-mutable struct PANOCState{R,Tx,TAx,TH}
+Base.@kwdef mutable struct PANOCState{R,Tx,TAx,TH}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
@@ -36,63 +36,24 @@ mutable struct PANOCState{R,Tx,TAx,TH}
     g_z::R            # value of nonsmooth term (at z)
     res::Tx           # fixed-point residual at iterate (= x - z)
     H::TH             # variable metric
-    tau::Maybe{R}     # stepsize (can be nothing since the initial state doesn't have it)
-    # some additional storage:
-    x_prev::Tx
-    res_prev::Tx
-    d::Tx
-    Ad::TAx
-    x_d::Tx
-    Ax_d::TAx
-    f_Ax_d::R
-    grad_f_Ax_d::TAx
-    At_grad_f_Ax_d::Tx
-    z_curr::Tx
+    tau::Maybe{R} = nothing
+    x_prev::Tx = zero(x)
+    res_prev::Tx = zero(x)
+    d::Tx = zero(x)
+    Ad::TAx = zero(Ax)
+    x_d::Tx = zero(x)
+    Ax_d::TAx = zero(Ax)
+    f_Ax_d::R = zero(real(eltype(x)))
+    grad_f_Ax_d::TAx = zero(Ax)
+    At_grad_f_Ax_d::Tx = zero(x)
+    z_curr::Tx = zero(x)
 end
-
-PANOCState(
-    x::Tx,
-    Ax::TAx,
-    f_Ax::R,
-    grad_f_Ax,
-    At_grad_f_Ax,
-    gamma::R,
-    y,
-    z,
-    g_z,
-    res,
-    H::TH,
-    tau,
-) where {R,Tx,TAx,TH} = PANOCState{R,Tx,TAx,TH}(
-    x,
-    Ax,
-    f_Ax,
-    grad_f_Ax,
-    At_grad_f_Ax,
-    gamma,
-    y,
-    z,
-    g_z,
-    res,
-    H,
-    tau,
-    zero(x),
-    zero(x),
-    zero(x),
-    zero(Ax),
-    zero(x),
-    zero(Ax),
-    zero(R),
-    zero(Ax),
-    zero(x),
-    zero(x),
-)
 
 f_model(state::PANOCState) =
     f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
 
 function Base.iterate(iter::PANOCIteration{R}) where {R}
-    x = iter.x0
+    x = copy(iter.x0)
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
 
@@ -114,20 +75,7 @@ function Base.iterate(iter::PANOCIteration{R}) where {R}
     # compute initial fixed-point residual
     res = x - z
 
-    state = PANOCState(
-        x,
-        Ax,
-        f_Ax,
-        grad_f_Ax,
-        At_grad_f_Ax,
-        gamma,
-        y,
-        z,
-        g_z,
-        res,
-        iter.H,
-        nothing,
-    )
+    state = PANOCState(; x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res, iter.H)
 
     return state, state
 end

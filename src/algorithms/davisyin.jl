@@ -21,7 +21,7 @@ end
 
 Base.IteratorSize(::Type{<:DavisYinIteration}) = Base.IsInfinite()
 
-mutable struct DavisYinState{T,S}
+struct DavisYinState{T,S}
     z::T
     xg::T
     y::S
@@ -31,7 +31,7 @@ mutable struct DavisYinState{T,S}
     res::T
 end
 
-function Base.iterate(iter::DavisYinIteration{R,C,T}) where {R,C,T}
+function Base.iterate(iter::DavisYinIteration)
     z = copy(iter.x0)
     xg, = prox(iter.g, z, iter.gamma)
     y = iter.A * xg
@@ -46,7 +46,7 @@ function Base.iterate(iter::DavisYinIteration{R,C,T}) where {R,C,T}
 
     res = xf - xg
     z .+= iter.lambda .* res
-    state = DavisYinState{T,typeof(y)}(z, xg, y, grad_h_y, z_half, xf, res)
+    state = DavisYinState(z, xg, y, grad_h_y, z_half, xf, res)
     return state, state
 end
 

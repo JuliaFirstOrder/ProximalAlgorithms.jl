@@ -40,22 +40,22 @@ end
 
 Base.IteratorSize(::Type{<:DRLSIteration}) = Base.IsInfinite()
 
-mutable struct DRLSState{R,Tx,TH}
+Base.@kwdef mutable struct DRLSState{R,Tx,TH}
     x::Tx
     u::Tx
     v::Tx
     w::Tx
     res::Tx
-    res_prev::Tx
+    res_prev::Tx = zero(x)
     xbar::Tx
-    xbar_prev::Tx
-    d::Tx
-    x_d::Tx
+    xbar_prev::Tx = zero(x)
+    d::Tx = zero(x)
+    x_d::Tx = zero(x)
     gamma::R
     f_u::R
     g_v::R
     H::TH
-    tau::Maybe{R}
+    tau::Maybe{R} = nothing
 end
 
 function DRE(state::DRLSState)
@@ -66,29 +66,13 @@ function DRE(state::DRLSState)
 end
 
 function Base.iterate(iter::DRLSIteration)
-    x = iter.x0
+    x = copy(iter.x0)
     u, f_u = prox(iter.f, x, iter.gamma)
     w = 2 * u - x
     v, g_v = prox(iter.g, w, iter.gamma)
     res = u - v
     xbar = x - iter.lambda * res
-    state = DRLSState(
-        x,
-        u,
-        v,
-        w,
-        res,
-        zero(x),
-        xbar,
-        zero(x),
-        zero(x),
-        zero(x),
-        iter.gamma,
-        f_u,
-        g_v,
-        iter.H,
-        nothing,
-    )
+    state = DRLSState(; x, u, v, w, res, xbar, iter.gamma, f_u, g_v, iter.H)
     return state, state
 end
 
