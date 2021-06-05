@@ -18,6 +18,7 @@ using Printf
     Lf::Maybe{R} = nothing
     gamma::Maybe{R} = Lf === nothing ? nothing : (alpha / Lf)
     adaptive::Bool = false
+    max_backtracks::Int = 20
     H::TH = LBFGS(x0, 5)
 end
 
@@ -191,7 +192,7 @@ function Base.iterate(
     tol = 10 * eps(R) * (1 + abs(FBE_x))
     threshold = FBE_x - sigma * norm(state.res)^2 + tol
 
-    for i = 1:20
+    for _ in 1:iter.max_backtracks
         state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
         state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
         state.res .= state.x .- state.z

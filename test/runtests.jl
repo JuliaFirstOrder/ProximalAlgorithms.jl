@@ -11,7 +11,7 @@ include("accel/nesterov.jl")
 include("accel/broyden.jl")
 include("accel/noaccel.jl")
 
-include("problems/test_drs_drls_equivalence.jl")
+include("problems/test_equivalence.jl")
 include("problems/test_elasticnet.jl")
 include("problems/test_lasso_small.jl")
 include("problems/test_lasso_small_v_split.jl")
