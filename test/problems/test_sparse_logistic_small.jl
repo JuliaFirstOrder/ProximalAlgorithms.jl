@@ -26,37 +26,45 @@
     # Nonfast/Adaptive
 
     x0 = zeros(T, n)
+    x0_backup = copy(x0)
     solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, fast = false)
     x, it = solver(x0, f = f, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 1100
+    @test x0 == x0_backup
 
     # Fast/Adaptive
 
     x0 = zeros(T, n)
+    x0_backup = copy(x0)
     solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, fast = true)
     x, it = solver(x0, f = f, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 500
+    @test x0 == x0_backup
 
     # ZeroFPR/Adaptive
 
     x0 = zeros(T, n)
+    x0_backup = copy(x0)
     solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL)
     x, it = solver(x0, f = f, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 25
+    @test x0 == x0_backup
 
     # PANOC/Adaptive
 
     x0 = zeros(T, n)
+    x0_backup = copy(x0)
     solver = ProximalAlgorithms.PANOC(adaptive = true, tol = TOL)
     x, it = solver(x0, f = f, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 50
+    @test x0 == x0_backup
 
 end

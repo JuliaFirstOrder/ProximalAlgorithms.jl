@@ -61,7 +61,7 @@ function Base.iterate(iter::LiLinIteration{R}) where {R}
     res = y - z
 
     state = LiLinState(
-        iter.x0,
+        copy(iter.x0),
         y,
         Ay,
         f_Ay,

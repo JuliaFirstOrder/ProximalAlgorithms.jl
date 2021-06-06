@@ -19,6 +19,7 @@ using Printf
     Lf::Maybe{R} = nothing
     gamma::Maybe{R} = Lf === nothing ? nothing : (1 / Lf)
     adaptive::Bool = false
+    minimum_gamma::R = real(eltype(x0))(1e-7)
     fast::Bool = false
 end
 
@@ -75,7 +76,7 @@ function Base.iterate(iter::ForwardBackwardIteration{R}, state::ForwardBackwardS
 
     # backtrack gamma (warn and halt if gamma gets too small)
     while iter.gamma === nothing || iter.adaptive == true
-        if state.gamma < 1e-7 # TODO: make this a parameter, or dependent on R?
+        if state.gamma < iter.minimum_gamma
             @warn "parameter `gamma` became too small ($(state.gamma)), stopping the iterations"
             return nothing
         end

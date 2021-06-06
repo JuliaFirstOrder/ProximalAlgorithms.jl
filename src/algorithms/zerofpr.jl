@@ -19,6 +19,7 @@ Base.@kwdef struct ZeroFPRIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C
     Lf::Maybe{R} = nothing
     gamma::Maybe{R} = Lf === nothing ? nothing : (alpha / Lf)
     adaptive::Bool = false
+    minimum_gamma::R = real(eltype(x0))(1e-7)
     max_backtracks::Int = 20
     H::TH = LBFGS(x0, 5)
 end
@@ -53,7 +54,7 @@ f_model(state::ZeroFPRState) =
     f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
 
 function Base.iterate(iter::ZeroFPRIteration{R}) where {R}
-    x = iter.x0
+    x = copy(iter.x0)
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
 
@@ -91,7 +92,7 @@ function Base.iterate(
 
     # backtrack gamma (warn and halt if gamma gets too small)
     while iter.gamma === nothing || iter.adaptive == true
-        if state.gamma < 1e-7 # TODO: make this a parameter, or dependent on R?
+        if state.gamma < iter.minimum_gamma
             @warn "parameter `gamma` became too small ($(state.gamma)), stopping the iterations"
             return nothing
         end

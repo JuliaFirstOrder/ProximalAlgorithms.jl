@@ -60,7 +60,9 @@
         h = IndPoint(b)
 
         x0 = zeros(T, n)
+        x0_backup = copy(x0)
         y0 = zeros(T, m)
+        y0_backup = copy(y0)
 
         solver = ProximalAlgorithms.AFBA(tol = tol, maxit = maxit)
         x, y, it = solver(x0, y0, f = f, g = g, h = h, L = A)
@@ -72,6 +74,9 @@
 
         assert_lp_solution(c, A, b, x, y, 1e2 * tol)
 
+        @test x0 == x0_backup
+        @test y0 == y0_backup
+
     end
 
     @testset "VuCondat" begin
@@ -81,7 +86,9 @@
         h = IndPoint(b)
 
         x0 = zeros(T, n)
+        x0_backup = copy(x0)
         y0 = zeros(T, m)
+        y0_backup = copy(y0)
 
         solver = ProximalAlgorithms.VuCondat(tol = tol, maxit = maxit)
         x, y, it = solver(x0, y0, f = f, g = g, h = h, L = A)
@@ -92,6 +99,9 @@
         @test it <= maxit
 
         assert_lp_solution(c, A, b, x, y, 1e2 * tol)
+
+        @test x0 == x0_backup
+        @test y0 == y0_backup
 
     end
 
@@ -104,6 +114,7 @@
         h = Linear(c)
 
         x0 = zeros(T, n)
+        x0_backup = copy(x0)
 
         solver = ProximalAlgorithms.DavisYin(gamma = T(1), tol = tol, maxit = maxit)
         xf, xg, it = solver(x0, f = f, g = g, h = h)
@@ -115,6 +126,8 @@
 
         @assert norm(xf - x_star) <= 1e2 * tol
         @assert norm(xg - x_star) <= 1e2 * tol
+
+        @test x0 == x0_backup
 
     end
 
