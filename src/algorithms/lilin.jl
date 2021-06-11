@@ -7,6 +7,29 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
+"""
+    LiLinIteration(; <keyword-arguments>)
+
+Instantiate the nonconvex accelerated proximal gradient method by Li and Lin
+(see Algorithm 2 in [1]) for solving optimization problems of the form
+
+    minimize f(Ax) + g(x),
+
+where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+
+# Arguments
+- `x0`: initial point.
+- `f=Zero()`: smooth objective term.
+- `A=I`: linear operator (e.g. a matrix).
+- `g=Zero()`: proximable objective term.
+- `Lf=nothing`: Lipschitz constant of the gradient of x ↦ f(Ax).
+- `gamma=nothing`: stepsize to use, defaults to `1/Lf` if not set (but `Lf` is).
+
+# References
+- [1] Li, Lin, "Accelerated Proximal Gradient Methods for Nonconvex Programming",
+Proceedings of NIPS 2015 (2015).
+"""
+
 Base.@kwdef struct LiLinIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
     f::Tf = Zero()
     A::TA = I
@@ -158,40 +181,5 @@ function (solver::LiLin)(x0; kwargs...)
     return state_final.z, num_iters
 end
 
-# Outer constructors
-
-"""
-    LiLin([gamma, adaptive, fast, maxit, tol, verbose, freq])
-
-Instantiate the nonconvex accelerated proximal gradient method by Li and Lin
-(see Algorithm 2 in [1]) for solving optimization problems of the form
-
-    minimize f(Ax) + g(x),
-
-where `f` is smooth and `A` is a linear mapping (for example, a matrix).
-If `solver = LiLin(args...)`, then the above problem is solved with
-
-    solver(x0, [f, A, g, L])
-
-Optional keyword arguments:
-
-* `gamma::Real` (default: `nothing`), the stepsize to use; defaults to `1/L` if not set (but `L` is).
-* `adaptive::Bool` (default: `false`), if true, forces the method stepsize to be adaptively adjusted.
-* `delta::Real` (default: `1e-3`), parameter determinining when extrapolated steps are to be accepted.
-* `maxit::Integer` (default: `10000`), maximum number of iterations to perform.
-* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
-* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
-* `freq::Integer` (default: `10`), frequency of verbosity.
-
-If `gamma` is not specified at construction time, the following keyword
-argument can be used to set the stepsize parameter:
-
-* `L::Real` (default: `nothing`), the Lipschitz constant of the gradient of x ↦ f(Ax).
-
-References:
-
-[1] Li, Lin, "Accelerated Proximal Gradient Methods for Nonconvex Programming",
-Proceedings of NIPS 2015 (2015).
-"""
 LiLin(; maxit=10_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
     LiLin(maxit, tol, verbose, freq, kwargs)

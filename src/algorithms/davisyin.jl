@@ -8,6 +8,31 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
+"""
+    DavisYinIteration(; <keyword-arguments>)
+
+Instantiate the Davis-Yin splitting algorithm (see [1]) for solving
+convex optimization problems of the form
+
+    minimize f(x) + g(x) + h(A x),
+
+where `h` is smooth and `A` is a linear mapping (for example, a matrix).
+
+# Arguments
+- `x0`: initial point.
+- `f=Zero()`: proximable objective term.
+- `g=Zero()`: proximable objective term.
+- `h=Zero()`: smooth objective term.
+- `A=I`: linear operator (e.g. a matrix).
+- `Lh=nothing`: Lipschitz constant of the gradient of x ↦ h(Ax).
+- `gamma=nothing`: stepsize to use, defaults to `1/Lh` if not set (but `Lh` is).
+
+# References
+- [1] Davis, Yin. "A Three-Operator Splitting Scheme and its Optimization
+Applications", Set-Valued and Variational Analysis, vol. 25, no. 4,
+pp. 829–858 (2017).
+"""
+
 @Base.kwdef struct DavisYinIteration{R,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg,Th,TA}
     f::Tf = Zero()
     g::Tg = Zero()
@@ -15,8 +40,8 @@ using Printf
     A::TA = I
     x0::T
     lambda::R = real(eltype(x0))(1)
-    L::Maybe{R} = nothing
-    gamma::Maybe{R} = L !== nothing ? (1 / L) : error("You must specify either L or gamma")
+    Lh::Maybe{R} = nothing
+    gamma::Maybe{R} = Lh !== nothing ? (1 / Lh) : error("You must specify either Lh or gamma")
 end
 
 Base.IteratorSize(::Type{<:DavisYinIteration}) = Base.IsInfinite()
@@ -86,40 +111,5 @@ function (solver::DavisYin)(x0; kwargs...)
     return state_final.xf, state_final.xg, num_iters
 end
 
-# Outer constructors
-
-"""
-    DavisYin([gamma, lambda, maxit, tol, verbose, freq])
-
-Instantiate the Davis-Yin splitting algorithm (see [1]) for solving
-convex optimization problems of the form
-
-    minimize f(x) + g(x) + h(A x),
-
-where `h` is smooth and `A` is a linear mapping (for example, a matrix).
-If `solver = DavisYin(args...)`, then the above problem is solved with
-
-    solver(x0; [f, g, h, A])
-
-Optional keyword arguments:
-
-* `gamma::Real` (default: `nothing`), stepsize parameter.
-* `labmda::Real` (default: `1.0`), relaxation parameter, see [1].
-* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
-* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
-* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
-* `freq::Integer` (default: `100`), frequency of verbosity.
-
-If `gamma` is not specified at construction time, the following keyword
-argument must be specified at solve time:
-
-* `L::Real`, Lipschitz constant of the gradient of `h(A x)`.
-
-References:
-
-[1] Davis, Yin. "A Three-Operator Splitting Scheme and its Optimization
-Applications", Set-Valued and Variational Analysis, vol. 25, no. 4,
-pp. 829–858 (2017).
-"""
 DavisYin(; maxit=10_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
     DavisYin(maxit, tol, verbose, freq, kwargs)

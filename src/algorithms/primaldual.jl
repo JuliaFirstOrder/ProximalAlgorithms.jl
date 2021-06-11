@@ -26,6 +26,81 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
+"""
+    AFBAIteration(; <keyword-arguments>)
+
+Instantiate the asymmetric forward-backward-adjoint algorithm (AFBA, see [1])
+for solving convex optimization problems of the form
+
+    minimize f(x) + g(x) + (h □ l)(L x),
+
+where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly
+convex. Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
+
+Points `x0` and `y0` are the initial primal and dual iterates, respectively.
+If unspecified, functions `f`, `g`, and `h` default to the identically zero
+function, `l` defaults to the indicator of the set `{0}`, and `L` defaults to
+the identity. Important keyword arguments, in case `f` and `l` are set, are:
+
+* `beta_f`: Lipschitz constant of gradient of `f` (default: zero)
+* `beta_l`: Lipschitz constant of gradient of the conjugate of `l` (default: zero)
+
+These are used to determine the algorithm default stepsizes, `gamma1` and `gamma2`,
+in case they are not directly specified.
+
+Optional keyword arguments are:
+
+* `gamma1`: stepsize corresponding to the primal updates (default: see [1] for each case)
+* `gamma2`: stepsize corresponding to the dual updates (default: see [1] for each case)
+* `theta`: nonnegative algorithm parameter (default: `1.0`)
+* `mu`: algorithm parameter in the range [0,1] (default: `1.0`)
+* `tol`: primal-dual termination tolerance (default: `1e-5`)
+* `maxit`: maximum number of iterations (default: `10000`)
+* `verbose`, verbosity level (default: `1`)
+* `verbose_freq`, verbosity frequency for `verbose = 1` (default: `100`)
+
+The iterator implements Algorithm 3 of [1] with constant stepsize (α_n=λ)
+for several prominant special cases:
+1) θ = 2          ==>   Corresponds to the Vu-Condat Algorithm [2,3].
+2) θ = 1, μ=1
+3) θ = 0, μ=1
+4) θ ∈ [0,∞), μ=0
+
+See [2, Section 5.2] and [1, Figure 1] for stepsize conditions, special cases,
+and relation to other algorithms.
+
+# Arguments
+- `x0`: initial primal point.
+- `y0`: initial dual point.
+- `f=Zero()`: smooth objective term.
+- `g=Zero()`: proximable objective term.
+- `h=Zero()`: proximable objective term.
+- `l=IndZero()`: strongly convex function.
+- `L=I`: linear operator (e.g. a matrix).
+- `beta_f=0`: Lipschitz constant of the gradient of `f`.
+- `beta_l=0`: Lipschitz constant of the gradient of `l` conjugate.
+- `theta=1`: nonnegative algorithm parameter.
+- `mu=1`: algorithm parameter in the range [0,1].
+- `gamma1`: primal stepsize (see [1] for the default choice).
+- `gamma2`: dual stepsize (see [1] for the default choice).
+
+# References
+- [1] Latafat, Patrinos, "Asymmetric forward–backward–adjoint splitting for
+solving monotone inclusions involving three operators", Computational
+Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
+- [2] Latafat, Patrinos, "Primal-dual proximal algorithms for structured convex
+optimization : a unifying framework", In Large-Scale and Distributed 
+Optimization, Giselsson and Rantzer, Eds. Springer International Publishing,
+pp. 97–120 ( 2018).
+- [3] Condat, "A primal–dual splitting method for convex optimization
+involving Lipschitzian, proximable and linear composite terms",
+Journal of Optimization Theory and Applications, vol. 158, no. 2,
+pp 460-479 (2013).
+- [4] Vũ, "A splitting algorithm for dual monotone inclusions involving
+cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
+pp. 667-681 (2013).
+"""
+
 Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL}
     f::Tf = Zero()
     g::Tg = Zero()
@@ -47,6 +122,31 @@ Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL}
         AFBA_default_stepsizes(L, h, theta, mu, beta_f, beta_l)
     end
 end
+
+"""
+    VuCondatIteration(; <keyword-arguments>)
+
+Instantiate the Vũ-Condat primal-dual algorithm (see [1, 2])
+for solving convex optimization problems of the form
+
+    minimize f(x) + g(x) + (h □ l)(L x),
+
+where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly
+convex. Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
+
+For the arguments see [`AFBAIteration](@ref).
+
+# References
+- [1] Condat, "A primal–dual splitting method for convex optimization
+involving Lipschitzian, proximable and linear composite terms",
+Journal of Optimization Theory and Applications, vol. 158, no. 2,
+pp 460-479 (2013).
+- [2] Vũ, "A splitting algorithm for dual monotone inclusions involving
+cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
+pp. 667-681 (2013).
+"""
+
+VuCondatIteration(kwargs...) = AFBAIteration(kwargs..., theta=2)
 
 Base.IteratorSize(::Type{<:AFBAIteration}) = Base.IsInfinite()
 
@@ -122,109 +222,9 @@ function (solver::AFBA)(x0, y0; kwargs...)
     return state_final.xbar, state_final.ybar, num_iters
 end
 
-# Outer constructors
-
-"""
-    AFBA([gamma1, gamma2, theta, mu, lambda, maxit, tol, verbose, freq])
-
-Instantiate the asymmetric forward-backward-adjoing algorithm (AFBA, see [1])
-for solving convex optimization problems of the form
-
-    minimize f(x) + g(x) + (h □ l)(L x),
-
-where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly
-convex. Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
-If `solver = AFBA(args...)`, then the above problem is solved with
-
-    solver(x0, y0; [f, g, h, l, L, beta_f, beta_l])
-
-Points `x0` and `y0` are the initial primal and dual iterates, respectively.
-If unspecified, functions `f`, `g`, and `h` default to the identically zero
-function, `l` defaults to the indicator of the set `{0}`, and `L` defaults to
-the identity. Important keyword arguments, in case `f` and `l` are set, are:
-
-* `beta_f`: Lipschitz constant of gradient of `f` (default: zero)
-* `beta_l`: Lipschitz constant of gradient of the conjugate of `l` (default: zero)
-
-These are used to determine the algorithm default stepsizes, `gamma1` and `gamma2`,
-in case they are not directly specified.
-
-Optional keyword arguments are:
-
-* `gamma1`: stepsize corresponding to the primal updates (default: see [1] for each case)
-* `gamma2`: stepsize corresponding to the dual updates (default: see [1] for each case)
-* `theta`: nonnegative algorithm parameter (default: `1.0`)
-* `mu`: algorithm parameter in the range [0,1] (default: `1.0`)
-* `tol`: primal-dual termination tolerance (default: `1e-5`)
-* `maxit`: maximum number of iterations (default: `10000`)
-* `verbose`, verbosity level (default: `1`)
-* `verbose_freq`, verbosity frequency for `verbose = 1` (default: `100`)
-
-The iterator implements Algorithm 3 of [1] with constant stepsize (α_n=λ)
-for several prominant special cases:
-1) θ = 2          ==>   Corresponds to the Vu-Condat Algorithm [2,3].
-2) θ = 1, μ=1
-3) θ = 0, μ=1
-4) θ ∈ [0,∞), μ=0
-
-See [2, Section 5.2] and [1, Figure 1] for stepsize conditions, special cases,
-and relation to other algorithms.
-
-References:
-
-[1] Latafat, Patrinos, "Asymmetric forward–backward–adjoint splitting for
-solving monotone inclusions involving three operators", Computational
-Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
-
-[2] Latafat, Patrinos, "Primal-dual proximal algorithms for structured convex
-optimization : a unifying framework", In Large-Scale and Distributed 
-Optimization, Giselsson and Rantzer, Eds. Springer International Publishing,
-pp. 97–120 ( 2018).
-
-[3] Condat, "A primal–dual splitting method for convex optimization
-involving Lipschitzian, proximable and linear composite terms",
-Journal of Optimization Theory and Applications, vol. 158, no. 2,
-pp 460-479 (2013).
-
-[4] Vũ, "A splitting algorithm for dual monotone inclusions involving
-cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
-pp. 667-681 (2013).
-"""
 AFBA(; maxit=10_000, tol=1e-5, verbose=false, freq=100, kwargs...) = 
     AFBA(maxit, tol, verbose, freq, kwargs)
 
-
-"""
-    VuCondat([gamma1, gamma2, theta, mu, lambda, maxit, tol, verbose, freq])
-
-Instantiate the Vû-Condat splitting algorithm (see [2, 3])
-for solving convex optimization problems of the form
-
-    minimize f(x) + g(x) + (h □ l)(L x),
-
-where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly
-convex. Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
-If `solver = VuCondat(args...)`, then the above problem is solved with
-
-    solver(x0, y0; [f, g, h, l, L, beta_f, beta_l])
-
-See documentation of `AFBA` for the list of keyword arguments.
-
-References:
-
-[1] Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems
-with Applications to Imaging", Journal of Mathematical Imaging and Vision,
-vol. 40, no. 1, pp. 120-145 (2011).
-
-[2] Condat, "A primal–dual splitting method for convex optimization
-involving Lipschitzian, proximable and linear composite terms",
-Journal of Optimization Theory and Applications, vol. 158, no. 2,
-pp 460-479 (2013).
-
-[3] Vũ, "A splitting algorithm for dual monotone inclusions involving
-cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
-pp. 667-681 (2013).
-"""
 VuCondat(; maxit=10_000, tol=1e-5, verbose=false, freq=100, kwargs...) = 
     AFBA(maxit=maxit, tol=tol, verbose=verbose, freq=freq, kwargs..., theta=2)
 

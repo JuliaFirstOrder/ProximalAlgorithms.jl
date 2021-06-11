@@ -8,6 +8,28 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
+"""
+    DouglasRachfordIteration(; <keyword-arguments>)
+
+Instantiate the Douglas-Rachford splitting algorithm (see [1]) for solving
+convex optimization problems of the form
+
+    minimize f(x) + g(x).
+
+# Arguments
+- `x0`: initial point.
+- `f=Zero()`: proximable objective term.
+- `g=Zero()`: proximable objective term.
+- `gamma`: stepsize to use.
+
+# References
+- [1] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
+Optimization" (2008).
+- [2] Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
+for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
+pp. 183-202 (2009).
+"""
+
 @Base.kwdef struct DouglasRachfordIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
     f::Tf = Zero()
     g::Tg = Zero()
@@ -58,33 +80,5 @@ function (solver::DouglasRachford)(x0; kwargs...)
     return state_final.y, state_final.z, num_iters
 end
 
-# Outer constructors
-
-"""
-    DouglasRachford([gamma, maxit, tol, verbose, freq])
-
-Instantiate the Douglas-Rachford splitting algorithm (see [1]) for solving
-convex optimization problems of the form
-
-    minimize f(x) + g(x),
-
-If `solver = DouglasRachford(args...)`, then the above problem is solved with
-
-    solver(x0, [f, g])
-
-Optional keyword arguments:
-
-* `gamma::Real` (default: `1.0`), stepsize parameter.
-* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
-* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
-* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
-* `freq::Integer` (default: `100`), frequency of verbosity.
-
-References:
-
-[1] Eckstein, Bertsekas, "On the Douglas-Rachford Splitting Method and the
-Proximal Point Algorithm for Maximal Monotone Operators",
-Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
-"""
 DouglasRachford(; maxit=1_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
     DouglasRachford(maxit, tol, verbose, freq, kwargs)

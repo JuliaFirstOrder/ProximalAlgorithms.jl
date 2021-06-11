@@ -11,6 +11,35 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
+"""
+    ForwardBackwardIteration(; <keyword-arguments>)
+
+Instantiate the forward-backward splitting algorithm (see [1, 2]) for solving
+optimization problems of the form
+
+    minimize f(Ax) + g(x),
+
+where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+
+# Arguments
+- `x0`: initial point.
+- `f=Zero()`: smooth objective term.
+- `A=I`: linear operator (e.g. a matrix).
+- `g=Zero()`: proximable objective term.
+- `Lf=nothing`: Lipschitz constant of the gradient of x ↦ f(Ax).
+- `gamma=nothing`: stepsize to use, defaults to `1/Lf` if not set (but `Lf` is).
+- `adaptive=false`: forces the method stepsize to be adaptively adjusted.
+- `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
+- `fast=false`: enables Nesterov acceleration.
+
+# References
+- [1] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
+Optimization" (2008).
+- [2] Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
+for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
+pp. 183-202 (2009).
+"""
+
 @Base.kwdef struct ForwardBackwardIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
     f::Tf = Zero()
     A::TA = I
@@ -148,44 +177,5 @@ function (solver::ForwardBackward)(x0; kwargs...)
     return state_final.z, num_iters
 end
 
-# Outer constructors
-
-"""
-    ForwardBackward([gamma, adaptive, fast, maxit, tol, verbose, freq])
-
-Instantiate the Forward-Backward splitting algorithm (see [1, 2]) for solving
-optimization problems of the form
-
-    minimize f(Ax) + g(x),
-
-where `f` is smooth and `A` is a linear mapping (for example, a matrix).
-If `solver = ForwardBackward(args...)`, then the above problem is solved with
-
-    solver(x0, [f, A, g, L])
-
-Optional keyword arguments:
-
-* `gamma::Real` (default: `nothing`), the stepsize to use; defaults to `1/L` if not set (but `L` is).
-* `adaptive::Bool` (default: `false`), if true, forces the method stepsize to be adaptively adjusted.
-* `fast::Bool` (default: `false`), if true, uses Nesterov acceleration.
-* `maxit::Integer` (default: `10000`), maximum number of iterations to perform.
-* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
-* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
-* `freq::Integer` (default: `10`), frequency of verbosity.
-
-If `gamma` is not specified at construction time, the following keyword
-argument can be used to set the stepsize parameter:
-
-* `L::Real` (default: `nothing`), the Lipschitz constant of the gradient of x ↦ f(Ax).
-
-References:
-
-[1] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
-Optimization" (2008).
-
-[2] Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
-for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
-pp. 183-202 (2009).
-"""
 ForwardBackward(; maxit=10_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
     ForwardBackward(maxit, tol, verbose, freq, kwargs)

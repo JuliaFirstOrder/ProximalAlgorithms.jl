@@ -9,6 +9,34 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
+"""
+    ZeroFPRIteration(; <keyword-arguments>)
+
+Instantiate the ZeroFPR algorithm (see [1]) for solving optimization problems
+of the form
+
+    minimize f(Ax) + g(x),
+
+where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+
+# Arguments
+- `x0`: initial point.
+- `f=Zero()`: smooth objective term.
+- `A=I`: linear operator (e.g. a matrix).
+- `g=Zero()`: proximable objective term.
+- `Lf=nothing`: Lipschitz constant of the gradient of x ↦ f(Ax).
+- `gamma=nothing`: stepsize to use, defaults to `1/Lf` if not set (but `Lf` is).
+- `adaptive=false`: forces the method stepsize to be adaptively adjusted.
+- `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
+- `max_backtracks=20`: maximum number of line-search backtracks.
+- `H=LBFGS(x0, 5)`: variable metric to use to compute line-search directions.
+
+# References
+- [1] Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two
+nonconvex functions: Further properties and nonmonotone line-search algorithms",
+SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
+"""
+
 Base.@kwdef struct ZeroFPRIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
     f::Tf = Zero()
     A::TA = I
@@ -195,43 +223,5 @@ function (solver::ZeroFPR)(x0; kwargs...)
     return state_final.xbar, num_iters
 end
 
-# Outer constructors
-
-"""
-    ZeroFPR([gamma, adaptive, memory, maxit, tol, verbose, freq, alpha, beta])
-
-Instantiate the ZeroFPR algorithm (see [1]) for solving optimization problems
-of the form
-
-    minimize f(Ax) + g(x),
-
-where `f` is smooth and `A` is a linear mapping (for example, a matrix).
-If `solver = ZeroFPR(args...)`, then the above problem is solved with
-
-    solver(x0, [f, A, g, L])
-
-Optional keyword arguments:
-
-* `gamma::Real` (default: `nothing`), the stepsize to use; defaults to `alpha/L` if not set (but `L` is).
-* `adaptive::Bool` (default: `false`), if true, forces the method stepsize to be adaptively adjusted even if `L` is provided (this behaviour is always enforced if `L` is not provided).
-* `memory::Integer` (default: `5`), memory parameter for L-BFGS.
-* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
-* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
-* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
-* `freq::Integer` (default: `10`), frequency of verbosity.
-* `alpha::Real` (default: `0.95`), stepsize to inverse-Lipschitz-constant ratio; should be in (0, 1).
-* `beta::Real` (default: `0.5`), sufficient decrease parameter; should be in (0, 1).
-
-If `gamma` is not specified at construction time, the following keyword
-argument can be used to set the stepsize parameter:
-
-* `L::Real` (default: `nothing`), the Lipschitz constant of the gradient of x ↦ f(Ax).
-
-References:
-
-[1] Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two
-nonconvex functions: Further properties and nonmonotone line-search algorithms",
-SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
-"""
 ZeroFPR(; maxit=1_000, tol=1e-8, verbose=false, freq=10, kwargs...) = 
     ZeroFPR(maxit, tol, verbose, freq, kwargs)
