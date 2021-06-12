@@ -9,7 +9,7 @@ ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"
 
 [compat]
 ProximalOperators = "0.14"
-julia = "1.0.0"
+julia = "1.1.0"
 
 [extras]
 AbstractOperators = "d9c5613a-d543-52d8-9afd-8f241a8c3f1c"
