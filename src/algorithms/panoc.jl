@@ -30,7 +30,7 @@ where `f` is smooth and `A` is a linear mapping (for example, a matrix).
 - `max_backtracks=20`: maximum number of line-search backtracks.
 - `H=LBFGS(x0, 5)`: variable metric to use to compute line-search directions.
 
-# Reference
+# References
 - [1] Stella, Themelis, Sopasakis, Patrinos, "A simple and efficient algorithm
 for nonlinear model predictive control", 56th IEEE Conference on Decision
 and Control (2017).
@@ -104,7 +104,10 @@ function Base.iterate(iter::PANOCIteration{R}) where {R}
     # compute initial fixed-point residual
     res = x - z
 
-    state = PANOCState(; x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res, iter.H)
+    state = PANOCState(
+        x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
+        gamma=gamma, y=y, z=z, g_z=g_z, res=res, H=iter.H,
+    )
 
     return state, state
 end

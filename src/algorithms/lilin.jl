@@ -84,20 +84,8 @@ function Base.iterate(iter::LiLinIteration{R}) where {R}
     res = y - z
 
     state = LiLinState(
-        copy(iter.x0),
-        y,
-        Ay,
-        f_Ay,
-        grad_f_Ay,
-        At_grad_f_Ay,
-        iter.gamma,
-        y_forward,
-        z,
-        g_z,
-        res,
-        R(1),
-        Fy,
-        R(1),
+        copy(iter.x0), y, Ay, f_Ay, grad_f_Ay, At_grad_f_Ay, iter.gamma,
+        y_forward, z, g_z, res, R(1), Fy, R(1),
     )
 
     return state, state

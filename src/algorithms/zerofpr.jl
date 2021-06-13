@@ -104,7 +104,10 @@ function Base.iterate(iter::ZeroFPRIteration{R}) where {R}
     # compute initial fixed-point residual
     res = x - xbar
 
-    state = ZeroFPRState(; x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, xbar, g_xbar, res, iter.H)
+    state = ZeroFPRState(
+        x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
+        gamma=gamma, y=y, xbar=xbar, g_xbar=g_xbar, res=res, H=iter.H,
+    )
 
     return state, state
 end

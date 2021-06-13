@@ -72,7 +72,10 @@ function Base.iterate(iter::DRLSIteration)
     v, g_v = prox(iter.g, w, iter.gamma)
     res = u - v
     xbar = x - iter.lambda * res
-    state = DRLSState(; x, u, v, w, res, xbar, iter.gamma, f_u, g_v, iter.H)
+    state = DRLSState(
+        x=x, u=u, v=v, w=w, res=res, xbar=xbar, gamma=iter.gamma, f_u=f_u,
+        g_v=g_v, H=iter.H,
+    )
     return state, state
 end
 

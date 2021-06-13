@@ -94,7 +94,10 @@ function Base.iterate(iter::ForwardBackwardIteration{R}) where {R}
     # compute initial fixed-point residual
     res = x - z
 
-    state = ForwardBackwardState(; x, Ax, f_Ax, grad_f_Ax, At_grad_f_Ax, gamma, y, z, g_z, res)
+    state = ForwardBackwardState(
+        x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
+        gamma=gamma, y=y, z=z, g_z=g_z, res=res,
+    )
 
     return state, state
 end
