@@ -20,26 +20,32 @@ using Test
 
     @testset "PANOC" begin
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.PANOC{T}()
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOC()
         x, it = solver(x0, f = f, g = g)
         z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
         @test norm(x - z, Inf) / gamma <= solver.tol
+        @test x0 == x0_backup
     end
 
     @testset "ZeroFPR" begin
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ZeroFPR{T}()
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ZeroFPR()
         x, it = solver(x0, f = f, g = g)
         z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
         @test norm(x - z, Inf) / gamma <= solver.tol
+        @test x0 == x0_backup
     end
 
     @testset "LiLin" begin
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.LiLin{T}(gamma = gamma)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.LiLin(gamma = gamma)
         x, it = solver(x0, f = f, g = g)
         z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
         @test norm(x - z, Inf) / gamma <= solver.tol
+        @test x0 == x0_backup
     end
 end
 
@@ -68,26 +74,32 @@ end
 
         @testset "PANOC" begin
             x0 = zeros(T, n)
-            solver = ProximalAlgorithms.PANOC{T}(tol = TOL)
+            x0_backup = copy(x0)
+            solver = ProximalAlgorithms.PANOC(tol = TOL)
             x, it = solver(x0, f = f, g = g)
             z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
             @test norm(x - z, Inf) / gamma <= solver.tol
+            @test x0 == x0_backup
         end
 
         @testset "ZeroFPR" begin
             x0 = zeros(T, n)
-            solver = ProximalAlgorithms.ZeroFPR{T}(tol = TOL)
+            x0_backup = copy(x0)
+            solver = ProximalAlgorithms.ZeroFPR(tol = TOL)
             x, it = solver(x0, f = f, g = g)
             z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
             @test norm(x - z, Inf) / gamma <= solver.tol
+            @test x0 == x0_backup
         end
 
         @testset "LiLin" begin
             x0 = zeros(T, n)
+            x0_backup = copy(x0)
             solver = ProximalAlgorithms.LiLin(gamma = gamma, tol = TOL)
             x, it = solver(x0, f = f, g = g)
             z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
             @test norm(x - z, Inf) / gamma <= solver.tol
+            @test x0 == x0_backup
         end
     end
 end

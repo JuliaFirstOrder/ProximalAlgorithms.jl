@@ -8,19 +8,45 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct DYS_iterable{R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg,Th,TA}
-    f::Tf
-    g::Tg
-    h::Th
-    A::TA
+"""
+    DavisYinIteration(; <keyword-arguments>)
+
+Instantiate the Davis-Yin splitting algorithm (see [1]) for solving
+convex optimization problems of the form
+
+    minimize f(x) + g(x) + h(A x),
+
+where `h` is smooth and `A` is a linear mapping (for example, a matrix).
+
+# Arguments
+- `x0`: initial point.
+- `f=Zero()`: proximable objective term.
+- `g=Zero()`: proximable objective term.
+- `h=Zero()`: smooth objective term.
+- `A=I`: linear operator (e.g. a matrix).
+- `Lh=nothing`: Lipschitz constant of the gradient of x ↦ h(Ax).
+- `gamma=nothing`: stepsize to use, defaults to `1/Lh` if not set (but `Lh` is).
+
+# References
+- [1] Davis, Yin. "A Three-Operator Splitting Scheme and its Optimization
+Applications", Set-Valued and Variational Analysis, vol. 25, no. 4,
+pp. 829–858 (2017).
+"""
+
+@Base.kwdef struct DavisYinIteration{R,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg,Th,TA}
+    f::Tf = Zero()
+    g::Tg = Zero()
+    h::Th = Zero()
+    A::TA = I
     x0::T
-    gamma::R
-    lambda::R
+    lambda::R = real(eltype(x0))(1)
+    Lh::Maybe{R} = nothing
+    gamma::Maybe{R} = Lh !== nothing ? (1 / Lh) : error("You must specify either Lh or gamma")
 end
 
-Base.IteratorSize(::Type{<:DYS_iterable}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:DavisYinIteration}) = Base.IsInfinite()
 
-mutable struct DYS_state{T,S}
+struct DavisYinState{T,S}
     z::T
     xg::T
     y::S
@@ -30,7 +56,7 @@ mutable struct DYS_state{T,S}
     res::T
 end
 
-function Base.iterate(iter::DYS_iterable{R,C,T}) where {R,C,T}
+function Base.iterate(iter::DavisYinIteration)
     z = copy(iter.x0)
     xg, = prox(iter.g, z, iter.gamma)
     y = iter.A * xg
@@ -45,11 +71,11 @@ function Base.iterate(iter::DYS_iterable{R,C,T}) where {R,C,T}
 
     res = xf - xg
     z .+= iter.lambda .* res
-    state = DYS_state{T,typeof(y)}(z, xg, y, grad_h_y, z_half, xf, res)
+    state = DavisYinState(z, xg, y, grad_h_y, z_half, xf, res)
     return state, state
 end
 
-function Base.iterate(iter::DYS_iterable, state::DYS_state)
+function Base.iterate(iter::DavisYinIteration, state::DavisYinState)
     prox!(state.xg, iter.g, state.z, iter.gamma)
     mul!(state.y, iter.A, state.xg)
     gradient!(state.grad_h_y, iter.h, state.y)
@@ -64,100 +90,26 @@ end
 
 # Solver
 
-struct DavisYin{R}
-    gamma::Maybe{R}
-    lambda::R
+struct DavisYin{R, K}
     maxit::Int
     tol::R
     verbose::Bool
     freq::Int
-
-    function DavisYin{R}(;
-        gamma::Maybe{R} = nothing,
-        lambda::R = R(1.0),
-        maxit::Int = 10000,
-        tol::R = R(1e-8),
-        verbose::Bool = false,
-        freq::Int = 100,
-    ) where {R}
-        @assert gamma === nothing || gamma > 0
-        @assert lambda > 0
-        @assert maxit > 0
-        @assert tol > 0
-        @assert freq > 0
-        new(gamma, lambda, maxit, tol, verbose, freq)
-    end
+    kwargs::K
 end
 
-function (solver::DavisYin{R})(
-    x0::AbstractArray{C};
-    f = Zero(),
-    g = Zero(),
-    h = Zero(),
-    A = I,
-    L::Maybe{R} = nothing,
-) where {R,C<:Union{R,Complex{R}}}
-
-    stop(state::DYS_state) = norm(state.res, Inf) <= solver.tol
+function (solver::DavisYin)(x0; kwargs...)
+    stop(state::DavisYinState) = norm(state.res, Inf) <= solver.tol
     disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf))
-
-    if solver.gamma === nothing
-        if L !== nothing
-            gamma = R(1) / L
-        else
-            error("You must specify either L or gamma")
-        end
-    else
-        gamma = solver.gamma
-    end
-
-    iter = DYS_iterable(f, g, h, A, x0, gamma, solver.lambda)
+    iter = DavisYinIteration(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose
         iter = tee(sample(iter, solver.freq), disp)
     end
-
     num_iters, state_final = loop(iter)
-
     return state_final.xf, state_final.xg, num_iters
-
 end
 
-# Outer constructors
-
-"""
-    DavisYin([gamma, lambda, maxit, tol, verbose, freq])
-
-Instantiate the Davis-Yin splitting algorithm (see [1]) for solving
-convex optimization problems of the form
-
-    minimize f(x) + g(x) + h(A x),
-
-where `h` is smooth and `A` is a linear mapping (for example, a matrix).
-If `solver = DavisYin(args...)`, then the above problem is solved with
-
-    solver(x0; [f, g, h, A])
-
-Optional keyword arguments:
-
-* `gamma::Real` (default: `nothing`), stepsize parameter.
-* `labmda::Real` (default: `1.0`), relaxation parameter, see [1].
-* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
-* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
-* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
-* `freq::Integer` (default: `100`), frequency of verbosity.
-
-If `gamma` is not specified at construction time, the following keyword
-argument must be specified at solve time:
-
-* `L::Real`, Lipschitz constant of the gradient of `h(A x)`.
-
-References:
-
-[1] Davis, Yin. "A Three-Operator Splitting Scheme and its Optimization
-Applications", Set-Valued and Variational Analysis, vol. 25, no. 4,
-pp. 829–858 (2017).
-"""
-DavisYin(::Type{R}; kwargs...) where {R} = DavisYin{R}(; kwargs...)
-DavisYin(; kwargs...) = DavisYin(Float64; kwargs...)
+DavisYin(; maxit=10_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
+    DavisYin(maxit, tol, verbose, freq, kwargs)

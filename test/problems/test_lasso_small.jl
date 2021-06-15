@@ -33,39 +33,47 @@ using ProximalAlgorithms
         ## Nonfast/Nonadaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, L = opnorm(A)^2)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm(A)^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 150
+        @test x0 == x0_backup
 
         # Nonfast/Adaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL, adaptive = true)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 300
+        @test x0 == x0_backup
 
         # Fast/Nonadaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL, fast = true)
-        x, it = solver(x0, f = f, A = A, g = g, L = opnorm(A)^2)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, fast = true)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm(A)^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100
+        @test x0 == x0_backup
 
         # Fast/Adaptive
 
         x0 = zeros(T, n)
+        x0_backup = copy(x0)
         solver =
-            ProximalAlgorithms.ForwardBackward{R}(tol = TOL, adaptive = true, fast = true)
+            ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, fast = true)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 200
+        @test x0 == x0_backup
     end
 
     @testset "ZeroFPR" begin
@@ -73,20 +81,24 @@ using ProximalAlgorithms
         # ZeroFPR/Nonadaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ZeroFPR{R}(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, L = opnorm(A)^2)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ZeroFPR(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm(A)^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
+        @test x0 == x0_backup
 
         # ZeroFPR/Adaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ZeroFPR{R}(adaptive = true, tol = TOL)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
+        @test x0 == x0_backup
 
     end
 
@@ -95,20 +107,24 @@ using ProximalAlgorithms
         # PANOC/Nonadaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.PANOC{R}(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, L = opnorm(A)^2)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOC(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm(A)^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
+        @test x0 == x0_backup
 
         ## PANOC/Adaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.PANOC{R}(adaptive = true, tol = TOL)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOC(adaptive = true, tol = TOL)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
+        @test x0 == x0_backup
 
     end
 
@@ -117,14 +133,16 @@ using ProximalAlgorithms
         # Douglas-Rachford
 
         x0 = zeros(T, n)
+        x0_backup = copy(x0)
         solver =
-            ProximalAlgorithms.DouglasRachford{R}(gamma = R(10) / opnorm(A)^2, tol = TOL)
+            ProximalAlgorithms.DouglasRachford(gamma = R(10) / opnorm(A)^2, tol = TOL)
         y, z, it = solver(x0, f = f2, g = g)
         @test eltype(y) == T
         @test eltype(z) == T
         @test norm(y - x_star, Inf) <= TOL
         @test norm(z - x_star, Inf) <= TOL
         @test it < 30
+        @test x0 == x0_backup
 
     end
 
@@ -133,34 +151,39 @@ using ProximalAlgorithms
         # Douglas-Rachford line search
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.DRLS{R}(tol = 10 * TOL)
-        y, z, it = solver(x0, f = f2, g = g, L = opnorm(A)^2)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.DRLS(tol = 10 * TOL)
+        y, z, it = solver(x0, f = f2, g = g, Lf = opnorm(A)^2)
         @test eltype(y) == T
         @test eltype(z) == T
         @test norm(y - x_star, Inf) <= 10 * TOL
         @test norm(z - x_star, Inf) <= 10 * TOL
         @test it < 26
+        @test x0 == x0_backup
 
     end
 
     @testset "AFBA" begin
 
         x0 = zeros(T, n)
+        x0_backup = copy(x0)
         y0 = zeros(T, n)
 
-        solver = ProximalAlgorithms.AFBA{R}(theta = R(1), mu = R(1), tol = R(1e-6))
+        solver = ProximalAlgorithms.AFBA(theta = R(1), mu = R(1), tol = R(1e-6))
         x_afba, y_afba, it_afba = solver(x0, y0, f = f2, g = g, beta_f = opnorm(A)^2)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
         @test it_afba <= 80
+        @test x0 == x0_backup
 
-        solver = ProximalAlgorithms.AFBA{R}(theta = R(1), mu = R(1), tol = R(1e-6))
+        solver = ProximalAlgorithms.AFBA(theta = R(1), mu = R(1), tol = R(1e-6))
         x_afba, y_afba, it_afba = solver(x0, y0, f = f2, h = g, beta_f = opnorm(A)^2)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
         @test it_afba <= 100
+        @test x0 == x0_backup
 
     end
 

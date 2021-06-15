@@ -44,39 +44,47 @@
         ## Nonfast/Nonadaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, L = opnorm([A1 A2])^2)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm([A1 A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 150
+        @test x0 == x0_backup
 
         # Nonfast/Adaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL, adaptive = true)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 300
+        @test x0 == x0_backup
 
         # Fast/Nonadaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.ForwardBackward{R}(tol = TOL, fast = true)
-        x, it = solver(x0, f = f, A = A, g = g, L = opnorm([A1 A2])^2)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, fast = true)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm([A1 A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100
+        @test x0 == x0_backup
 
         # Fast/Adaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
+        x0_backup = copy(x0)
         solver =
-            ProximalAlgorithms.ForwardBackward{R}(tol = TOL, adaptive = true, fast = true)
+            ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, fast = true)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 200
+        @test x0 == x0_backup
     end
 
     @testset "ZeroFPR" begin
@@ -84,20 +92,24 @@
         # ZeroFPR/Nonadaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.ZeroFPR{R}(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, L = opnorm([A1 A2])^2)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ZeroFPR(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm([A1 A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
+        @test x0 == x0_backup
 
         # ZeroFPR/Adaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.ZeroFPR{R}(adaptive = true, tol = TOL)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
+        @test x0 == x0_backup
 
     end
 
@@ -106,20 +118,24 @@
         # PANOC/Nonadaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.PANOC{R}(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, L = opnorm([A1 A2])^2)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOC(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm([A1 A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
+        @test x0 == x0_backup
 
         ## PANOC/Adaptive
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
-        solver = ProximalAlgorithms.PANOC{R}(adaptive = true, tol = TOL)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOC(adaptive = true, tol = TOL)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
+        @test x0 == x0_backup
 
     end
 

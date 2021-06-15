@@ -9,21 +9,52 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct ZeroFPR_iterable{R<:Real,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
-    f::Tf             # smooth term
-    A::TA             # matrix/linear operator
-    g::Tg             # (possibly) nonsmooth, proximable term
-    x0::Tx            # initial point
-    alpha::R          # in (0, 1), e.g.: 0.95
-    beta::R           # in (0, 1), e.g.: 0.5
-    gamma::Maybe{R}   # stepsize parameter of forward and backward steps
-    adaptive::Bool    # enforce adaptive stepsize even if L is provided
-    H::TH
+"""
+    ZeroFPRIteration(; <keyword-arguments>)
+
+Instantiate the ZeroFPR algorithm (see [1]) for solving optimization problems
+of the form
+
+    minimize f(Ax) + g(x),
+
+where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+
+# Arguments
+- `x0`: initial point.
+- `f=Zero()`: smooth objective term.
+- `A=I`: linear operator (e.g. a matrix).
+- `g=Zero()`: proximable objective term.
+- `Lf=nothing`: Lipschitz constant of the gradient of x ↦ f(Ax).
+- `gamma=nothing`: stepsize to use, defaults to `1/Lf` if not set (but `Lf` is).
+- `adaptive=false`: forces the method stepsize to be adaptively adjusted.
+- `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
+- `max_backtracks=20`: maximum number of line-search backtracks.
+- `H=LBFGS(x0, 5)`: variable metric to use to compute line-search directions.
+
+# References
+- [1] Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two
+nonconvex functions: Further properties and nonmonotone line-search algorithms",
+SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
+"""
+
+Base.@kwdef struct ZeroFPRIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
+    f::Tf = Zero()
+    A::TA = I
+    g::Tg = Zero()
+    x0::Tx
+    alpha::R = real(eltype(x0))(0.95)
+    beta::R = real(eltype(x0))(0.5)
+    Lf::Maybe{R} = nothing
+    gamma::Maybe{R} = Lf === nothing ? nothing : (alpha / Lf)
+    adaptive::Bool = false
+    minimum_gamma::R = real(eltype(x0))(1e-7)
+    max_backtracks::Int = 20
+    H::TH = LBFGS(x0, 5)
 end
 
-Base.IteratorSize(::Type{<:ZeroFPR_iterable}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:ZeroFPRIteration}) = Base.IsInfinite()
 
-mutable struct ZeroFPR_state{R<:Real,Tx,TAx,TH}
+Base.@kwdef mutable struct ZeroFPRState{R,Tx,TAx,TH}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
@@ -35,61 +66,23 @@ mutable struct ZeroFPR_state{R<:Real,Tx,TAx,TH}
     g_xbar::R         # value of nonsmooth term (at xbar)
     res::Tx           # fixed-point residual at iterate (= x - xbar)
     H::TH             # variable metric
-    tau::Maybe{R}     # stepsize (can be nothing since the initial state doesn't have it)
-    # some additional storage:
-    Axbar::TAx
-    grad_f_Axbar::TAx
-    At_grad_f_Axbar::Tx
-    xbarbar::Tx
-    res_xbar::Tx
-    xbar_prev::Maybe{Tx}
-    res_xbar_prev::Maybe{Tx}
-    d::Tx
-    Ad::TAx
+    tau::Maybe{R} = nothing
+    Axbar::TAx = zero(Ax)
+    grad_f_Axbar::TAx = zero(Ax)
+    At_grad_f_Axbar::Tx = zero(x)
+    xbarbar::Tx = zero(x)
+    res_xbar::Tx = zero(x)
+    xbar_prev::Maybe{Tx} = nothing
+    res_xbar_prev::Maybe{Tx} = nothing
+    d::Tx = zero(x)
+    Ad::TAx = zero(Ax)
 end
 
-ZeroFPR_state(
-    x::Tx,
-    Ax::TAx,
-    f_Ax::R,
-    grad_f_Ax,
-    At_grad_f_Ax,
-    gamma::R,
-    y,
-    xbar,
-    g_xbar,
-    res,
-    H::TH,
-    tau,
-) where {R,Tx,TAx,TH} = ZeroFPR_state{R,Tx,TAx,TH}(
-    x,
-    Ax,
-    f_Ax,
-    grad_f_Ax,
-    At_grad_f_Ax,
-    gamma,
-    y,
-    xbar,
-    g_xbar,
-    res,
-    H,
-    tau,
-    zero(Ax),
-    zero(Ax),
-    zero(x),
-    zero(x),
-    zero(x),
-    nothing,
-    nothing,
-    zero(x),
-    zero(Ax),
-)
-
-f_model(state::ZeroFPR_state) =
+f_model(state::ZeroFPRState) =
     f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
 
-function Base.iterate(iter::ZeroFPR_iterable{R}) where {R}
-    x = iter.x0
+function Base.iterate(iter::ZeroFPRIteration{R}) where {R}
+    x = copy(iter.x0)
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
 
@@ -111,27 +104,17 @@ function Base.iterate(iter::ZeroFPR_iterable{R}) where {R}
     # compute initial fixed-point residual
     res = x - xbar
 
-    state = ZeroFPR_state(
-        x,
-        Ax,
-        f_Ax,
-        grad_f_Ax,
-        At_grad_f_Ax,
-        gamma,
-        y,
-        xbar,
-        g_xbar,
-        res,
-        iter.H,
-        nothing,
+    state = ZeroFPRState(
+        x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
+        gamma=gamma, y=y, xbar=xbar, g_xbar=g_xbar, res=res, H=iter.H,
     )
 
     return state, state
 end
 
 function Base.iterate(
-    iter::ZeroFPR_iterable{R},
-    state::ZeroFPR_state{R,Tx,TAx},
+    iter::ZeroFPRIteration{R},
+    state::ZeroFPRState{R,Tx,TAx},
 ) where {R,Tx,TAx}
     f_Axbar_upp = f_model(state)
     # These need to be performed anyway (to compute xbarbar later on)
@@ -140,7 +123,7 @@ function Base.iterate(
 
     # backtrack gamma (warn and halt if gamma gets too small)
     while iter.gamma === nothing || iter.adaptive == true
-        if state.gamma < 1e-7 # TODO: make this a parameter, or dependent on R?
+        if state.gamma < iter.minimum_gamma
             @warn "parameter `gamma` became too small ($(state.gamma)), stopping the iterations"
             return nothing
         end
@@ -191,7 +174,7 @@ function Base.iterate(
     tol = 10 * eps(R) * (1 + abs(FBE_x))
     threshold = FBE_x - sigma * norm(state.res)^2 + tol
 
-    for i = 1:20
+    for _ in 1:iter.max_backtracks
         state.x .= state.xbar_prev .+ tau .* state.d
         state.Ax .= state.Axbar .+ tau .* state.Ad
         # TODO: can precompute most of next line in case f is quadratic
@@ -216,48 +199,16 @@ end
 
 # Solver
 
-struct ZeroFPR{R<:Real}
-    alpha::R
-    beta::R
-    gamma::Maybe{R}
-    adaptive::Bool
-    memory::Int
+struct ZeroFPR{R, K}
     maxit::Int
     tol::R
     verbose::Bool
     freq::Int
-
-    function ZeroFPR{R}(;
-        alpha::R = R(0.95),
-        beta::R = R(0.5),
-        gamma::Maybe{R} = nothing,
-        adaptive::Bool = false,
-        memory::Int = 5,
-        maxit::Int = 1000,
-        tol::R = R(1e-8),
-        verbose::Bool = false,
-        freq::Int = 10,
-    ) where {R}
-        @assert 0 < alpha < 1
-        @assert 0 < beta < 1
-        @assert gamma === nothing || gamma > 0
-        @assert memory >= 0
-        @assert maxit > 0
-        @assert tol > 0
-        @assert freq > 0
-        new(alpha, beta, gamma, adaptive, memory, maxit, tol, verbose, freq)
-    end
+    kwargs::K
 end
 
-function (solver::ZeroFPR{R})(
-    x0::AbstractArray{C};
-    f = Zero(),
-    A = I,
-    g = Zero(),
-    L::Maybe{R} = nothing,
-) where {R,C<:Union{R,Complex{R}}}
-
-    stop(state::ZeroFPR_state) = norm(state.res, Inf) / state.gamma <= solver.tol
+function (solver::ZeroFPR)(x0; kwargs...)
+    stop(state::ZeroFPRState) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) = @printf(
         "%5d | %.3e | %.3e | %.3e\n",
         it,
@@ -265,73 +216,15 @@ function (solver::ZeroFPR{R})(
         norm(state.res, Inf) / state.gamma,
         (state.tau === nothing ? 0.0 : state.tau)
     )
-
-    gamma = if solver.gamma === nothing && L !== nothing
-        solver.alpha / L
-    else
-        solver.gamma
-    end
-
-    iter = ZeroFPR_iterable(
-        f,
-        A,
-        g,
-        x0,
-        solver.alpha,
-        solver.beta,
-        gamma,
-        solver.adaptive,
-        LBFGS(x0, solver.memory),
-    )
+    iter = ZeroFPRIteration(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose
         iter = tee(sample(iter, solver.freq), disp)
     end
-
     num_iters, state_final = loop(iter)
-
     return state_final.xbar, num_iters
-
 end
 
-# Outer constructors
-
-"""
-    ZeroFPR([gamma, adaptive, memory, maxit, tol, verbose, freq, alpha, beta])
-
-Instantiate the ZeroFPR algorithm (see [1]) for solving optimization problems
-of the form
-
-    minimize f(Ax) + g(x),
-
-where `f` is smooth and `A` is a linear mapping (for example, a matrix).
-If `solver = ZeroFPR(args...)`, then the above problem is solved with
-
-    solver(x0, [f, A, g, L])
-
-Optional keyword arguments:
-
-* `gamma::Real` (default: `nothing`), the stepsize to use; defaults to `alpha/L` if not set (but `L` is).
-* `adaptive::Bool` (default: `false`), if true, forces the method stepsize to be adaptively adjusted even if `L` is provided (this behaviour is always enforced if `L` is not provided).
-* `memory::Integer` (default: `5`), memory parameter for L-BFGS.
-* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
-* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
-* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
-* `freq::Integer` (default: `10`), frequency of verbosity.
-* `alpha::Real` (default: `0.95`), stepsize to inverse-Lipschitz-constant ratio; should be in (0, 1).
-* `beta::Real` (default: `0.5`), sufficient decrease parameter; should be in (0, 1).
-
-If `gamma` is not specified at construction time, the following keyword
-argument can be used to set the stepsize parameter:
-
-* `L::Real` (default: `nothing`), the Lipschitz constant of the gradient of x ↦ f(Ax).
-
-References:
-
-[1] Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two
-nonconvex functions: Further properties and nonmonotone line-search algorithms",
-SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
-"""
-ZeroFPR(::Type{R}; kwargs...) where {R} = ZeroFPR{R}(; kwargs...)
-ZeroFPR(; kwargs...) = ZeroFPR(Float64; kwargs...)
+ZeroFPR(; maxit=1_000, tol=1e-8, verbose=false, freq=10, kwargs...) = 
+    ZeroFPR(maxit, tol, verbose, freq, kwargs)

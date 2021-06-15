@@ -8,27 +8,46 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct DRS_iterable{R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg}
-    f::Tf
-    g::Tg
-    x::T
+"""
+    DouglasRachfordIteration(; <keyword-arguments>)
+
+Instantiate the Douglas-Rachford splitting algorithm (see [1]) for solving
+convex optimization problems of the form
+
+    minimize f(x) + g(x).
+
+# Arguments
+- `x0`: initial point.
+- `f=Zero()`: proximable objective term.
+- `g=Zero()`: proximable objective term.
+- `gamma`: stepsize to use.
+
+# References
+- [1] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
+Optimization" (2008).
+- [2] Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
+for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
+pp. 183-202 (2009).
+"""
+
+@Base.kwdef struct DouglasRachfordIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
+    f::Tf = Zero()
+    g::Tg = Zero()
+    x0::Tx
     gamma::R
 end
 
-Base.IteratorSize(::Type{<:DRS_iterable}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:DouglasRachfordIteration}) = Base.IsInfinite()
 
-mutable struct DRS_state{T}
-    x::T
-    y::T
-    r::T
-    z::T
-    res::T
+Base.@kwdef struct DouglasRachfordState{Tx}
+    x::Tx
+    y::Tx = zero(x)
+    r::Tx = zero(x)
+    z::Tx = zero(x)
+    res::Tx = zero(x)
 end
 
-DRS_state(iter::DRS_iterable) =
-    DRS_state(copy(iter.x), zero(iter.x), zero(iter.x), zero(iter.x), zero(iter.x))
-
-function Base.iterate(iter::DRS_iterable, state::DRS_state = DRS_state(iter))
+function Base.iterate(iter::DouglasRachfordIteration, state::DouglasRachfordState = DouglasRachfordState(x=copy(iter.x0)))
     prox!(state.y, iter.f, state.x, iter.gamma)
     state.r .= 2 .* state.y .- state.x
     prox!(state.z, iter.g, state.r, iter.gamma)
@@ -39,77 +58,27 @@ end
 
 # Solver
 
-struct DouglasRachford{R}
-    gamma::R
+struct DouglasRachford{R, K}
     maxit::Int
     tol::R
     verbose::Bool
     freq::Int
-
-    function DouglasRachford{R}(;
-        gamma::R,
-        maxit::Int = 1000,
-        tol::R = R(1e-8),
-        verbose::Bool = false,
-        freq::Int = 100,
-    ) where {R}
-        @assert gamma > 0
-        @assert maxit > 0
-        @assert tol > 0
-        @assert freq > 0
-        new(gamma, maxit, tol, verbose, freq)
-    end
+    kwargs::K
 end
 
-function (solver::DouglasRachford{R})(
-    x0::AbstractArray{C};
-    f = Zero(),
-    g = Zero(),
-) where {R,C<:Union{R,Complex{R}}}
-
-    stop(state::DRS_state) = norm(state.res, Inf) / solver.gamma <= solver.tol
-    disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf) / solver.gamma)
-
-    iter = DRS_iterable(f, g, x0, solver.gamma)
+function (solver::DouglasRachford)(x0; kwargs...)
+    iter = DouglasRachfordIteration(; x0=x0, solver.kwargs..., kwargs...)
+    gamma = iter.gamma
+    stop(state::DouglasRachfordState) = norm(state.res, Inf) / gamma <= solver.tol
+    disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf) / gamma)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose
         iter = tee(sample(iter, solver.freq), disp)
     end
-
     num_iters, state_final = loop(iter)
-
     return state_final.y, state_final.z, num_iters
-
 end
 
-# Outer constructors
-
-"""
-    DouglasRachford([gamma, maxit, tol, verbose, freq])
-
-Instantiate the Douglas-Rachford splitting algorithm (see [1]) for solving
-convex optimization problems of the form
-
-    minimize f(x) + g(x),
-
-If `solver = DouglasRachford(args...)`, then the above problem is solved with
-
-    solver(x0, [f, g])
-
-Optional keyword arguments:
-
-* `gamma::Real` (default: `1.0`), stepsize parameter.
-* `maxit::Integer` (default: `1000`), maximum number of iterations to perform.
-* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
-* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
-* `freq::Integer` (default: `100`), frequency of verbosity.
-
-References:
-
-[1] Eckstein, Bertsekas, "On the Douglas-Rachford Splitting Method and the
-Proximal Point Algorithm for Maximal Monotone Operators",
-Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
-"""
-DouglasRachford(::Type{R}; kwargs...) where {R} = DouglasRachford{R}(; kwargs...)
-DouglasRachford(; kwargs...) = DouglasRachford(Float64; kwargs...)
+DouglasRachford(; maxit=1_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
+    DouglasRachford(maxit, tol, verbose, freq, kwargs)

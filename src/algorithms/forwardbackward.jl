@@ -11,19 +11,50 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-struct FBS_iterable{R<:Real,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
-    f::Tf             # smooth term
-    A::TA             # matrix/linear operator
-    g::Tg             # (possibly) nonsmooth, proximable term
-    x0::Tx            # initial point
-    gamma::Maybe{R}   # stepsize parameter of forward and backward steps
-    adaptive::Bool    # enforce adaptive stepsize even if L is provided
-    fast::Bool
+"""
+    ForwardBackwardIteration(; <keyword-arguments>)
+
+Instantiate the forward-backward splitting algorithm (see [1, 2]) for solving
+optimization problems of the form
+
+    minimize f(Ax) + g(x),
+
+where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+
+# Arguments
+- `x0`: initial point.
+- `f=Zero()`: smooth objective term.
+- `A=I`: linear operator (e.g. a matrix).
+- `g=Zero()`: proximable objective term.
+- `Lf=nothing`: Lipschitz constant of the gradient of x ↦ f(Ax).
+- `gamma=nothing`: stepsize to use, defaults to `1/Lf` if not set (but `Lf` is).
+- `adaptive=false`: forces the method stepsize to be adaptively adjusted.
+- `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
+- `fast=false`: enables Nesterov acceleration.
+
+# References
+- [1] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
+Optimization" (2008).
+- [2] Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
+for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
+pp. 183-202 (2009).
+"""
+
+@Base.kwdef struct ForwardBackwardIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
+    f::Tf = Zero()
+    A::TA = I
+    g::Tg = Zero()
+    x0::Tx
+    Lf::Maybe{R} = nothing
+    gamma::Maybe{R} = Lf === nothing ? nothing : (1 / Lf)
+    adaptive::Bool = false
+    minimum_gamma::R = real(eltype(x0))(1e-7)
+    fast::Bool = false
 end
 
-Base.IteratorSize(::Type{<:FBS_iterable}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:ForwardBackwardIteration}) = Base.IsInfinite()
 
-mutable struct FBS_state{R<:Real,Tx,TAx}
+Base.@kwdef mutable struct ForwardBackwardState{R,Tx,TAx}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
@@ -34,14 +65,14 @@ mutable struct FBS_state{R<:Real,Tx,TAx}
     z::Tx             # forward-backward point
     g_z::R            # value of nonsmooth term (at z)
     res::Tx           # fixed-point residual at iterate (= z - x)
-    theta::R
-    z_prev::Tx
+    theta::R = one(real(eltype(x)))
+    z_prev::Tx = copy(x)
 end
 
-f_model(state::FBS_state) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
+f_model(state::ForwardBackwardState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
 
-function Base.iterate(iter::FBS_iterable{R}) where {R}
-    x = iter.x0
+function Base.iterate(iter::ForwardBackwardIteration{R}) where {R}
+    x = copy(iter.x0)
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
 
@@ -63,31 +94,21 @@ function Base.iterate(iter::FBS_iterable{R}) where {R}
     # compute initial fixed-point residual
     res = x - z
 
-    state = FBS_state(
-        x,
-        Ax,
-        f_Ax,
-        grad_f_Ax,
-        At_grad_f_Ax,
-        gamma,
-        y,
-        z,
-        g_z,
-        res,
-        R(1),
-        copy(x),
+    state = ForwardBackwardState(
+        x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
+        gamma=gamma, y=y, z=z, g_z=g_z, res=res,
     )
 
     return state, state
 end
 
-function Base.iterate(iter::FBS_iterable{R}, state::FBS_state{R,Tx,TAx}) where {R,Tx,TAx}
+function Base.iterate(iter::ForwardBackwardIteration{R}, state::ForwardBackwardState{R,Tx,TAx}) where {R,Tx,TAx}
     Az, f_Az, grad_f_Az, At_grad_f_Az = nothing, nothing, nothing, nothing
     a, b, c = nothing, nothing, nothing
 
     # backtrack gamma (warn and halt if gamma gets too small)
     while iter.gamma === nothing || iter.adaptive == true
-        if state.gamma < 1e-7 # TODO: make this a parameter, or dependent on R?
+        if state.gamma < iter.minimum_gamma
             @warn "parameter `gamma` became too small ($(state.gamma)), stopping the iterations"
             return nothing
         end
@@ -137,101 +158,27 @@ end
 
 # Solver
 
-struct ForwardBackward{R<:Real}
-    gamma::Maybe{R}
-    adaptive::Bool
-    fast::Bool
+struct ForwardBackward{R, K}
     maxit::Int
     tol::R
     verbose::Bool
     freq::Int
-
-    function ForwardBackward{R}(;
-        gamma::Maybe{R} = nothing,
-        adaptive::Bool = false,
-        fast::Bool = false,
-        maxit::Int = 10000,
-        tol::R = R(1e-8),
-        verbose::Bool = false,
-        freq::Int = 100,
-    ) where {R}
-        @assert gamma === nothing || gamma > 0
-        @assert maxit > 0
-        @assert tol > 0
-        @assert freq > 0
-        new(gamma, adaptive, fast, maxit, tol, verbose, freq)
-    end
+    kwargs::K
 end
 
-function (solver::ForwardBackward{R})(
-    x0::AbstractArray{C};
-    f = Zero(),
-    A = I,
-    g = Zero(),
-    L::Maybe{R} = nothing,
-) where {R,C<:Union{R,Complex{R}}}
-
-    stop(state::FBS_state) = norm(state.res, Inf) / state.gamma <= solver.tol
+function (solver::ForwardBackward)(x0; kwargs...)
+    stop(state::ForwardBackwardState) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) =
         @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
-
-    gamma = if solver.gamma === nothing && L !== nothing
-        R(1) / L
-    else
-        solver.gamma
-    end
-
-    iter = FBS_iterable(f, A, g, x0, gamma, solver.adaptive, solver.fast)
+    iter = ForwardBackwardIteration(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose
         iter = tee(sample(iter, solver.freq), disp)
     end
-
     num_iters, state_final = loop(iter)
-
     return state_final.z, num_iters
-
 end
 
-# Outer constructors
-
-"""
-    ForwardBackward([gamma, adaptive, fast, maxit, tol, verbose, freq])
-
-Instantiate the Forward-Backward splitting algorithm (see [1, 2]) for solving
-optimization problems of the form
-
-    minimize f(Ax) + g(x),
-
-where `f` is smooth and `A` is a linear mapping (for example, a matrix).
-If `solver = ForwardBackward(args...)`, then the above problem is solved with
-
-    solver(x0, [f, A, g, L])
-
-Optional keyword arguments:
-
-* `gamma::Real` (default: `nothing`), the stepsize to use; defaults to `1/L` if not set (but `L` is).
-* `adaptive::Bool` (default: `false`), if true, forces the method stepsize to be adaptively adjusted.
-* `fast::Bool` (default: `false`), if true, uses Nesterov acceleration.
-* `maxit::Integer` (default: `10000`), maximum number of iterations to perform.
-* `tol::Real` (default: `1e-8`), absolute tolerance on the fixed-point residual.
-* `verbose::Bool` (default: `true`), whether or not to print information during the iterations.
-* `freq::Integer` (default: `10`), frequency of verbosity.
-
-If `gamma` is not specified at construction time, the following keyword
-argument can be used to set the stepsize parameter:
-
-* `L::Real` (default: `nothing`), the Lipschitz constant of the gradient of x ↦ f(Ax).
-
-References:
-
-[1] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
-Optimization" (2008).
-
-[2] Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
-for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
-pp. 183-202 (2009).
-"""
-ForwardBackward(::Type{R}; kwargs...) where {R} = ForwardBackward{R}(; kwargs...)
-ForwardBackward(; kwargs...) = ForwardBackward(Float64; kwargs...)
+ForwardBackward(; maxit=10_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
+    ForwardBackward(maxit, tol, verbose, freq, kwargs)
