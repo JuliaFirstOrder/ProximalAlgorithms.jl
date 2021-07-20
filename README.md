@@ -1,13 +1,13 @@
 # ProximalAlgorithms.jl
 
-[![Build status](https://github.com/kul-forbes/ProximalAlgorithms.jl/workflows/CI/badge.svg)](https://github.com/kul-forbes/ProximalAlgorithms.jl/actions?query=workflow%3ACI)
-[![codecov.io](http://codecov.io/github/kul-forbes/ProximalAlgorithms.jl/coverage.svg?branch=master)](http://codecov.io/github/kul-forbes/ProximalAlgorithms.jl?branch=master)
+[![Build status](https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl/workflows/CI/badge.svg)](https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl/actions?query=workflow%3ACI)
+[![codecov.io](http://codecov.io/github/JuliaFirstOrder/ProximalAlgorithms.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaFirstOrderProximalAlgorithms.jl?branch=master)
 
 Proximal algorithms (also known as "splitting" algorithms or methods) for nonsmooth optimization in Julia.
 
-This package can be used in combination with [ProximalOperators.jl](https://github.com/kul-forbes/ProximalOperators.jl) (providing first-order primitives, i.e. gradient and proximal mapping, for numerous cost functions) and [AbstractOperators.jl](https://github.com/kul-forbes/AbstractOperators.jl) (providing several linear and nonlinear operators) to formulate and solve a wide spectrum of nonsmooth optimization problems.
+This package can be used in combination with [ProximalOperators.jl](https://github.com/JuliaFirstOrder/ProximalOperators.jl) (providing first-order primitives, i.e. gradient and proximal mapping, for numerous cost functions) and [AbstractOperators.jl](https://github.com/kul-forbes/AbstractOperators.jl) (providing several linear and nonlinear operators) to formulate and solve a wide spectrum of nonsmooth optimization problems.
 
-[StructuredOptimization.jl](https://github.com/kul-forbes/StructuredOptimization.jl) provides a higher-level interface to formulate and solve problems using (some of) the algorithms here included.
+[StructuredOptimization.jl](https://github.com/JuliaFirstOrder/StructuredOptimization.jl) provides a higher-level interface to formulate and solve problems using (some of) the algorithms here included.
 
 ### Quick start
 
@@ -35,7 +35,7 @@ Douglas-Rachford line-search (L-BFGS) | [`DRLS`](src/algorithms/drls.jl) | [[13]
 
 ### Contributing
 
-Contributions are welcome in the form of [issues notification](https://github.com/kul-forbes/ProximalAlgorithms.jl/issues) or [pull requests](https://github.com/kul-forbes/ProximalAlgorithms.jl/pulls). We recommend looking at already implemented algorithms to get inspiration on how to structure new ones.
+Contributions are welcome in the form of [issues notification](https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl/issues) or [pull requests](https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl/pulls). We recommend looking at already implemented algorithms to get inspiration on how to structure new ones.
 
 ### References
 
