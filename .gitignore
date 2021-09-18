@@ -2,3 +2,16 @@
 *.jl.*.cov
 *.jl.mem
 *.swp
+*.log
+*.aux
+*.cvs
+*.bbl
+*.blg
+
+docs/build/
+docs/site/
+
+Manifest.toml
+docs/Manifest.toml
+benchmark/Manifest.toml
+benchmark/*.json
