@@ -67,7 +67,7 @@
 
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
         x0_backup = copy(x0)
-        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, fast = true)
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
         x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm([A1 A2])^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
@@ -79,7 +79,7 @@
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
         x0_backup = copy(x0)
         solver =
-            ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, fast = true)
+            ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL

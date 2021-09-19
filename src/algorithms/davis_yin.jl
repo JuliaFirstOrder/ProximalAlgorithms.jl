@@ -33,7 +33,7 @@ Applications", Set-Valued and Variational Analysis, vol. 25, no. 4,
 pp. 829–858 (2017).
 """
 
-@Base.kwdef struct DavisYinIteration{R,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg,Th,TA}
+Base.@kwdef struct DavisYinIteration{R,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg,Th,TA}
     f::Tf = Zero()
     g::Tg = Zero()
     h::Th = Zero()

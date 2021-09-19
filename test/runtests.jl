@@ -2,7 +2,8 @@ using Test
 
 include("definitions/arraypartition.jl")
 
-include("utilities/iterationtools.jl")
+include("utilities/iteration_tools.jl")
+include("utilities/fb_tools.jl")
 include("utilities/conjugate.jl")
 
 include("accel/lbfgs.jl")

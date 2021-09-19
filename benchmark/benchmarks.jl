@@ -29,7 +29,7 @@ for T in [Float64]
     end
 
     SUITE[k]["FastForwardBackward"] = @benchmarkable solver(x0, f=f, A=$A, g=g) setup=begin
-        solver = ProximalAlgorithms.ForwardBackward(tol=1e-4, fast=true)
+        solver = ProximalAlgorithms.FastForwardBackward(tol=1e-4)
         x0 = zeros($T, size($A, 2))
         f = Translate(SqrNormL2(), -$b)
         g = NormL1($lam)

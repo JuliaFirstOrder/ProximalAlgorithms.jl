@@ -54,7 +54,7 @@
 
         x0 = zeros(T, n)
         solver =
-            ProximalAlgorithms.ForwardBackward(tol = TOL, fast = true, verbose = true)
+            ProximalAlgorithms.FastForwardBackward(tol = TOL, verbose = true)
         x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm(A)^2)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
@@ -63,10 +63,9 @@
         # Fast/Adaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ForwardBackward(
+        solver = ProximalAlgorithms.FastForwardBackward(
             tol = TOL,
             adaptive = true,
-            fast = true,
             verbose = true,
         )
         x, it = solver(x0, f = f, A = A, g = g)

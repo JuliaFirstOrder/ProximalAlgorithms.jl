@@ -27,7 +27,7 @@
 
     x0 = zeros(T, n)
     x0_backup = copy(x0)
-    solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, fast = false)
+    solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
     x, it = solver(x0, f = f, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
@@ -38,7 +38,7 @@
 
     x0 = zeros(T, n)
     x0_backup = copy(x0)
-    solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, fast = true)
+    solver = ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
     x, it = solver(x0, f = f, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4

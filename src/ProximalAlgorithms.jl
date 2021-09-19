@@ -8,8 +8,8 @@ include("compat.jl")
 # utilities
 
 include("utilities/conjugate.jl")
-include("utilities/fbetools.jl")
-include("utilities/iterationtools.jl")
+include("utilities/fb_tools.jl")
+include("utilities/iteration_tools.jl")
 
 # acceleration operators
 
@@ -21,14 +21,15 @@ include("accel/noaccel.jl")
 
 # algorithms
 
-include("algorithms/forwardbackward.jl")
+include("algorithms/forward_backward.jl")
+include("algorithms/fast_forward_backward.jl")
 include("algorithms/zerofpr.jl")
 include("algorithms/panoc.jl")
-include("algorithms/douglasrachford.jl")
+include("algorithms/douglas_rachford.jl")
 include("algorithms/drls.jl")
-include("algorithms/primaldual.jl")
-include("algorithms/davisyin.jl")
-include("algorithms/lilin.jl")
+include("algorithms/primal_dual.jl")
+include("algorithms/davis_yin.jl")
+include("algorithms/li_lin.jl")
 include("algorithms/fista.jl")
 
 end # module

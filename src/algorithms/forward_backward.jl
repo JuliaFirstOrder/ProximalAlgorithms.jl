@@ -1,9 +1,5 @@
-# Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
-# Optimization" (2008).
-#
-# Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
-# for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2,
-# no. 1, pp. 183-202 (2009).
+# Lions, Mercier, “Splitting algorithms for the sum of two nonlinear
+# operators,” SIAM Journal on Numerical Analysis, vol. 16, pp. 964–979 (1979).
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
@@ -30,17 +26,13 @@ where `f` is smooth and `A` is a linear mapping (for example, a matrix).
 - `gamma=nothing`: stepsize to use, defaults to `1/Lf` if not set (but `Lf` is).
 - `adaptive=false`: forces the method stepsize to be adaptively adjusted.
 - `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
-- `fast=false`: enables Nesterov acceleration.
 
 # References
-- [1] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
-Optimization" (2008).
-- [2] Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
-for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
-pp. 183-202 (2009).
+- [1] Lions, Mercier, “Splitting algorithms for the sum of two nonlinear
+operators,” SIAM Journal on Numerical Analysis, vol. 16, pp. 964–979 (1979).
 """
 
-@Base.kwdef struct ForwardBackwardIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
+Base.@kwdef struct ForwardBackwardIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()
@@ -49,7 +41,6 @@ pp. 183-202 (2009).
     gamma::Maybe{R} = Lf === nothing ? nothing : (1 / Lf)
     adaptive::Bool = false
     minimum_gamma::R = real(eltype(x0))(1e-7)
-    fast::Bool = false
 end
 
 Base.IteratorSize(::Type{<:ForwardBackwardIteration}) = Base.IsInfinite()
@@ -65,8 +56,6 @@ Base.@kwdef mutable struct ForwardBackwardState{R,Tx,TAx}
     z::Tx             # forward-backward point
     g_z::R            # value of nonsmooth term (at z)
     res::Tx           # fixed-point residual at iterate (= z - x)
-    theta::R = one(real(eltype(x)))
-    z_prev::Tx = copy(x)
 end
 
 f_model(state::ForwardBackwardState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, 1 / state.gamma)
@@ -77,72 +66,35 @@ function Base.iterate(iter::ForwardBackwardIteration{R}) where {R}
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
 
     gamma = iter.gamma
-
     if gamma === nothing
-        # compute lower bound to Lipschitz constant of the gradient of x ↦ f(Ax)
-        xeps = x .+ R(1)
-        grad_f_Axeps, f_Axeps = gradient(iter.f, iter.A * xeps)
-        L = norm(iter.A' * (grad_f_Axeps - grad_f_Ax)) / R(sqrt(length(x)))
-        gamma = R(1) / L
+        gamma = 1 / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax)
     end
 
-    # compute initial forward-backward step
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
     z, g_z = prox(iter.g, y, gamma)
 
-    # compute initial fixed-point residual
-    res = x - z
-
     state = ForwardBackwardState(
         x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
-        gamma=gamma, y=y, z=z, g_z=g_z, res=res,
+        gamma=gamma, y=y, z=z, g_z=g_z, res=x - z,
     )
 
     return state, state
 end
 
 function Base.iterate(iter::ForwardBackwardIteration{R}, state::ForwardBackwardState{R,Tx,TAx}) where {R,Tx,TAx}
-    Az, f_Az, grad_f_Az, At_grad_f_Az = nothing, nothing, nothing, nothing
-    a, b, c = nothing, nothing, nothing
-
-    # backtrack gamma (warn and halt if gamma gets too small)
-    while iter.gamma === nothing || iter.adaptive == true
-        if state.gamma < iter.minimum_gamma
-            @warn "parameter `gamma` became too small ($(state.gamma)), stopping the iterations"
-            return nothing
-        end
-        f_Az_upp = f_model(state)
-        Az = iter.A * state.z
-        grad_f_Az, f_Az = gradient(iter.f, Az)
-        tol = 10 * eps(R) * (1 + abs(f_Az))
-        if f_Az <= f_Az_upp + tol
-            break
-        end
-        state.gamma *= 0.5
-        state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
-        state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
-        state.res .= state.x .- state.z
-    end
-
-    if iter.fast == true
-        theta1 = (R(1) + sqrt(R(1) + 4 * state.theta^2)) / R(2)
-        extr = (state.theta - R(1)) / theta1
-        state.theta = theta1
-        state.x .= state.z .+ extr .* (state.z .- state.z_prev)
-        state.z_prev, state.z = state.z, state.z_prev
-    else
+    if iter.gamma === nothing || iter.adaptive == true
+        state.gamma, state.g_z, Az, f_Az, grad_f_Az = backtrack_stepsize!(
+            state.gamma, iter.f, iter.A, iter.g,
+            state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.z, state.g_z, state.res,
+            minimum_gamma = iter.minimum_gamma,
+        )
         state.x, state.z = state.z, state.x
-    end
-
-    # TODO: if iter.fast == true, in the adaptive case we should still be able
-    # to save some computation by extrapolating Ax and (if f is quadratic)
-    # f_Ax, grad_f_Ax, At_grad_f_Ax.
-    if iter.fast == false && (iter.gamma === nothing || iter.adaptive == true)
         state.Ax = Az
         state.f_Ax = f_Az
         state.grad_f_Ax = grad_f_Az
     else
+        state.x, state.z = state.z, state.x
         mul!(state.Ax, iter.A, state.x)
         state.f_Ax = gradient!(state.grad_f_Ax, iter.f, state.Ax)
     end
