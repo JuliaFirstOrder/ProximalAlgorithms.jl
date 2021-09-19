@@ -30,7 +30,7 @@ Instantiate the FISTA splitting algorithm (see [TODO]) for solving convex optimi
 @Base.kwdef struct FISTAIteration{R,Tx<:AbstractArray{R},Tf,Th}
     y0::Tx
     f::Tf = Zero()
-    h::Tg = Zero()
+    h::Th = Zero()
     λ::R
     μ::R = 0.0
     adaptive::Bool = false # TODO: Implement adaptive FISTA.
@@ -82,26 +82,26 @@ end
 struct FISTA{R, K}
     maxit::Int
     tol::R # See [TODO].
-    type::String
+    termination_type::String
     verbose::Bool
     freq::Int
     kwargs::K
 end
 
 # Alias for the above struct.
-FISTA(; maxit=1_000, tol=1e-8, verbose=false, freq=100, type="", kwargs...) =
-    FISTA(maxit, tol, verbose, freq, type, kwargs)
+FISTA(; maxit=1_000, tol=1e-8, termination_type="", verbose=false, freq=100, kwargs...) =
+    FISTA(maxit, tol, termination_type, verbose, freq, kwargs)
 
 # Main caller.
 function (solver::FISTA)(y0; kwargs...)
     iter = FISTAIteration(; y0=y0, solver.kwargs..., kwargs...)
-    if solver.type == "AIPP"
+    if solver.termination_type == "AIPP"
         # Relevant for the implementation of AIPP.
-        stop(state::FISTAState) = norm(state.r) ^ 2 + state.η <= solver.tol * norm(state.y00 - state.y + state.r)
+        stop(state::FISTAState) = norm(state.r) ^ 2 + state.η <= solver.tol * norm(iter.y0 - state.y + state.r)
     else
         stop(state::FISTAState) = max(norm(state.r), state.η) <= solver.tol
     end
-    disp((it, state)) = @printf("%5d | %.3e\n", it, (norm(state.r) ^ 2 + state.η) / norm(state.y00 - state.y + state.r))
+    disp((it, state)) = @printf("%5d | %.3e\n", it, (norm(state.r) ^ 2 + state.η) / norm(iter.y0 - state.y + state.r))
     if solver.verbose
         iter = tee(sample(iter, solver.freq), disp)
     end
