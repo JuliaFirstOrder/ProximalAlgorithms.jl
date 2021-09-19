@@ -55,7 +55,7 @@ for T in [Float64]
         f = LeastSquares($A, $b)
         g = NormL1($lam)
     end
-    
+
     SUITE[k]["AFBA-1"] = @benchmarkable solver(x0, y0, f=f, g=g, beta_f=beta_f) setup=begin
         beta_f = opnorm($A)^2
         solver = ProximalAlgorithms.AFBA(theta=$R(1), mu=$R(1), tol=$R(1e-6))
@@ -72,5 +72,13 @@ for T in [Float64]
         y0 = zeros($T, size($A, 1))
         h = Translate(SqrNormL2(), -$b)
         g = NormL1($lam)
+    end
+
+    SUITE[k]["FISTA"] = @benchmarkable solver(y0, f=f, Lf=Lf, h=h) setup=begin
+        solver = ProximalAlgorithms.FISTA(tol=$R(1e-3))
+        y0 = zeros($T, size($A, 2))
+        f = LeastSquares($A, $b)
+        h = NormL1($lam)
+        Lf = opnorm($A)^2
     end
 end

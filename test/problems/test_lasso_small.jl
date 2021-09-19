@@ -194,4 +194,19 @@ using ProximalAlgorithms
 
     end
 
+    @testset "FISTA" begin
+
+        # FISTA
+
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.FISTA(tol = 10 * TOL)
+        y, it = solver(x0, f = f2, h = g, Lf = opnorm(A)^2)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= 10 * TOL
+        @test it < 70
+        @test x0 == x0_backup
+
+    end
+
 end
