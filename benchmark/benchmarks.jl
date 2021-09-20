@@ -60,7 +60,7 @@ for T in [Float64]
         beta_f = opnorm($A)^2
         solver = ProximalAlgorithms.AFBA(theta=$R(1), mu=$R(1), tol=$R(1e-6))
         x0 = zeros($T, size($A, 2))
-        y0 = zeros($T, size($A, 1))
+        y0 = zeros($T, size($A, 2))
         f = LeastSquares($A, $b)
         g = NormL1($lam)
     end
