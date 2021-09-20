@@ -9,7 +9,7 @@ using LinearAlgebra
 using Printf
 
 """
-    FistaIteration(; <keyword-arguments>)
+    SFISTAIteration(; <keyword-arguments>)
 
 Instantiate the generalized FISTA algorithm [3] for solving strongly-convex optimization problems of the form
 
