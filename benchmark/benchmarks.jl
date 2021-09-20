@@ -74,8 +74,8 @@ for T in [Float64]
         g = NormL1($lam)
     end
 
-    SUITE[k]["FISTA"] = @benchmarkable solver(y0, f=f, Lf=Lf, h=h) setup=begin
-        solver = ProximalAlgorithms.FISTA(tol=$R(1e-3))
+    SUITE[k]["SFISTA"] = @benchmarkable solver(y0, f=f, Lf=Lf, h=h) setup=begin
+        solver = ProximalAlgorithms.SFISTA(tol=$R(1e-3))
         y0 = zeros($T, size($A, 2))
         f = LeastSquares($A, $b)
         h = NormL1($lam)

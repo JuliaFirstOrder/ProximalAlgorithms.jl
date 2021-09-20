@@ -1,6 +1,6 @@
-# An implementation of a generalized FISTA method where the smooth part of the objective function can be strongly convex. The
-# scheme is based on Nesterov's accelerated gradient method [1, Eq. (4.9)] and Beck's method for the convex case [2]. Its full
-# definition is given in [3, Algorithm 2.2.2.] and some analyses of this method are given in [3, 4, 5].
+# An implementation of the S-FISTA method where the smooth part of the objective function can be strongly convex. The scheme is
+# based on Nesterov's accelerated gradient method [1, Eq. (4.9)] and Beck's method for the convex case [2]. Its full  definition
+# is given in [3, Algorithm 2.2.2.] and some analyses of this method are given in [3, 4, 5].
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
@@ -38,7 +38,7 @@ arXiv:2107.01267.
 Applications.
 """
 
-@Base.kwdef struct FISTAIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Th}
+@Base.kwdef struct SFISTAIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Th}
     y0::Tx
     f::Tf = Zero()
     h::Th = Zero()
@@ -47,9 +47,9 @@ Applications.
     adaptive::Bool = false # TODO: Implement adaptive FISTA.
 end
 
-Base.IteratorSize(::Type{<:FISTAIteration}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:SFISTAIteration}) = Base.IsInfinite()
 
-Base.@kwdef mutable struct FISTAState{R, Tx}
+Base.@kwdef mutable struct SFISTAState{R, Tx}
     λ::R                                # stepsize (mutable if iter.adaptive == true).
     yPrev::Tx                           # previous main iterate.
     y:: Tx = zero(yPrev)                # main iterate.
@@ -64,8 +64,8 @@ Base.@kwdef mutable struct FISTAState{R, Tx}
     gradf_y::Tx = zero(yPrev)           # array containing ∇f(y).
 end
 
-function Base.iterate(iter::FISTAIteration,
-                      state::FISTAState = FISTAState(λ=1/iter.Lf, yPrev=copy(iter.y0)))
+function Base.iterate(iter::SFISTAIteration,
+                      state::SFISTAState = SFISTAState(λ=1/iter.Lf, yPrev=copy(iter.y0)))
     # Set up helper variables.
     state.τ = state.λ * (1 + iter.μ * state.APrev)
     state.a = (state.τ + sqrt(state.τ ^ 2 + 4 * state.τ * state.APrev)) / 2
@@ -86,7 +86,7 @@ end
 
 ## Solver.
 
-struct FISTA{R, K}
+struct SFISTA{R, K}
     maxit::Int
     tol::R
     termination_type::String
@@ -96,7 +96,7 @@ struct FISTA{R, K}
 end
 
 # Different stopping conditions (sc). Returns the current residual value and whether or not a stopping condition holds.
-function check_sc(state::FISTAState, iter::FISTAIteration, tol, termination_type)
+function check_sc(state::SFISTAState, iter::SFISTAIteration, tol, termination_type)
     if termination_type == "AIPP"
         # AIPP-style termination [4]. The main inclusion is: r ∈ ∂_η(f + h)(y).
         r = (iter.y0 - state.x) / state.A
@@ -111,9 +111,9 @@ function check_sc(state::FISTAState, iter::FISTAIteration, tol, termination_type
 end
 
 # Functor ('function-like object') for the above type.
-function (solver::FISTA)(y0; kwargs...)
-    raw_iter = FISTAIteration(; y0=y0, solver.kwargs..., kwargs...)
-    stop(state::FISTAState) = check_sc(state, raw_iter, solver.tol, solver.termination_type)[2]
+function (solver::SFISTA)(y0; kwargs...)
+    raw_iter = SFISTAIteration(; y0=y0, solver.kwargs..., kwargs...)
+    stop(state::SFISTAState) = check_sc(state, raw_iter, solver.tol, solver.termination_type)[2]
     disp((it, state)) = @printf("%5d | %.3e\n", it, check_sc(state, raw_iter, solver.tol, solver.termination_type)[1])
     iter = take(halt(raw_iter, stop), solver.maxit)
     iter = enumerate(iter)
@@ -124,5 +124,5 @@ function (solver::FISTA)(y0; kwargs...)
     return state_final.y, num_iters
 end
 
-FISTA(; maxit=1000, tol=1e-6, termination_type="", verbose=false, freq=(maxit < Inf ? Int(maxit/100) : 100), kwargs...) =
-    FISTA(maxit, tol, termination_type, verbose, freq, kwargs)
+SFISTA(; maxit=1000, tol=1e-6, termination_type="", verbose=false, freq=(maxit < Inf ? Int(maxit/100) : 100), kwargs...) =
+    SFISTA(maxit, tol, termination_type, verbose, freq, kwargs)
