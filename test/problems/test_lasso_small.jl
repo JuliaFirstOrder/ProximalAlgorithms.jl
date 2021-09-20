@@ -204,7 +204,7 @@ using ProximalAlgorithms
         y, it = solver(x0, f = f2, h = g, Lf = opnorm(A)^2)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= 10 * TOL
-        @test it < 70
+        @test it < 100
         @test x0 == x0_backup
 
     end

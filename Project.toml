@@ -4,10 +4,7 @@ version = "0.5.0"
 
 [deps]
 AbstractOperators = "d9c5613a-d543-52d8-9afd-8f241a8c3f1c"
-ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
-BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-PkgBenchmark = "32113eaa-f34f-5b0d-bd6c-c81e245fc73d"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"
 
