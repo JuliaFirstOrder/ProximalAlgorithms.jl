@@ -103,8 +103,9 @@ function check_sc(state::SFISTAState, iter::SFISTAIteration, tol, termination_ty
         res = (norm(r) ^ 2 + max(η, 0.0)) / max(norm(iter.y0 - state.y + r) ^ 2, 1e-16)
     else
         # Classic (approximate) first-order stationary point [4]. The main inclusion is: r ∈ ∇f(y) + ∂h(y).
+        λ2 = state.λ / (1 + state.λ * iter.μf)
         gradf_y, = gradient(iter.f, state.y)
-        r = gradf_y - state.gradf_xt + iter.Lf * (state.xt - state.y)
+        r = gradf_y - state.gradf_xt + (state.xt - state.y) / λ2
         res = norm(r)
     end
     return res, (res <= tol || res ≈ tol)
