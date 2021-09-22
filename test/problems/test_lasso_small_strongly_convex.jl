@@ -8,26 +8,26 @@ using ProximalAlgorithms
 @testset "Lasso small strongly convex ($T)" for T in [Float32, Float64]
 
     Random.seed!(777)
-    dim = 10
+    dim = 5
+    μf = T(1.0)
+    Lf = T(10.0)
 
-    D = Diagonal(T(1.0) .+ T(9.0) .* rand(T, dim))
-    Q = qr(rand(T, (dim, dim))).Q
+    x_star = convert(Vector{T}, 1.5 * rand(T, dim) .- 0.5)
 
-    A = convert(Matrix{T}, Q * D * Q')
-    b = A * (T(2.0) * rand(T, dim) .- T(1.0))
-    σ = svd(A).S
-    m, n = size(A)
-
-    lam = T(0.1) * norm(A' * b, Inf)
+    lam = convert(T, (μf + Lf) / 2.0)
     @test typeof(lam) == T
+
+    D = Diagonal(convert(Vector{T}, sqrt(μf) .+ (sqrt(Lf) - sqrt(μf)) * rand(T, dim)))
+    D[1] = sqrt(μf)
+    D[end] = sqrt(Lf)
+    Q = qr(rand(T, (dim, dim))).Q
+    A = convert(Matrix{T}, Q * D * Q')
+    b = A * x_star + lam * inv(A') * sign.(x_star)
 
     f = LeastSquares(A, b)
     h = NormL1(lam)
 
-    # Still need to find an easy way to compute this.
-    x_star = zeros(T, dim)
-
-    TOL = T(1e-6)
+    TOL = T(1e-4)
 
     @testset "SFISTA" begin
 
@@ -36,10 +36,10 @@ using ProximalAlgorithms
         x0 =  A \ b
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.SFISTA(tol = TOL)
-        y, it = solver(x0, f = f, h = h, Lf = maximum(σ)^2, μf = minimum(σ)^2)
+        y, it = solver(x0, f = f, h = h, Lf = Lf)
         @test eltype(y) == T
         @test norm(y - x_star) <= TOL
-        @test it < 100
+        @test it < 200
         @test x0 == x0_backup
 
     end
