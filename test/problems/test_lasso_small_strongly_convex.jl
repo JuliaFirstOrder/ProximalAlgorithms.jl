@@ -18,15 +18,14 @@ using ProximalAlgorithms
     σ = svd(A).S
     m, n = size(A)
 
-    # lam = T(0.1) * norm(A' * b, Inf)
-    x_ls = A \ b
-    lam = maximum(x_ls) / T(2.0)
+    lam = T(0.1) * norm(A' * b, Inf)
     @test typeof(lam) == T
 
     f = LeastSquares(A, b)
     h = NormL1(lam)
 
-    x_star = sign.(x_ls) .* max.(T(0.0), abs.(x_ls) .- lam)
+    # Still need to find an easy way to compute this.
+    x_star = zeros(T, dim)
 
     TOL = T(1e-6)
 
@@ -34,7 +33,7 @@ using ProximalAlgorithms
 
         # SFISTA
 
-        x0 = zeros(T, n)
+        x0 =  A \ b
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.SFISTA(tol = TOL)
         y, it = solver(x0, f = f, h = h, Lf = maximum(σ)^2, μf = minimum(σ)^2)
