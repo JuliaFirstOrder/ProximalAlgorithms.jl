@@ -5,7 +5,7 @@ using Random
 using ProximalOperators
 using ProximalAlgorithms
 
-@testset "Lasso small strongly convex ($T)" for T in [Float32, Float64]
+@testset "Lasso small (strongly convex, $T)" for T in [Float32, Float64]
 
     Random.seed!(777)
     dim = 5
