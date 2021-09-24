@@ -29,5 +29,6 @@ include("algorithms/drls.jl")
 include("algorithms/primaldual.jl")
 include("algorithms/davisyin.jl")
 include("algorithms/lilin.jl")
+include("algorithms/fista.jl")
 
 end # module
