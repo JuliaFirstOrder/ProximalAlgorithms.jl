@@ -69,7 +69,7 @@ Base.@kwdef mutable struct ForwardBackwardState{R,Tx,TAx}
     z_prev::Tx = copy(x)
 end
 
-f_model(state::ForwardBackwardState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
+f_model(state::ForwardBackwardState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, 1 / state.gamma)
 
 function Base.iterate(iter::ForwardBackwardIteration{R}) where {R}
     x = copy(iter.x0)
