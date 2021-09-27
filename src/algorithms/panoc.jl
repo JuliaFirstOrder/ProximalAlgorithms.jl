@@ -78,8 +78,8 @@ Base.@kwdef mutable struct PANOCState{R,Tx,TAx,TH}
     z_curr::Tx = zero(x)
 end
 
-f_model(state::PANOCState) =
-    f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
+f_model(iter::PANOCIteration, state::PANOCState) =
+    f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
 
 function Base.iterate(iter::PANOCIteration{R}) where {R}
     x = copy(iter.x0)
@@ -119,7 +119,7 @@ function Base.iterate(
     Az, f_Az, grad_f_Az, At_grad_f_Az = nothing, nothing, nothing, nothing
     a, b, c = nothing, nothing, nothing
 
-    f_Az_upp = f_model(state)
+    f_Az_upp = f_model(iter, state)
 
     # backtrack gamma (warn and halt if gamma gets too small)
     while iter.gamma === nothing || iter.adaptive == true
@@ -138,7 +138,7 @@ function Base.iterate(
         state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
         state.res .= state.x .- state.z
         reset!(state.H)
-        f_Az_upp = f_model(state)
+        f_Az_upp = f_model(iter, state)
     end
 
     # compute FBE
@@ -176,7 +176,7 @@ function Base.iterate(
         state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
         state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
         state.res .= state.x .- state.z
-        FBE_x_new = f_model(state) + state.g_z
+        FBE_x_new = f_model(iter, state) + state.g_z
 
         if FBE_x_new <= threshold
             # update metric

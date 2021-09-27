@@ -78,8 +78,8 @@ Base.@kwdef mutable struct ZeroFPRState{R,Tx,TAx,TH}
     Ad::TAx = zero(Ax)
 end
 
-f_model(state::ZeroFPRState) =
-    f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
+f_model(iter::ZeroFPRIteration, state::ZeroFPRState) =
+    f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
 
 function Base.iterate(iter::ZeroFPRIteration{R}) where {R}
     x = copy(iter.x0)
@@ -116,7 +116,7 @@ function Base.iterate(
     iter::ZeroFPRIteration{R},
     state::ZeroFPRState{R,Tx,TAx},
 ) where {R,Tx,TAx}
-    f_Axbar_upp = f_model(state)
+    f_Axbar_upp = f_model(iter, state)
     # These need to be performed anyway (to compute xbarbar later on)
     mul!(state.Axbar, iter.A, state.xbar)
     f_Axbar = gradient!(state.grad_f_Axbar, iter.f, state.Axbar)
@@ -136,7 +136,7 @@ function Base.iterate(
         state.g_xbar = prox!(state.xbar, iter.g, state.y, state.gamma)
         state.res .= state.x .- state.xbar
         reset!(state.H)
-        f_Axbar_upp = f_model(state)
+        f_Axbar_upp = f_model(iter, state)
         mul!(state.Axbar, iter.A, state.xbar)
         f_Axbar = gradient!(state.grad_f_Axbar, iter.f, state.Axbar)
     end
@@ -183,7 +183,7 @@ function Base.iterate(
         state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
         state.g_xbar = prox!(state.xbar, iter.g, state.y, state.gamma)
         state.res .= state.x .- state.xbar
-        FBE_x = f_model(state) + state.g_xbar
+        FBE_x = f_model(iter, state) + state.g_xbar
 
         if FBE_x <= threshold
             state.tau = tau
