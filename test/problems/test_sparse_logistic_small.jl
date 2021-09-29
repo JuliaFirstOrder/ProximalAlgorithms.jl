@@ -16,6 +16,7 @@
     R = real(T)
 
     f = Translate(LogisticLoss(ones(R, m), R(1)), -b)
+    f2 = ComposeAffine(LogisticLoss(ones(R, m), R(1)), A, -b)
     lam = R(0.1)
     g = NormL1(lam)
 
@@ -28,7 +29,7 @@
     x0 = zeros(T, n)
     x0_backup = copy(x0)
     solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
-    x, it = solver(x0, f = f, A = A, g = g)
+    x, it = solver(x0, f = f2, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 1100
@@ -39,7 +40,7 @@
     x0 = zeros(T, n)
     x0_backup = copy(x0)
     solver = ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
-    x, it = solver(x0, f = f, A = A, g = g)
+    x, it = solver(x0, f = f2, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 500

@@ -1,6 +1,7 @@
 using Test
 
 include("definitions/arraypartition.jl")
+include("definitions/compose.jl")
 
 include("utilities/iteration_tools.jl")
 include("utilities/fb_tools.jl")

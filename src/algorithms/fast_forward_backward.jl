@@ -17,16 +17,15 @@ using Printf
 Instantiate the accelerated forward-backward splitting algorithm (see [1, 2]) for solving
 optimization problems of the form
 
-    minimize f(Ax) + g(x),
+    minimize f(x) + g(x),
 
-where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+where `f` is smooth.
 
 # Arguments
 - `x0`: initial point.
 - `f=Zero()`: smooth objective term.
-- `A=I`: linear operator (e.g. a matrix).
 - `g=Zero()`: proximable objective term.
-- `Lf=nothing`: Lipschitz constant of the gradient of x ↦ f(Ax).
+- `Lf=nothing`: Lipschitz constant of the gradient of `f`.
 - `gamma=nothing`: stepsize to use, defaults to `1/Lf` if not set (but `Lf` is).
 - `adaptive=false`: forces the method stepsize to be adaptively adjusted.
 - `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
@@ -39,9 +38,8 @@ for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
 pp. 183-202 (2009).
 """
 
-Base.@kwdef struct FastForwardBackwardIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
+Base.@kwdef struct FastForwardBackwardIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
     f::Tf = Zero()
-    A::TA = I
     g::Tg = Zero()
     x0::Tx
     Lf::Maybe{R} = nothing
@@ -52,50 +50,46 @@ end
 
 Base.IteratorSize(::Type{<:FastForwardBackwardIteration}) = Base.IsInfinite()
 
-Base.@kwdef mutable struct FastForwardBackwardState{R,Tx,TAx}
+Base.@kwdef mutable struct FastForwardBackwardState{R,Tx}
     x::Tx             # iterate
-    Ax::TAx           # A times x
-    f_Ax::R           # value of smooth term
-    grad_f_Ax::TAx    # gradient of f at Ax
-    At_grad_f_Ax::Tx  # gradient of smooth term
+    f_x::R            # value f at x
+    grad_f_x::Tx      # gradient of f at x
     gamma::R          # stepsize parameter of forward and backward steps
     y::Tx             # forward point
     z::Tx             # forward-backward point
-    g_z::R            # value of nonsmooth term (at z)
+    g_z::R            # value of g at z
     res::Tx           # fixed-point residual at iterate (= z - x)
     theta::R = one(real(eltype(x)))
     z_prev::Tx = copy(x)
 end
 
-f_model(state::FastForwardBackwardState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, state.gamma)
+f_model(state::FastForwardBackwardState) = f_model(state.f_x, state.grad_f_x, state.res, state.gamma)
 
 function Base.iterate(iter::FastForwardBackwardIteration{R}) where {R}
     x = copy(iter.x0)
-    Ax = iter.A * x
-    grad_f_Ax, f_Ax = gradient(iter.f, Ax)
+    grad_f_x, f_x = gradient(iter.f, x)
 
     gamma = iter.gamma
     if gamma === nothing
-        gamma = 1 / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax)
+        gamma = 1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x)
     end
 
-    At_grad_f_Ax = iter.A' * grad_f_Ax
-    y = x - gamma .* At_grad_f_Ax
+    y = x - gamma .* grad_f_x
     z, g_z = prox(iter.g, y, gamma)
 
     state = FastForwardBackwardState(
-        x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
+        x=x, f_x=f_x, grad_f_x=grad_f_x,
         gamma=gamma, y=y, z=z, g_z=g_z, res=x - z,
     )
 
     return state, state
 end
 
-function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardBackwardState{R,Tx,TAx}) where {R,Tx,TAx}
+function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardBackwardState{R,Tx}) where {R,Tx}
     if iter.gamma === nothing || iter.adaptive == true
         state.gamma, state.g_z, _, _, _ = backtrack_stepsize!(
-            state.gamma, iter.f, iter.A, iter.g,
-            state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.z, state.g_z, state.res,
+            state.gamma, iter.f, I, iter.g,
+            state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res,
             minimum_gamma = iter.minimum_gamma,
         )
     end
@@ -105,13 +99,9 @@ function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardB
     state.theta = theta1
     state.x .= state.z .+ extr .* (state.z .- state.z_prev)
     state.z_prev, state.z = state.z, state.z_prev
-    
-    # TODO: in the adaptive case we should be able to save some computation
-    # by extrapolating Ax and (if f is quadratic) f_Ax, grad_f_Ax, At_grad_f_Ax.
-    mul!(state.Ax, iter.A, state.x)
-    state.f_Ax = gradient!(state.grad_f_Ax, iter.f, state.Ax)
-    mul!(state.At_grad_f_Ax, adjoint(iter.A), state.grad_f_Ax)
-    state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
+
+    state.f_x = gradient!(state.grad_f_x, iter.f, state.x)
+    state.y .= state.x .- state.gamma .* state.grad_f_x
     state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
     state.res .= state.x .- state.z
 
