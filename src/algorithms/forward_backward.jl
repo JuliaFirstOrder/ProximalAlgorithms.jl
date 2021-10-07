@@ -17,7 +17,7 @@ optimization problems of the form
 
 where `f` is smooth.
 
-# Arguments
+# Keyword arguments
 - `x0`: initial point.
 - `f=Zero()`: smooth objective term.
 - `g=Zero()`: proximable objective term.
@@ -53,8 +53,6 @@ Base.@kwdef mutable struct ForwardBackwardState{R,Tx}
     g_z::R            # value of g at z
     res::Tx           # fixed-point residual at iterate (= z - x)
 end
-
-f_model(state::ForwardBackwardState) = f_model(state.f_x, state.grad_f_x, state.res, 1 / state.gamma)
 
 function Base.iterate(iter::ForwardBackwardIteration{R}) where {R}
     x = copy(iter.x0)
@@ -123,3 +121,8 @@ end
 
 ForwardBackward(; maxit=10_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
     ForwardBackward(maxit, tol, verbose, freq, kwargs)
+
+# Aliases
+
+const ProximalGradientIteration = ForwardBackwardIteration
+const ProximalGradient = ForwardBackward

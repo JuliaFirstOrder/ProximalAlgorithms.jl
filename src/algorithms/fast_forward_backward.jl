@@ -21,7 +21,7 @@ optimization problems of the form
 
 where `f` is smooth.
 
-# Arguments
+# Keyword arguments
 - `x0`: initial point.
 - `f=Zero()`: smooth objective term.
 - `g=Zero()`: proximable objective term.
@@ -42,10 +42,12 @@ Base.@kwdef struct FastForwardBackwardIteration{R,C<:Union{R,Complex{R}},Tx<:Abs
     f::Tf = Zero()
     g::Tg = Zero()
     x0::Tx
+    m::R = real(eltype(x0))(0)
     Lf::Maybe{R} = nothing
     gamma::Maybe{R} = Lf === nothing ? nothing : (1 / Lf)
     adaptive::Bool = false
     minimum_gamma::R = real(eltype(x0))(1e-7)
+    theta::R = real(eltype(x0))(1)
 end
 
 Base.IteratorSize(::Type{<:FastForwardBackwardIteration}) = Base.IsInfinite()
@@ -59,11 +61,9 @@ Base.@kwdef mutable struct FastForwardBackwardState{R,Tx}
     z::Tx             # forward-backward point
     g_z::R            # value of g at z
     res::Tx           # fixed-point residual at iterate (= z - x)
-    theta::R = one(real(eltype(x)))
+    theta::R          # acceleration sequence
     z_prev::Tx = copy(x)
 end
-
-f_model(state::FastForwardBackwardState) = f_model(state.f_x, state.grad_f_x, state.res, state.gamma)
 
 function Base.iterate(iter::FastForwardBackwardIteration{R}) where {R}
     x = copy(iter.x0)
@@ -78,26 +78,39 @@ function Base.iterate(iter::FastForwardBackwardIteration{R}) where {R}
     z, g_z = prox(iter.g, y, gamma)
 
     state = FastForwardBackwardState(
+        gamma=gamma, theta=iter.theta,
         x=x, f_x=f_x, grad_f_x=grad_f_x,
-        gamma=gamma, y=y, z=z, g_z=g_z, res=x - z,
+        y=y, z=z, g_z=g_z, res=x - z,
     )
 
     return state, state
 end
 
+function update_theta(prev_theta, prev_gamma, gamma, m=0)
+    # Solves for theta: theta^2 / gamma + (theta - 1) * theta'^2 / gamma' - m * theta = 0
+    b = prev_theta^2 / prev_gamma - m
+    delta = b^2 + 4 * (prev_theta^2) / (prev_gamma * gamma)
+    return gamma * (-b + sqrt(delta)) / 2
+end
+
 function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardBackwardState{R,Tx}) where {R,Tx}
-    if iter.gamma === nothing || iter.adaptive == true
-        state.gamma, state.g_z, _, _, _ = backtrack_stepsize!(
+    gamma = if iter.gamma === nothing || iter.adaptive == true
+        gamma, state.g_z = backtrack_stepsize!(
             state.gamma, iter.f, I, iter.g,
             state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res,
             minimum_gamma = iter.minimum_gamma,
         )
+        gamma
+    else
+        iter.gamma
     end
 
-    theta1 = (R(1) + sqrt(R(1) + 4 * state.theta^2)) / R(2)
-    extr = (state.theta - R(1)) / theta1
-    state.theta = theta1
-    state.x .= state.z .+ extr .* (state.z .- state.z_prev)
+    theta = update_theta(state.theta, state.gamma, gamma, iter.m)
+    beta = gamma * (state.theta) * (1 - state.theta) / (state.gamma * theta + gamma * state.theta ^ 2)
+    state.gamma = gamma
+    state.theta = theta
+
+    state.x .= state.z .+ beta .* (state.z .- state.z_prev)
     state.z_prev, state.z = state.z, state.z_prev
 
     state.f_x = gradient!(state.grad_f_x, iter.f, state.x)
@@ -134,3 +147,8 @@ end
 
 FastForwardBackward(; maxit=10_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
     FastForwardBackward(maxit, tol, verbose, freq, kwargs)
+
+# Aliases
+
+const FastProximalGradientIteration = FastForwardBackwardIteration
+const FastProximalGradient = FastForwardBackward
