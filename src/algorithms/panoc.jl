@@ -18,7 +18,7 @@ of the form
 
 where `f` is smooth and `A` is a linear mapping (for example, a matrix).
 
-# Arguments
+# Keyword arguments
 - `x0`: initial point.
 - `f=Zero()`: smooth objective term.
 - `A=I`: linear operator (e.g. a matrix).

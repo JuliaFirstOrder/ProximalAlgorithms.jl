@@ -18,7 +18,7 @@ convex optimization problems of the form
 
 where `h` is smooth and `A` is a linear mapping (for example, a matrix).
 
-# Arguments
+# Keyword arguments
 - `x0`: initial point.
 - `f=Zero()`: proximable objective term.
 - `g=Zero()`: proximable objective term.
