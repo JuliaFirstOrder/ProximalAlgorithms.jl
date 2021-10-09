@@ -17,7 +17,7 @@ Instantiate the nonconvex accelerated proximal gradient method by Li and Lin
 
 where `f` is smooth and `A` is a linear mapping (for example, a matrix).
 
-# Keyword arguments
+# Arguments
 - `x0`: initial point.
 - `f=Zero()`: smooth objective term.
 - `A=I`: linear operator (e.g. a matrix).

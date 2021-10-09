@@ -16,7 +16,7 @@ convex optimization problems of the form
 
     minimize f(x) + g(x).
 
-# Keyword arguments
+# Arguments
 - `x0`: initial point.
 - `f=Zero()`: proximable objective term.
 - `g=Zero()`: proximable objective term.

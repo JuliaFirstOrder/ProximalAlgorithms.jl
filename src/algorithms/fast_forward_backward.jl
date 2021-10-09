@@ -21,7 +21,7 @@ optimization problems of the form
 
 where `f` is smooth.
 
-# Keyword arguments
+# Arguments
 - `x0`: initial point.
 - `f=Zero()`: smooth objective term.
 - `g=Zero()`: proximable objective term.

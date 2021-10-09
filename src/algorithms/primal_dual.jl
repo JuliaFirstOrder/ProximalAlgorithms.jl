@@ -69,7 +69,7 @@ for several prominant special cases:
 See [2, Section 5.2] and [1, Figure 1] for stepsize conditions, special cases,
 and relation to other algorithms.
 
-# Keyword arguments
+# Arguments
 - `x0`: initial primal point.
 - `y0`: initial dual point.
 - `f=Zero()`: smooth objective term.

@@ -20,7 +20,7 @@ The scheme is based on Nesterov's accelerated gradient method [1, Eq. (4.9)] and
 definition is given in [3, Algorithm 2.2.2.], and some analyses of this method are given in [3, 4, 5]. Another perspective is that
 it is a special instance of [4, Algorithm 1] in which μh=0.
 
-# Keyword arguments
+# Arguments
 - `y0`: initial point; must be in the domain of h.
 - `f=Zero()`: smooth objective term.
 - `h=Zero()`: proximable objective term.
