@@ -14,9 +14,9 @@ using Printf
 Instantiate the Davis-Yin splitting algorithm (see [1]) for solving
 convex optimization problems of the form
 
-    minimize f(x) + g(x) + h(A x),
+    minimize f(x) + g(x) + h(x),
 
-where `h` is smooth and `A` is a linear mapping (for example, a matrix).
+where `h` is smooth.
 
 # Arguments
 - `x0`: initial point.
