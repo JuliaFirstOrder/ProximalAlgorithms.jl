@@ -43,9 +43,9 @@ function backtrack_stepsize!(
     grad_f_Ax, f_Ax = gradient(f, Ax)
     At_grad_f_Ax = A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
-    z, g_z = prox(iter.g, y, gamma)
+    z, g_z = prox(g, y, gamma)
     return backtrack_stepsize!(
-        gamma, f, A, g, x, f_Ax, At_grad_f_Ax, y, z, g_z, res;
+        gamma, f, A, g, x, f_Ax, At_grad_f_Ax, y, z, g_z, x - z;
         alpha = alpha, minimum_gamma = minimum_gamma
     )
 end
