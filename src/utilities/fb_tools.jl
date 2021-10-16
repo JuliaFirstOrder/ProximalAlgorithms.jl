@@ -16,23 +16,26 @@ function lower_bound_smoothness_constant(f, A, x)
 end
 
 function backtrack_stepsize!(
-    gamma, f, A, g, x, f_Ax::R, At_grad_f_Ax, y, z, g_z, res;
+    gamma::R, f, A, g, x, f_Ax::R, At_grad_f_Ax, y, z, g_z::R, res;
     alpha = 1, minimum_gamma = 1e-7
 ) where R
-    while gamma >= minimum_gamma
-        f_Az_upp = f_model(f_Ax, At_grad_f_Ax, res, alpha / gamma)
-        Az = A * z
-        grad_f_Az, f_Az = gradient(f, Az)
-        tol = 10 * eps(R) * (1 + abs(f_Az))
-        if f_Az <= f_Az_upp + tol
-            return gamma, g_z, Az, f_Az, grad_f_Az, f_Az_upp
-        end
+    f_Az_upp = f_model(f_Ax, At_grad_f_Ax, res, alpha / gamma)
+    Az = A * z
+    grad_f_Az, f_Az = gradient(f, Az)
+    tol = 10 * eps(R) * (1 + abs(f_Az))
+    while f_Az > f_Az_upp + tol && gamma >= minimum_gamma
         gamma /= 2
         y .= x .- gamma .* At_grad_f_Ax
         g_z = prox!(z, g, y, gamma)
         res .= x .- z
+        f_Az_upp = f_model(f_Ax, At_grad_f_Ax, res, alpha / gamma)
+        mul!(Az, A, z)
+        f_Az = gradient!(grad_f_Az, f, Az)
+        tol = 10 * eps(R) * (1 + abs(f_Az))
     end
-    @warn "stepsize `gamma` became too small ($(gamma))"
+    if gamma < minimum_gamma
+        @warn "stepsize `gamma` became too small ($(gamma))"
+    end
     return gamma, g_z, Az, f_Az, grad_f_Az, f_Az_upp
 end
 

@@ -17,19 +17,19 @@ g = Zero()
 
 for _ in 1:100
     x = randn(n)
-    Lest = lower_bound_smoothness_constant(f, I, x)
+    Lest = @inferred lower_bound_smoothness_constant(f, I, x)
     @test Lest <= Lf
 end
 
 x = randn(n)
-Lest = lower_bound_smoothness_constant(f, I, x)
+Lest = @inferred lower_bound_smoothness_constant(f, I, x)
 alpha = R(0.5)
 gamma_init = 10 / Lest
 gamma = gamma_init
 
 for _ in 1:100
     x = randn(n)
-    new_gamma, = backtrack_stepsize!(gamma, f, I, g, x, alpha=alpha)
+    new_gamma, = @inferred backtrack_stepsize!(gamma, f, I, g, x, alpha=alpha)
     @test new_gamma <= gamma
     gamma = new_gamma
 end
