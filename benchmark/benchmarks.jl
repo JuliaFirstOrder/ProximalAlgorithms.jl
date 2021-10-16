@@ -22,35 +22,35 @@ for T in [Float64]
     lam = R(0.1) * norm(A' * b, Inf)
 
     SUITE[k]["ForwardBackward"] = @benchmarkable solver(x0, f=f, A=$A, g=g) setup=begin
-        solver = ProximalAlgorithms.ForwardBackward(tol=1e-4)
+        solver = ProximalAlgorithms.ForwardBackward(tol=1e-6)
         x0 = zeros($T, size($A, 2))
         f = Translate(SqrNormL2(), -$b)
         g = NormL1($lam)
     end
 
     SUITE[k]["FastForwardBackward"] = @benchmarkable solver(x0, f=f, A=$A, g=g) setup=begin
-        solver = ProximalAlgorithms.ForwardBackward(tol=1e-4, fast=true)
+        solver = ProximalAlgorithms.ForwardBackward(tol=1e-6, fast=true)
         x0 = zeros($T, size($A, 2))
         f = Translate(SqrNormL2(), -$b)
         g = NormL1($lam)
     end
 
     SUITE[k]["ZeroFPR"] = @benchmarkable solver(x0, f=f, A=$A, g=g) setup=begin
-        solver = ProximalAlgorithms.ZeroFPR(tol=1e-4)
+        solver = ProximalAlgorithms.ZeroFPR(tol=1e-6)
         x0 = zeros($T, size($A, 2))
         f = Translate(SqrNormL2(), -$b)
         g = NormL1($lam)
     end
 
     SUITE[k]["PANOC"] = @benchmarkable solver(x0, f=f, A=$A, g=g) setup=begin
-        solver = ProximalAlgorithms.PANOC(tol=1e-4)
+        solver = ProximalAlgorithms.PANOC(tol=1e-6)
         x0 = zeros($T, size($A, 2))
         f = Translate(SqrNormL2(), -$b)
         g = NormL1($lam)
     end
 
     SUITE[k]["DouglasRachford"] = @benchmarkable solver(x0, f=f, g=g) setup=begin
-        solver = ProximalAlgorithms.DouglasRachford(tol=1e-4, gamma=$R(1))
+        solver = ProximalAlgorithms.DouglasRachford(tol=1e-6, gamma=$R(1))
         x0 = zeros($T, size($A, 2))
         f = LeastSquares($A, $b)
         g = NormL1($lam)
