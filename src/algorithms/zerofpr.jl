@@ -112,7 +112,7 @@ function Base.iterate(
         state.gamma, state.g_xbar, state.Axbar, f_Axbar, state.grad_f_Axbar, f_Axbar_upp = backtrack_stepsize!(
             state.gamma, iter.f, iter.A, iter.g,
             state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.xbar, state.g_xbar, state.res,
-            iter.alpha, iter.minimum_gamma,
+            alpha = iter.alpha, minimum_gamma = iter.minimum_gamma,
         )
         if state.gamma != gamma_prev
             reset!(state.H)

@@ -98,7 +98,7 @@ function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardB
         gamma, state.g_z = backtrack_stepsize!(
             state.gamma, iter.f, I, iter.g,
             state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res,
-            1, iter.minimum_gamma,
+            minimum_gamma = iter.minimum_gamma,
         )
         gamma
     else

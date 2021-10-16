@@ -79,7 +79,7 @@ function Base.iterate(iter::ForwardBackwardIteration{R}, state::ForwardBackwardS
         state.gamma, state.g_z, _, state.f_x, state.grad_f_x = backtrack_stepsize!(
             state.gamma, iter.f, I, iter.g,
             state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res,
-            1, iter.minimum_gamma,
+            minimum_gamma = iter.minimum_gamma,
         )
         state.x, state.z = state.z, state.x
     else
