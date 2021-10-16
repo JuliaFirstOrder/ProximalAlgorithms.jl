@@ -16,7 +16,7 @@ function lower_bound_smoothness_constant(f, A, x)
 end
 
 function backtrack_stepsize!(
-    gamma, f, A, g, x, f_Ax::R, At_grad_f_Ax, y, z, g_z, res;
+    gamma, f, A, g, x, f_Ax::R, At_grad_f_Ax, y, z, g_z, res,
     alpha = 1, minimum_gamma = 1e-7
 ) where R
     while gamma >= minimum_gamma
@@ -37,7 +37,7 @@ function backtrack_stepsize!(
 end
 
 function backtrack_stepsize!(
-    gamma, f, A, g, x; alpha = 1, minimum_gamma = 1e-7
+    gamma, f, A, g, x, alpha = 1, minimum_gamma = 1e-7
 )
     Ax = A * x
     grad_f_Ax, f_Ax = gradient(f, Ax)
@@ -45,7 +45,7 @@ function backtrack_stepsize!(
     y = x - gamma .* At_grad_f_Ax
     z, g_z = prox(g, y, gamma)
     return backtrack_stepsize!(
-        gamma, f, A, g, x, f_Ax, At_grad_f_Ax, y, z, g_z, x - z;
-        alpha = alpha, minimum_gamma = minimum_gamma
+        gamma, f, A, g, x, f_Ax, At_grad_f_Ax, y, z, g_z, x - z,
+        alpha, minimum_gamma
     )
 end

@@ -29,7 +29,7 @@ gamma = gamma_init
 
 for _ in 1:100
     x = randn(n)
-    new_gamma, = backtrack_stepsize!(gamma, f, I, g, x, alpha=alpha)
+    new_gamma, = backtrack_stepsize!(gamma, f, I, g, x, alpha)
     @test new_gamma <= gamma
     gamma = new_gamma
 end
