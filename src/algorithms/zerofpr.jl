@@ -87,26 +87,17 @@ function Base.iterate(iter::ZeroFPRIteration{R}) where {R}
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
 
     gamma = iter.gamma
-
     if gamma === nothing
-        # compute lower bound to Lipschitz constant of the gradient of x ↦ f(Ax)
-        xeps = x .+ R(1)
-        grad_f_Axeps, f_Axeps = gradient(iter.f, iter.A * xeps)
-        L = norm(iter.A' * (grad_f_Axeps - grad_f_Ax)) / R(sqrt(length(x)))
-        gamma = iter.alpha / L
+        gamma = iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax)
     end
 
-    # compute initial forward-backward step
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
     xbar, g_xbar = prox(iter.g, y, gamma)
 
-    # compute initial fixed-point residual
-    res = x - xbar
-
     state = ZeroFPRState(
         x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
-        gamma=gamma, y=y, xbar=xbar, g_xbar=g_xbar, res=res, H=iter.H,
+        gamma=gamma, y=y, xbar=xbar, g_xbar=g_xbar, res=x - xbar, H=iter.H,
     )
 
     return state, state
@@ -116,29 +107,20 @@ function Base.iterate(
     iter::ZeroFPRIteration{R},
     state::ZeroFPRState{R,Tx,TAx},
 ) where {R,Tx,TAx}
-    f_Axbar_upp = f_model(iter, state)
-    # These need to be performed anyway (to compute xbarbar later on)
-    mul!(state.Axbar, iter.A, state.xbar)
-    f_Axbar = gradient!(state.grad_f_Axbar, iter.f, state.Axbar)
-
-    # backtrack gamma (warn and halt if gamma gets too small)
-    while iter.gamma === nothing || iter.adaptive == true
-        if state.gamma < iter.minimum_gamma
-            @warn "parameter `gamma` became too small ($(state.gamma)), stopping the iterations"
-            return nothing
+    f_Axbar_upp, f_Axbar = if iter.gamma === nothing || iter.adaptive == true
+        gamma_prev = state.gamma
+        state.gamma, state.g_xbar, state.Axbar, f_Axbar, state.grad_f_Axbar, f_Axbar_upp = backtrack_stepsize!(
+            state.gamma, iter.f, iter.A, iter.g,
+            state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.xbar, state.g_xbar, state.res,
+            alpha = iter.alpha, minimum_gamma = iter.minimum_gamma,
+        )
+        if state.gamma != gamma_prev
+            reset!(state.H)
         end
-        tol = 10 * eps(R) * (1 + abs(f_Axbar))
-        if f_Axbar <= f_Axbar_upp + tol
-            break
-        end
-        state.gamma *= 0.5
-        state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
-        state.g_xbar = prox!(state.xbar, iter.g, state.y, state.gamma)
-        state.res .= state.x .- state.xbar
-        reset!(state.H)
-        f_Axbar_upp = f_model(iter, state)
+        f_Axbar_upp, f_Axbar
+    else
         mul!(state.Axbar, iter.A, state.xbar)
-        f_Axbar = gradient!(state.grad_f_Axbar, iter.f, state.Axbar)
+        f_model(iter, state), gradient!(state.grad_f_Axbar, iter.f, state.Axbar)
     end
 
     if state.xbar_prev === nothing

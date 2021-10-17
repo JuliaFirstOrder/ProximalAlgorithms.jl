@@ -24,6 +24,8 @@ using ProximalAlgorithms
     f2 = LeastSquares(A, b)
     g = NormL1(lam)
 
+    Lf = opnorm(A)^2
+
     x_star = T[-3.877278911564627e-01, 0, 0, 2.174149659863943e-02, 6.168435374149660e-01]
 
     TOL = R(1e-4)
@@ -35,7 +37,7 @@ using ProximalAlgorithms
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.ForwardBackward(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm(A)^2)
+        x, it = solver(x0, f = f2, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 150
@@ -46,7 +48,7 @@ using ProximalAlgorithms
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
-        x, it = solver(x0, f = f, A = A, g = g)
+        x, it = solver(x0, f = f2, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 300
@@ -56,8 +58,8 @@ using ProximalAlgorithms
 
         x0 = zeros(T, n)
         x0_backup = copy(x0)
-        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, fast = true)
-        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm(A)^2)
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
+        x, it = solver(x0, f = f2, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100
@@ -68,8 +70,8 @@ using ProximalAlgorithms
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver =
-            ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, fast = true)
-        x, it = solver(x0, f = f, A = A, g = g)
+            ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
+        x, it = solver(x0, f = f2, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 200
@@ -83,7 +85,7 @@ using ProximalAlgorithms
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.ZeroFPR(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm(A)^2)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -109,7 +111,7 @@ using ProximalAlgorithms
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.PANOC(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm(A)^2)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -153,7 +155,7 @@ using ProximalAlgorithms
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.DRLS(tol = 10 * TOL)
-        y, z, it = solver(x0, f = f2, g = g, Lf = opnorm(A)^2)
+        y, z, it = solver(x0, f = f2, g = g, Lf = Lf)
         @test eltype(y) == T
         @test eltype(z) == T
         @test norm(y - x_star, Inf) <= 10 * TOL
@@ -201,7 +203,7 @@ using ProximalAlgorithms
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.SFISTA(tol = 10 * TOL)
-        y, it = solver(x0, f = f2, h = g, Lf = opnorm(A)^2)
+        y, it = solver(x0, f = f2, h = g, Lf = Lf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= 10 * TOL
         @test it < 100

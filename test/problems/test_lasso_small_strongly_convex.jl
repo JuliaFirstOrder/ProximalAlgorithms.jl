@@ -29,17 +29,35 @@ using ProximalAlgorithms
 
     TOL = T(1e-4)
 
+    x0 = A \ b
+    x0_backup = copy(x0)
+
     @testset "SFISTA" begin
-
-        # SFISTA
-
-        x0 =  A \ b
-        x0_backup = copy(x0)
         solver = ProximalAlgorithms.SFISTA(tol = TOL)
         y, it = solver(x0, f = f, h = h, Lf = Lf, μf = μf)
         @test eltype(y) == T
         @test norm(y - x_star) <= TOL
-        @test it < 200
+        @test it < 45
+        @test x0 == x0_backup
+
+    end
+
+    @testset "ForwardBackward" begin
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL)
+        y, it = solver(x0, f = f, g = h, Lf = Lf)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 110
+        @test x0 == x0_backup
+
+    end
+
+    @testset "FastForwardBackward" begin
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
+        y, it = solver(x0, f = f, g = h, Lf = Lf, m = μf)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 45
         @test x0 == x0_backup
 
     end

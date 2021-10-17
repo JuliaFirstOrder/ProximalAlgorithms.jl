@@ -21,17 +21,17 @@ for T in [Float64]
     R = real(T)
     lam = R(0.1) * norm(A' * b, Inf)
 
-    SUITE[k]["ForwardBackward"] = @benchmarkable solver(x0, f=f, A=$A, g=g) setup=begin
+    SUITE[k]["ForwardBackward"] = @benchmarkable solver(x0, f=f, g=g) setup=begin
         solver = ProximalAlgorithms.ForwardBackward(tol=1e-6)
         x0 = zeros($T, size($A, 2))
-        f = Translate(SqrNormL2(), -$b)
+        f = LeastSquares($A, $b)
         g = NormL1($lam)
     end
 
-    SUITE[k]["FastForwardBackward"] = @benchmarkable solver(x0, f=f, A=$A, g=g) setup=begin
-        solver = ProximalAlgorithms.ForwardBackward(tol=1e-6, fast=true)
+    SUITE[k]["FastForwardBackward"] = @benchmarkable solver(x0, f=f, g=g) setup=begin
+        solver = ProximalAlgorithms.FastForwardBackward(tol=1e-6)
         x0 = zeros($T, size($A, 2))
-        f = Translate(SqrNormL2(), -$b)
+        f = LeastSquares($A, $b)
         g = NormL1($lam)
     end
 

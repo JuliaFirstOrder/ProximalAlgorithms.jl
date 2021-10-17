@@ -36,7 +36,7 @@ for nonlinear model predictive control", 56th IEEE Conference on Decision
 and Control (2017).
 """
 
-@Base.kwdef struct PANOCIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
+Base.@kwdef struct PANOCIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()
@@ -87,26 +87,17 @@ function Base.iterate(iter::PANOCIteration{R}) where {R}
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
 
     gamma = iter.gamma
-
     if gamma === nothing
-        # compute lower bound to Lipschitz constant of the gradient of x ↦ f(Ax)
-        xeps = x .+ R(1)
-        grad_f_Axeps, f_Axeps = gradient(iter.f, iter.A * xeps)
-        L = norm(iter.A' * (grad_f_Axeps - grad_f_Ax)) / R(sqrt(length(x)))
-        gamma = iter.alpha / L
+        gamma = iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax)
     end
 
-    # compute initial forward-backward step
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
     z, g_z = prox(iter.g, y, gamma)
 
-    # compute initial fixed-point residual
-    res = x - z
-
     state = PANOCState(
         x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
-        gamma=gamma, y=y, z=z, g_z=g_z, res=res, H=iter.H,
+        gamma=gamma, y=y, z=z, g_z=g_z, res=x - z, H=iter.H,
     )
 
     return state, state
@@ -119,26 +110,19 @@ function Base.iterate(
     Az, f_Az, grad_f_Az, At_grad_f_Az = nothing, nothing, nothing, nothing
     a, b, c = nothing, nothing, nothing
 
-    f_Az_upp = f_model(iter, state)
-
-    # backtrack gamma (warn and halt if gamma gets too small)
-    while iter.gamma === nothing || iter.adaptive == true
-        if state.gamma < iter.minimum_gamma
-            @warn "parameter `gamma` became too small ($(state.gamma)), stopping the iterations"
-            return nothing
+    f_Az_upp = if (iter.gamma === nothing || iter.adaptive == true)
+        gamma_prev = state.gamma
+        state.gamma, state.g_z, Az, f_Az, grad_f_Az, f_Az_upp = backtrack_stepsize!(
+            state.gamma, iter.f, iter.A, iter.g,
+            state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.z, state.g_z, state.res,
+            alpha = iter.alpha, minimum_gamma = iter.minimum_gamma,
+        )
+        if state.gamma != gamma_prev
+            reset!(state.H)
         end
-        Az = iter.A * state.z
-        grad_f_Az, f_Az = gradient(iter.f, Az)
-        tol = 10 * eps(R) * (1 + abs(f_Az))
-        if f_Az <= f_Az_upp + tol
-            break
-        end
-        state.gamma *= 0.5
-        state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
-        state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
-        state.res .= state.x .- state.z
-        reset!(state.H)
-        f_Az_upp = f_model(iter, state)
+        f_Az_upp
+    else
+        f_model(iter, state)
     end
 
     # compute FBE

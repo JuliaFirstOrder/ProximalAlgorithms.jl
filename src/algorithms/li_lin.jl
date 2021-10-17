@@ -13,16 +13,15 @@ using Printf
 Instantiate the nonconvex accelerated proximal gradient method by Li and Lin
 (see Algorithm 2 in [1]) for solving optimization problems of the form
 
-    minimize f(Ax) + g(x),
+    minimize f(x) + g(x),
 
-where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+where `f` is smooth.
 
 # Arguments
 - `x0`: initial point.
 - `f=Zero()`: smooth objective term.
-- `A=I`: linear operator (e.g. a matrix).
 - `g=Zero()`: proximable objective term.
-- `Lf=nothing`: Lipschitz constant of the gradient of x ↦ f(Ax).
+- `Lf=nothing`: Lipschitz constant of the gradient of f.
 - `gamma=nothing`: stepsize to use, defaults to `1/Lf` if not set (but `Lf` is).
 
 # References
@@ -30,9 +29,8 @@ where `f` is smooth and `A` is a linear mapping (for example, a matrix).
 Proceedings of NIPS 2015 (2015).
 """
 
-Base.@kwdef struct LiLinIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg}
+Base.@kwdef struct LiLinIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
     f::Tf = Zero()
-    A::TA = I
     g::Tg = Zero()
     x0::Tx
     Lf::Maybe{R} = nothing
@@ -44,13 +42,11 @@ end
 
 Base.IteratorSize(::Type{<:LiLinIteration}) = Base.IsInfinite()
 
-mutable struct LiLinState{R<:Real,Tx,TAx}
+mutable struct LiLinState{R<:Real,Tx}
     x::Tx             # iterate
     y::Tx             # extrapolated point
-    Ay::TAx           # A times y
-    f_Ay::R           # value of smooth term at y
-    grad_f_Ay::TAx    # gradient of f at Ay
-    At_grad_f_Ay::Tx  # gradient of smooth term at y
+    f_y::R            # value of f at y
+    grad_f_y::Tx      # gradient of f at y
     # TODO: *two* gammas should be used in general, one for y and one for x
     gamma::R          # stepsize parameter of forward and backward steps
     y_forward::Tx     # forward point at y
@@ -64,19 +60,17 @@ end
 
 function Base.iterate(iter::LiLinIteration{R}) where {R}
     y = copy(iter.x0)
-    Ay = iter.A * y
-    grad_f_Ay, f_Ay = gradient(iter.f, Ay)
+    grad_f_y, f_y = gradient(iter.f, y)
 
     # TODO: initialize gamma if not provided
     # TODO: authors suggest Barzilai-Borwein rule?
     # TODO: *two* gammas should be used in general, one for y and one for x
 
     # compute initial forward-backward step
-    At_grad_f_Ay = iter.A' * grad_f_Ay
-    y_forward = y - iter.gamma .* At_grad_f_Ay
+    y_forward = y - iter.gamma .* grad_f_y
     z, g_z = prox(iter.g, y_forward, iter.gamma)
 
-    Fy = f_Ay + iter.g(y)
+    Fy = f_y + iter.g(y)
 
     @assert isfinite(Fy) "initial point must be feasible"
 
@@ -84,7 +78,7 @@ function Base.iterate(iter::LiLinIteration{R}) where {R}
     res = y - z
 
     state = LiLinState(
-        copy(iter.x0), y, Ay, f_Ay, grad_f_Ay, At_grad_f_Ay, iter.gamma,
+        copy(iter.x0), y, f_y, grad_f_y, iter.gamma,
         y_forward, z, g_z, res, R(1), Fy, R(1),
     )
 
@@ -93,8 +87,8 @@ end
 
 function Base.iterate(
     iter::LiLinIteration{R},
-    state::LiLinState{R,Tx,TAx},
-) where {R,Tx,TAx}
+    state::LiLinState{R,Tx},
+) where {R,Tx}
     # TODO: backtrack gamma at y
 
     Fz = iter.f(state.z) + state.g_z
@@ -106,10 +100,8 @@ function Base.iterate(
     else
         # TODO: re-use available space in state?
         # TODO: backtrack gamma at x
-        Ax = iter.A * state.x
-        grad_f_Ax, f_Ax = gradient(iter.f, Ax)
-        At_grad_f_Ax = iter.A' * grad_f_Ax
-        x_forward = state.x - state.gamma .* At_grad_f_Ax
+        grad_f_x, f_x = gradient(iter.f, x)
+        x_forward = state.x - state.gamma .* grad_f_x
         v, g_v = prox(iter.g, x_forward, state.gamma)
         Fv = iter.f(v) + g_v
         case = Fz <= Fv ? 1 : 2
@@ -127,10 +119,8 @@ function Base.iterate(
         Fx = Fv
     end
 
-    mul!(state.Ay, iter.A, state.y)
-    state.f_Ay = gradient!(state.grad_f_Ay, iter.f, state.Ay)
-    mul!(state.At_grad_f_Ay, adjoint(iter.A), state.grad_f_Ay)
-    state.y_forward .= state.y .- state.gamma .* state.At_grad_f_Ay
+    state.f_y = gradient!(state.grad_f_y, iter.f, state.y)
+    state.y_forward .= state.y .- state.gamma .* state.grad_f_y
     state.g_z = prox!(state.z, iter.g, state.y_forward, state.gamma)
 
     state.res .= state.y - state.z

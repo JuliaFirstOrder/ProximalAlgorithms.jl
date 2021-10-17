@@ -40,7 +40,7 @@ arXiv:2107.01267.
 Applications.
 """
 
-@Base.kwdef struct SFISTAIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Th}
+Base.@kwdef struct SFISTAIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Th}
     y0::Tx
     f::Tf = Zero()
     h::Th = Zero()

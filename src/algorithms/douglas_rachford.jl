@@ -30,7 +30,7 @@ for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
 pp. 183-202 (2009).
 """
 
-@Base.kwdef struct DouglasRachfordIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
+Base.@kwdef struct DouglasRachfordIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
     f::Tf = Zero()
     g::Tg = Zero()
     x0::Tx

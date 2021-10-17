@@ -26,7 +26,10 @@
     @test typeof(lam) == R
 
     f = SeparableSum(Translate(SqrNormL2(R(1)), -b1), Translate(SqrNormL2(R(1)), -b2))
+    f2 = Sum(LeastSquares(A1, b1), LeastSquares(A2, b2))
     g = NormL1(lam)
+
+    Lf = opnorm([A1; A2])^2
 
     x_star = T[-3.877278911564627e-01, 0, 0, 2.174149659863943e-02, 6.168435374149660e-01]
 
@@ -39,7 +42,7 @@
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.ForwardBackward(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm([A1; A2])^2)
+        x, it = solver(x0, f = f2, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 150
@@ -50,7 +53,7 @@
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
-        x, it = solver(x0, f = f, A = A, g = g)
+        x, it = solver(x0, f = f2, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 300
@@ -60,8 +63,8 @@
 
         x0 = zeros(T, n)
         x0_backup = copy(x0)
-        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, fast = true)
-        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm([A1; A2])^2)
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
+        x, it = solver(x0, f = f2, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100
@@ -72,8 +75,8 @@
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver =
-            ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, fast = true)
-        x, it = solver(x0, f = f, A = A, g = g)
+            ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
+        x, it = solver(x0, f = f2, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 200
