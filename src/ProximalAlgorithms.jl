@@ -1,5 +1,7 @@
 module ProximalAlgorithms
 
+using ProximalOperators
+
 const RealOrComplex{R} = Union{R,Complex{R}}
 const Maybe{T} = Union{T,Nothing}
 
