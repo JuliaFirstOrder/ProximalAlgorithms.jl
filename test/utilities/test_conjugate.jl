@@ -1,3 +1,5 @@
+using Test
+
 @testset "Conjugate" begin
 
     using ProximalOperators
