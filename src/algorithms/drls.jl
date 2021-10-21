@@ -62,28 +62,6 @@ DRE(f_u::Number, g_v::Number, x, u, res, gamma) = f_u + g_v - real(dot(x - u, re
 
 DRE(state::DRLSState) = DRE(state.f_u, state.g_v, state.x, state.u, state.res, state.gamma)
 
-function DRE(f, g, x, gamma)
-    u, f_u = prox(f, x, gamma)
-    w = 2 * u - x
-    v, g_v = prox(g, w, gamma)
-    res = u - v
-    return DRE(f_u, g_v, x, u, res, gamma)
-end
-
-# function DRS_step(f, g, x, gamma, lambda)
-#     u, f_u = prox(f, x, gamma)
-#     w = 2 * u - x
-#     v, g_v = prox(g, w, gamma)
-#     res = u - v
-#     return x - lambda * res, res
-# end
-
-# function DRS_consistency_check(iter, state)
-#     xbar, res = DRS_step(iter.f, iter.g, state.x, iter.gamma, iter.lambda)
-#     @assert all(res .== state.res)
-#     @assert all(xbar .== state.xbar)
-# end
-
 function Base.iterate(iter::DRLSIteration)
     x = copy(iter.x0)
     u, f_u = prox(iter.f, x, iter.gamma)
