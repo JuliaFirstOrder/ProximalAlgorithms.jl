@@ -58,12 +58,31 @@ Base.@kwdef mutable struct DRLSState{R,Tx,TH}
     tau::Maybe{R} = nothing
 end
 
-function DRE(state::DRLSState)
-    return (
-        state.f_u + state.g_v - real(dot(state.x - state.u, state.res)) / state.gamma +
-        1 / (2 * state.gamma) * norm(state.res)^2
-    )
+DRE(f_u::Number, g_v::Number, x, u, res, gamma) = f_u + g_v - real(dot(x - u, res)) / gamma + 1 / (2 * gamma) * norm(res)^2
+
+DRE(state::DRLSState) = DRE(state.f_u, state.g_v, state.x, state.u, state.res, state.gamma)
+
+function DRE(f, g, x, gamma)
+    u, f_u = prox(f, x, gamma)
+    w = 2 * u - x
+    v, g_v = prox(g, w, gamma)
+    res = u - v
+    return DRE(f_u, g_v, x, u, res, gamma)
 end
+
+# function DRS_step(f, g, x, gamma, lambda)
+#     u, f_u = prox(f, x, gamma)
+#     w = 2 * u - x
+#     v, g_v = prox(g, w, gamma)
+#     res = u - v
+#     return x - lambda * res, res
+# end
+
+# function DRS_consistency_check(iter, state)
+#     xbar, res = DRS_step(iter.f, iter.g, state.x, iter.gamma, iter.lambda)
+#     @assert all(res .== state.res)
+#     @assert all(xbar .== state.xbar)
+# end
 
 function Base.iterate(iter::DRLSIteration)
     x = copy(iter.x0)
@@ -84,8 +103,8 @@ function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where {R}
 
     mul!(state.d, iter.H, -state.res)
     state.x_d .= state.x .+ state.d
-    copyto!(state.xbar_prev, state.xbar)
-    copyto!(state.res_prev, state.res)
+    state.xbar_prev, state.xbar = state.xbar, state.xbar_prev
+    state.res_prev, state.res = state.res, state.res_prev
     state.tau = R(1)
     state.x .= state.x_d
 
@@ -102,7 +121,7 @@ function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where {R}
         state.xbar .= state.x .- iter.lambda * state.res
         DRE_candidate = DRE(state)
 
-        if DRE_candidate <= DRE_curr - iter.c / iter.gamma * norm(state.res)^2
+        if DRE_candidate <= DRE_curr - iter.c / iter.gamma * norm(state.res_prev)^2
             return state, state
         end
 
