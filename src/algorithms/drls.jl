@@ -92,6 +92,8 @@ function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where {R}
     state.x .= state.x_d
 
     for k = 1:iter.max_backtracks
+        state.x .= state.tau .* state.x_d .+ (1 - state.tau) .* state.xbar_prev
+
         state.f_u = prox!(state.u, iter.f, state.x, iter.gamma)
         state.w .= 2 .* state.u .- state.x
         state.g_v = prox!(state.v, iter.g, state.w, iter.gamma)
@@ -105,15 +107,13 @@ function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where {R}
         DRE_candidate = DRE(state)
 
         if iter.dre_sign * DRE_candidate <= iter.dre_sign * DRE_curr - iter.c / iter.gamma * norm(state.res_prev)^2
-            return state, state
+            break
         end
 
-        state.tau = state.tau / 2
-        state.x .= state.tau .* state.x_d .+ (1 - state.tau) .* state.xbar_prev
+        state.tau = k < iter.max_backtracks - 1 ? state.tau / 2 : R(0)
     end
 
-    @warn "stepsize `tau` became too small ($(state.tau)), stopping the iterations"
-    return nothing
+    return state, state
 end
 
 # Solver
