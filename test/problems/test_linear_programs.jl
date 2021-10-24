@@ -50,7 +50,7 @@
     b = A * x_star
     c = A' * y_star + s_star
 
-    tol = 100 * eps(T)
+    tol = 10 * eps(T)
     maxit = 10_000
 
     @testset "AFBA" begin
@@ -72,7 +72,7 @@
 
         @test it <= maxit
 
-        assert_lp_solution(c, A, b, x, y, 1e2 * tol)
+        assert_lp_solution(c, A, b, x, y, sqrt(eps(T)))
 
         @test x0 == x0_backup
         @test y0 == y0_backup
@@ -98,7 +98,7 @@
 
         @test it <= maxit
 
-        assert_lp_solution(c, A, b, x, y, 1e2 * tol)
+        assert_lp_solution(c, A, b, x, y, sqrt(eps(T)))
 
         @test x0 == x0_backup
         @test y0 == y0_backup
