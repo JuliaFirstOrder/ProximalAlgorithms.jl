@@ -50,7 +50,7 @@
     b = A * x_star
     c = A' * y_star + s_star
 
-    tol = 10 * eps(T)
+    tol = 100 * eps(T)
     maxit = 10_000
 
     @testset "AFBA" begin
