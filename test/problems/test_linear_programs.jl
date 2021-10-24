@@ -72,7 +72,7 @@
 
         @test it <= maxit
 
-        assert_lp_solution(c, A, b, x, y, sqrt(eps(T)))
+        assert_lp_solution(c, A, b, x, y, 1000 * tol)
 
         @test x0 == x0_backup
         @test y0 == y0_backup
@@ -98,7 +98,7 @@
 
         @test it <= maxit
 
-        assert_lp_solution(c, A, b, x, y, sqrt(eps(T)))
+        assert_lp_solution(c, A, b, x, y, 1000 * tol)
 
         @test x0 == x0_backup
         @test y0 == y0_backup
