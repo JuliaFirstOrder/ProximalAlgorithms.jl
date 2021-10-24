@@ -10,7 +10,10 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-function drls_default_gamma(f, Lf, alpha, lambda)
+function drls_default_gamma(f, muf, Lf, alpha, lambda)
+    if muf !== nothing && muf > 0
+        return 1 / (alpha * muf)
+    end
     if ProximalOperators.is_convex(f)
         return alpha / Lf
     else
@@ -18,14 +21,10 @@ function drls_default_gamma(f, Lf, alpha, lambda)
     end
 end
 
-function drls_default_c(f, Lf, gamma, lambda, beta)
-    m = if ProximalOperators.is_convex(f)
-        max(gamma * Lf - lambda / 2, 0)
-    else
-        1
-    end
-    C_gamma_lambda = (lambda / ((1 + gamma * Lf)^2) * ((2 - lambda) / 2 - gamma * Lf * m))
-    return beta * C_gamma_lambda
+function drls_C(f, muf, Lf, gamma, lambda, beta)
+    a = muf === nothing || muf <= 0 ? gamma * Lf : 1 / (gamma * muf)
+    m = ProximalOperators.is_convex(f) ? max(a - lambda / 2, 0) : 1
+    return (lambda / ((1 + a)^2) * ((2 - lambda) / 2 - a * m))
 end
 
 Base.@kwdef struct DRLSIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg,TH}
@@ -35,9 +34,11 @@ Base.@kwdef struct DRLSIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},T
     alpha::R = real(eltype(x0))(0.95)
     beta::R = real(eltype(x0))(0.5)
     lambda::R = real(eltype(x0))(1)
+    muf::Maybe{R} = nothing
     Lf::Maybe{R} = nothing
-    gamma::R = drls_default_gamma(f, Lf, alpha, lambda)
-    c::R = drls_default_c(f, Lf, gamma, lambda, beta)
+    gamma::R = drls_default_gamma(f, muf, Lf, alpha, lambda)
+    c::R = beta * drls_C(f, muf, Lf, gamma, lambda, beta)
+    dre_sign::Int = muf === nothing || muf <= 0 ? 1 : -1
     max_backtracks::Int = 20
     H::TH = LBFGS(x0, 5)
 end
@@ -91,6 +92,8 @@ function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where {R}
     state.x .= state.x_d
 
     for k = 1:iter.max_backtracks
+        state.x .= state.tau .* state.x_d .+ (1 - state.tau) .* state.xbar_prev
+
         state.f_u = prox!(state.u, iter.f, state.x, iter.gamma)
         state.w .= 2 .* state.u .- state.x
         state.g_v = prox!(state.v, iter.g, state.w, iter.gamma)
@@ -103,16 +106,14 @@ function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where {R}
         state.xbar .= state.x .- iter.lambda * state.res
         DRE_candidate = DRE(state)
 
-        if DRE_candidate <= DRE_curr - iter.c / iter.gamma * norm(state.res_prev)^2
-            return state, state
+        if iter.dre_sign * DRE_candidate <= iter.dre_sign * DRE_curr - iter.c / iter.gamma * norm(state.res_prev)^2
+            break
         end
 
-        state.tau = state.tau / 2
-        state.x .= state.tau .* state.x_d .+ (1 - state.tau) .* state.xbar_prev
+        state.tau = k < iter.max_backtracks - 1 ? state.tau / 2 : R(0)
     end
 
-    @warn "stepsize `tau` became too small ($(state.tau)), stopping the iterations"
-    return nothing
+    return state, state
 end
 
 # Solver

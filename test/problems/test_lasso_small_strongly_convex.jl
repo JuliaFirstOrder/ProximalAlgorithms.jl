@@ -39,7 +39,6 @@ using ProximalAlgorithms
         @test norm(y - x_star) <= TOL
         @test it < 45
         @test x0 == x0_backup
-
     end
 
     @testset "ForwardBackward" begin
@@ -49,7 +48,6 @@ using ProximalAlgorithms
         @test norm(y - x_star, Inf) <= TOL
         @test it < 110
         @test x0 == x0_backup
-
     end
 
     @testset "FastForwardBackward" begin
@@ -59,7 +57,16 @@ using ProximalAlgorithms
         @test norm(y - x_star, Inf) <= TOL
         @test it < 45
         @test x0 == x0_backup
+    end
 
+    @testset "DRLS" begin
+        solver = ProximalAlgorithms.DRLS(tol = TOL)
+        u, v, it = solver(x0, f = f, g = h, muf = μf)
+        @test eltype(u) == T
+        @test eltype(v) == T
+        @test norm(v - x_star, Inf) <= TOL
+        @test it < 13
+        @test x0 == x0_backup
     end
 
 end
