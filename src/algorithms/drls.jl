@@ -21,7 +21,7 @@ function drls_default_gamma(f, muf, Lf, alpha, lambda)
     end
 end
 
-function drls_C(f, muf, Lf, gamma, lambda, beta)
+function drls_C(f, muf, Lf, gamma, lambda)
     a = muf === nothing || muf <= 0 ? gamma * Lf : 1 / (gamma * muf)
     m = ProximalOperators.is_convex(f) ? max(a - lambda / 2, 0) : 1
     return (lambda / ((1 + a)^2) * ((2 - lambda) / 2 - a * m))
@@ -37,7 +37,7 @@ Base.@kwdef struct DRLSIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},T
     muf::Maybe{R} = nothing
     Lf::Maybe{R} = nothing
     gamma::R = drls_default_gamma(f, muf, Lf, alpha, lambda)
-    c::R = beta * drls_C(f, muf, Lf, gamma, lambda, beta)
+    c::R = beta * drls_C(f, muf, Lf, gamma, lambda)
     dre_sign::Int = muf === nothing || muf <= 0 ? 1 : -1
     max_backtracks::Int = 20
     H::TH = LBFGS(x0, 5)
