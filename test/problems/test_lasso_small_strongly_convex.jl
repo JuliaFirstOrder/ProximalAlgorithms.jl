@@ -65,7 +65,7 @@ using ProximalAlgorithms
         @test eltype(u) == T
         @test eltype(v) == T
         @test norm(v - x_star, Inf) <= TOL
-        @test it < 13
+        @test it < 14
         @test x0 == x0_backup
     end
 

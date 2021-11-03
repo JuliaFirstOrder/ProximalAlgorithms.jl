@@ -1,6 +1,8 @@
 using LinearAlgebra
+import Base: *
+import LinearAlgebra: mul!
 
-mutable struct LBFGS{R<:Real,C<:Union{R,Complex{R}},I<:Integer,T<:AbstractArray{C},M}
+mutable struct LBFGSOperator{M,R,I,T}
     currmem::I
     curridx::I
     s::T
@@ -12,20 +14,20 @@ mutable struct LBFGS{R<:Real,C<:Union{R,Complex{R}},I<:Integer,T<:AbstractArray{
     H::R
 end
 
-function LBFGS(
-    x::T,
-    M::I,
-) where {R<:Real,C<:Union{R,Complex{R}},I<:Integer,T<:AbstractArray{C}}
+function LBFGSOperator{M}(x::T) where {M,T}
+    R = real(eltype(x))
     s_M = [zero(x) for i = 1:M]
     y_M = [zero(x) for i = 1:M]
     s = zero(x)
     y = zero(x)
     ys_M = zeros(R, M)
     alphas = zeros(R, M)
-    LBFGS{R,C,I,T,M}(0, 0, s, y, s_M, y_M, ys_M, alphas, one(R))
+    LBFGSOperator{M,R,typeof(0),T}(0, 0, s, y, s_M, y_M, ys_M, alphas, one(R))
 end
 
-function update!(L::LBFGS{R,C,I,T,M}, s, y) where {R,C,I,T,M}
+LBFGSOperator(M, x) = LBFGSOperator{M}(x)
+
+function update!(L::LBFGSOperator{M}, s, y) where M
     L.s .= s
     L.y .= y
     ys = real(dot(L.s, L.y))
@@ -47,31 +49,27 @@ function update!(L::LBFGS{R,C,I,T,M}, s, y) where {R,C,I,T,M}
     return L
 end
 
-function reset!(L::LBFGS{R,C,I,T,M}) where {R,C,I,T,M}
+function reset!(L::LBFGSOperator{M,R,I}) where {M,R,I}
     L.currmem, L.curridx = zero(I), zero(I)
     L.H = one(R)
 end
 
-import Base: *
-
-function (*)(L::LBFGS, v)
+function (*)(L::LBFGSOperator, v)
     w = similar(v)
     mul!(w, L, v)
 end
 
 # Two-loop recursion
 
-import LinearAlgebra: mul!
-
-function mul!(d::T, L::LBFGS{R,C,I,T,M}, v::T) where {R,C,I,T,M}
+function mul!(d, L::LBFGSOperator, v)
     d .= v
     idx = loop1!(d, L)
     d .*= L.H
-    d = loop2!(d, idx, L)
+    loop2!(d, idx, L)
     return d
 end
 
-function loop1!(d::T, L::LBFGS{R,C,I,T,M}) where {R,C,I,T,M}
+function loop1!(d, L::LBFGSOperator{M}) where M
     idx = L.curridx
     for i = 1:L.currmem
         L.alphas[idx] = real(dot(L.s_M[idx], d)) / L.ys_M[idx]
@@ -84,7 +82,7 @@ function loop1!(d::T, L::LBFGS{R,C,I,T,M}) where {R,C,I,T,M}
     return idx
 end
 
-function loop2!(d::T, idx::Int, L::LBFGS{R,C,I,T,M}) where {R,C,I,T,M}
+function loop2!(d, idx, L::LBFGSOperator{M}) where M
     for i = 1:L.currmem
         idx += 1
         if idx > M
@@ -94,4 +92,14 @@ function loop2!(d::T, idx::Int, L::LBFGS{R,C,I,T,M}) where {R,C,I,T,M}
         d .+= (L.alphas[idx] - beta) .* L.s_M[idx]
     end
     return d
+end
+
+struct LBFGS{M} end
+
+LBFGS(M) = LBFGS{M}()
+
+acceleration_style(::Type{<:LBFGS}) = QuasiNewtonStyle()
+
+function initialize(::LBFGS{M}, x) where M
+    return LBFGSOperator{M}(x)
 end

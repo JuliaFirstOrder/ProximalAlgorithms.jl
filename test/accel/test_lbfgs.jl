@@ -1,6 +1,6 @@
 @testset "L-BFGS ($T)" for T in [Float32, Float64, Complex{Float32}, Complex{Float64}]
     using LinearAlgebra
-    using ProximalAlgorithms: LBFGS, update!
+    using ProximalAlgorithms: LBFGS, initialize, LBFGSOperator, update!
     using RecursiveArrayTools: ArrayPartition, unpack
 
     Q = T[
@@ -103,11 +103,14 @@
     @testset "Arrays" begin
         mem = 3
         x = zeros(T, 10)
-        H = LBFGS(x, mem)
+
+        @inferred initialize(LBFGS(mem), x)
+
+        H = LBFGSOperator(mem, x)
 
         x = xs[1]
         grad = Q * x + q
-        dir = -(H * grad)
+        dir = @inferred -(H * grad)
 
         @test dir ≈ dirs_ref[1]
 
@@ -128,7 +131,7 @@
     @testset "ArrayPartition" begin
         mem = 3
         x = ArrayPartition(zeros(T, 10), zeros(T, 10))
-        H = LBFGS(x, mem)
+        H = LBFGSOperator(mem, x)
 
         x = ArrayPartition(xs[1], xs[1])
         temp = Q * unpack(x, 1) + q

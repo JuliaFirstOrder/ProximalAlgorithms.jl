@@ -15,13 +15,16 @@ function lower_bound_smoothness_constant(f, A, x)
     return lower_bound_smoothness_constant(f, A, x, grad_f_Ax)
 end
 
+# TODO: add storage for Az, grad_f_Az, as inputs
+# TODO: remove Az, grad_f_Az, from outputs
+
 function backtrack_stepsize!(
-    gamma::R, f, A, g, x, f_Ax::R, At_grad_f_Ax, y, z, g_z::R, res;
+    gamma::R, f, A, g, x, f_Ax::R, At_grad_f_Ax, y, z, g_z::R, res, Az, grad_f_Az;
     alpha = 1, minimum_gamma = 1e-7
 ) where R
     f_Az_upp = f_model(f_Ax, At_grad_f_Ax, res, alpha / gamma)
-    Az = A * z
-    grad_f_Az, f_Az = gradient(f, Az)
+    mul!(Az, A, z)
+    f_Az = gradient!(grad_f_Az, f, Az)
     tol = 10 * eps(R) * (1 + abs(f_Az))
     while f_Az > f_Az_upp + tol && gamma >= minimum_gamma
         gamma /= 2
@@ -48,7 +51,31 @@ function backtrack_stepsize!(
     y = x - gamma .* At_grad_f_Ax
     z, g_z = prox(g, y, gamma)
     return backtrack_stepsize!(
-        gamma, f, A, g, x, f_Ax, At_grad_f_Ax, y, z, g_z, x - z;
+        gamma, f, A, g, x, f_Ax, At_grad_f_Ax, y, z, g_z, x - z, Ax, grad_f_Ax;
         alpha = alpha, minimum_gamma = minimum_gamma
     )
 end
+
+# Base.@kwdef struct SmoothnessConstantEstimate
+#     f::Tf
+#     A::TA = I
+#     g::Tg
+#     x::Tx
+#     f_Ax::R
+#     At_grad_f_Ax::Tx
+#     y::Tx
+#     z::Tx
+#     Az::Tx
+#     grad_f_Az::Tx
+#     LfA::R = begin
+#         xeps = x .+ 1
+#         grad_f_Axeps, _ = gradient(f, A * xeps)
+#         return norm(A' * grad_f_Axeps - At_grad_f_Ax) / real(eltype(x))(sqrt(length(x)))
+#     end
+# end
+
+# value(sce::SmoothnessConstantEstimate) = sce.LfA
+
+# function update!(sce::SmoothnessConstantEstimate, x, f_Ax, At_grad_f_Ax)
+#     return true
+# end

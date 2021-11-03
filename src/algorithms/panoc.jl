@@ -28,7 +28,7 @@ where `f` is smooth and `A` is a linear mapping (for example, a matrix).
 - `adaptive=false`: forces the method stepsize to be adaptively adjusted.
 - `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
 - `max_backtracks=20`: maximum number of line-search backtracks.
-- `H=LBFGS(x0, 5)`: variable metric to use to compute line-search directions.
+- `directions=LBFGS(5)`: strategy to use to compute line-search directions.
 
 # References
 - [1] Stella, Themelis, Sopasakis, Patrinos, "A simple and efficient algorithm
@@ -36,19 +36,19 @@ for nonlinear model predictive control", 56th IEEE Conference on Decision
 and Control (2017).
 """
 
-Base.@kwdef struct PANOCIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
+Base.@kwdef struct PANOCIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TLf,Tgamma,D}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()
     x0::Tx
     alpha::R = real(eltype(x0))(0.95)
     beta::R = real(eltype(x0))(0.5)
-    Lf::Maybe{R} = nothing
-    gamma::Maybe{R} = Lf === nothing ? nothing : (alpha / Lf)
+    Lf::TLf = nothing
+    gamma::Tgamma = Lf === nothing ? nothing : (alpha / Lf)
     adaptive::Bool = false
     minimum_gamma::R = real(eltype(x0))(1e-7)
     max_backtracks::Int = 20
-    H::TH = LBFGS(x0, 5)
+    directions::D = LBFGS(5)
 end
 
 Base.IteratorSize(::Type{<:PANOCIteration}) = Base.IsInfinite()
@@ -65,7 +65,7 @@ Base.@kwdef mutable struct PANOCState{R,Tx,TAx,TH}
     g_z::R            # value of nonsmooth term (at z)
     res::Tx           # fixed-point residual at iterate (= x - z)
     H::TH             # variable metric
-    tau::Maybe{R} = nothing
+    tau::R = zero(gamma)
     x_prev::Tx = zero(x)
     res_prev::Tx = zero(x)
     d::Tx = zero(x)
@@ -76,6 +76,8 @@ Base.@kwdef mutable struct PANOCState{R,Tx,TAx,TH}
     grad_f_Ax_d::TAx = zero(Ax)
     At_grad_f_Ax_d::Tx = zero(x)
     z_curr::Tx = zero(x)
+    Az::TAx = similar(Ax)
+    grad_f_Az::Tx = similar(Ax)
 end
 
 f_model(iter::PANOCIteration, state::PANOCState) =
@@ -97,11 +99,23 @@ function Base.iterate(iter::PANOCIteration{R}) where {R}
 
     state = PANOCState(
         x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
-        gamma=gamma, y=y, z=z, g_z=g_z, res=x - z, H=iter.H,
+        gamma=gamma, y=y, z=z, g_z=g_z, res=x - z, H=initialize(iter.directions, x),
     )
 
     return state, state
 end
+
+set_next_direction!(::QuasiNewtonStyle, ::PANOCIteration, state::PANOCState) = mul!(state.d, state.H, -state.res)
+set_next_direction!(::NoAccelerationStyle, ::PANOCIteration, state::PANOCState) = state.d .= .-state.res
+set_next_direction!(iter::PANOCIteration, state::PANOCState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
+
+update_direction_state!(::QuasiNewtonStyle, ::PANOCIteration, state::PANOCState) = update!(state.H, state.x - state.x_prev, state.res - state.res_prev)
+update_direction_state!(::NoAccelerationStyle, ::PANOCIteration, state::PANOCState) = return
+update_direction_state!(iter::PANOCIteration, state::PANOCState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
+
+reset_direction_state!(::QuasiNewtonStyle, ::PANOCIteration, state::PANOCState) = reset!(state.H)
+reset_direction_state!(::NoAccelerationStyle, ::PANOCIteration, state::PANOCState) = return
+reset_direction_state!(iter::PANOCIteration, state::PANOCState) = reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
 function Base.iterate(
     iter::PANOCIteration{R},
@@ -115,10 +129,11 @@ function Base.iterate(
         state.gamma, state.g_z, Az, f_Az, grad_f_Az, f_Az_upp = backtrack_stepsize!(
             state.gamma, iter.f, iter.A, iter.g,
             state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.z, state.g_z, state.res,
+            state.Az, state.grad_f_Az,
             alpha = iter.alpha, minimum_gamma = iter.minimum_gamma,
         )
         if state.gamma != gamma_prev
-            reset!(state.H)
+            reset_direction_state!(iter, state)
         end
         f_Az_upp
     else
@@ -129,7 +144,7 @@ function Base.iterate(
     FBE_x = f_Az_upp + state.g_z
 
     # compute direction
-    mul!(state.d, state.H, -state.res)
+    set_next_direction!(iter, state)
 
     # store iterate and residual for metric update later on
     state.x_prev .= state.x
@@ -164,7 +179,7 @@ function Base.iterate(
 
         if FBE_x_new <= threshold
             # update metric
-            update!(state.H, state.x - state.x_prev, state.res - state.res_prev)
+            update_direction_state!(iter, state)
             state.tau = tau
             return state, state
         end
@@ -222,7 +237,7 @@ function (solver::PANOC)(x0; kwargs...)
         it,
         state.gamma,
         norm(state.res, Inf) / state.gamma,
-        (state.tau === nothing ? 0.0 : state.tau)
+        state.tau,
     )
     iter = PANOCIteration(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)

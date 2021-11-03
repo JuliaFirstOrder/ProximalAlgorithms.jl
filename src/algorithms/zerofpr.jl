@@ -29,7 +29,7 @@ where `f` is smooth and `A` is a linear mapping (for example, a matrix).
 - `adaptive=false`: forces the method stepsize to be adaptively adjusted.
 - `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
 - `max_backtracks=20`: maximum number of line-search backtracks.
-- `H=LBFGS(x0, 5)`: variable metric to use to compute line-search directions.
+- `directions=LBFGS(5)`: strategy to use to compute line-search directions.
 
 # References
 - [1] Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two
@@ -37,7 +37,7 @@ nonconvex functions: Further properties and nonmonotone line-search algorithms",
 SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
 """
 
-Base.@kwdef struct ZeroFPRIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
+Base.@kwdef struct ZeroFPRIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,D}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()
@@ -49,7 +49,7 @@ Base.@kwdef struct ZeroFPRIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C
     adaptive::Bool = false
     minimum_gamma::R = real(eltype(x0))(1e-7)
     max_backtracks::Int = 20
-    H::TH = LBFGS(x0, 5)
+    directions::D = LBFGS(5)
 end
 
 Base.IteratorSize(::Type{<:ZeroFPRIteration}) = Base.IsInfinite()
@@ -76,6 +76,8 @@ Base.@kwdef mutable struct ZeroFPRState{R,Tx,TAx,TH}
     res_xbar_prev::Maybe{Tx} = nothing
     d::Tx = zero(x)
     Ad::TAx = zero(Ax)
+    Az::TAx = similar(Ax)
+    grad_f_Az::Tx = similar(Ax)
 end
 
 f_model(iter::ZeroFPRIteration, state::ZeroFPRState) =
@@ -97,11 +99,23 @@ function Base.iterate(iter::ZeroFPRIteration{R}) where {R}
 
     state = ZeroFPRState(
         x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
-        gamma=gamma, y=y, xbar=xbar, g_xbar=g_xbar, res=x - xbar, H=iter.H,
+        gamma=gamma, y=y, xbar=xbar, g_xbar=g_xbar, res=x - xbar, H=initialize(iter.directions, x),
     )
 
     return state, state
 end
+
+set_next_direction!(::QuasiNewtonStyle, ::ZeroFPRIteration, state::ZeroFPRState) = mul!(state.d, state.H, -state.res_xbar)
+set_next_direction!(::NoAccelerationStyle, ::ZeroFPRIteration, state::ZeroFPRState) = state.d .= .-state.res
+set_next_direction!(iter::ZeroFPRIteration, state::ZeroFPRState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
+
+update_direction_state!(::QuasiNewtonStyle, ::ZeroFPRIteration, state::ZeroFPRState) = update!(state.H, state.xbar - state.xbar_prev, state.res_xbar - state.res_xbar_prev)
+update_direction_state!(::NoAccelerationStyle, ::ZeroFPRIteration, state::ZeroFPRState) = return
+update_direction_state!(iter::ZeroFPRIteration, state::ZeroFPRState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
+
+reset_direction_state!(::QuasiNewtonStyle, ::ZeroFPRIteration, state::ZeroFPRState) = reset!(state.H)
+reset_direction_state!(::NoAccelerationStyle, ::ZeroFPRIteration, state::ZeroFPRState) = return
+reset_direction_state!(iter::ZeroFPRIteration, state::ZeroFPRState) = reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
 function Base.iterate(
     iter::ZeroFPRIteration{R},
@@ -112,10 +126,11 @@ function Base.iterate(
         state.gamma, state.g_xbar, state.Axbar, f_Axbar, state.grad_f_Axbar, f_Axbar_upp = backtrack_stepsize!(
             state.gamma, iter.f, iter.A, iter.g,
             state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.xbar, state.g_xbar, state.res,
+            state.Az, state.grad_f_Az,
             alpha = iter.alpha, minimum_gamma = iter.minimum_gamma,
         )
         if state.gamma != gamma_prev
-            reset!(state.H)
+            reset_direction_state!(iter, state)
         end
         f_Axbar_upp, f_Axbar
     else
@@ -138,15 +153,12 @@ function Base.iterate(
     state.res_xbar .= state.xbar .- state.xbarbar
 
     if state.xbar_prev !== nothing
-        # update metric
-        update!(state.H, state.xbar - state.xbar_prev, state.res_xbar - state.res_xbar_prev)
-        # store vectors for next update
+        update_direction_state!(iter, state)
         copyto!(state.xbar_prev, state.xbar)
         copyto!(state.res_xbar_prev, state.res_xbar)
     end
 
-    # compute direction
-    mul!(state.d, state.H, -state.res_xbar)
+    set_next_direction!(iter, state)
 
     # Perform line-search over the FBE
     tau = R(1)

@@ -1,41 +1,22 @@
-using LinearAlgebra
+struct SimpleNesterovSequence{R} end
 
-mutable struct NesterovAcceleration{R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C}}
-    k::Int
-    s::T
+function Base.iterate(::SimpleNesterovSequence{R}, k=R(0)) where R
+    val = iszero(k) ? R(0) : (k - 1) / (k + 2)
+    return val, k + 1
 end
 
-function NesterovAcceleration(
-    x::T,
-) where {R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C}}
-    NesterovAcceleration{R,C,T}(0, zero(x))
+struct NesterovSequence{R} end
+
+function Base.iterate(::NesterovSequence{R}, thetas=(R(1), R(1))) where R
+    theta_prev, theta = thetas
+    return (theta_prev - 1) / theta, (theta, (1 + sqrt(1 + 4 * theta^2)) / 2)
 end
 
-function update!(L::NesterovAcceleration{R,C,T}, s, y) where {R,C,T}
-    L.s .= s
-    L.k += 1
-    return L
-end
+struct NesterovExtrapolation{S} end
 
-function reset!(L::NesterovAcceleration{R,C,T}) where {R,C,T}
-    L.k = 0
-end
+NesterovExtrapolation(S) = NesterovExtrapolation{S}()
+NesterovExtrapolation() = NesterovExtrapolation{SimpleNesterovSequence}()
 
-import Base: *
+acceleration_style(::Type{<:NesterovExtrapolation}) = NesterovStyle()
 
-function (*)(L::NesterovAcceleration, v)
-    w = similar(v)
-    mul!(w, L, v)
-end
-
-import LinearAlgebra: mul!
-
-function mul!(d::T, L::NesterovAcceleration{R,C,T}, v::T) where {R,C,T}
-    if L.k == 0
-        d .= 0
-    elseif L.k == 1
-        d .= v
-    else
-        d .= v .- (L.k - 1) / (L.k + 2) .* L.s
-    end
-end
+initialize(::NesterovExtrapolation{S}, x) where S = Iterators.Stateful(S{real(eltype(x))}())

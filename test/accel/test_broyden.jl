@@ -1,9 +1,8 @@
 using Test
+using LinearAlgebra
+using ProximalAlgorithms: Broyden, initialize, BroydenOperator, update!
 
 @testset "Broyden ($R)" for R in [Float32, Float64]
-    using LinearAlgebra
-    using ProximalAlgorithms: Broyden, update!
-
     H = R[
         0.63287    0.330934   -0.156908   -0.294776    0.10761;
         0.330934   0.673201    0.0459778   0.231011   -0.235265;
@@ -16,46 +15,30 @@ using Test
     n = length(l)
 
     f(x) = dot(x, H * x) / 2 + dot(x, l)
+    grad_f(x) = H * x + l
 
     x_star = -H \ l
     f_star = f(x_star)
-    norm_x_star = norm(x_star)
 
     Lip = opnorm(H)
     gamma = 1 / Lip
-    x = zeros(n)
-    res = zeros(n)
-    x_prev = zeros(n)
-    res_prev = zeros(n)
+    x = zeros(R, n)
 
-    acc = Broyden(x)
+    @inferred initialize(Broyden(), x)
 
-    mul!(res, H, x)
-    res .+= l
-    res .*= gamma
+    acc = BroydenOperator(x)
 
-    d = acc * res
+    grad_f_x = grad_f(x)
 
     for it = 1:10
-        # store iterate and residual for the operator update later
-        res_prev .= res
-        x_prev .= x
+        d = @inferred acc * grad_f_x
+        x = x - d
 
-        # compute accelerated direction
-        mul!(d, acc, res)
+        grad_f_x_prev = grad_f_x
+        grad_f_x = grad_f(x)
 
-        # update iterate
-        x .-= d
-
-        # compute new residual
-        mul!(res, H, x)
-        res .+= l
-        res .*= gamma
-
-        # update operator
-        update!(acc, x - x_prev, res - res_prev)
+        update!(acc, -d, grad_f_x - grad_f_x_prev)
     end
 
     @test f(x) <= f_star + (1 + abs(f_star)) * sqrt(eps(R))
-
 end

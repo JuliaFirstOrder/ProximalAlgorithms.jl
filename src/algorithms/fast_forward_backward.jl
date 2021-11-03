@@ -38,13 +38,13 @@ for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
 pp. 183-202 (2009).
 """
 
-Base.@kwdef struct FastForwardBackwardIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
+Base.@kwdef struct FastForwardBackwardIteration{R,Tx,Tf,Tg,TLf,Tgamma}
     f::Tf = Zero()
     g::Tg = Zero()
     x0::Tx
     m::R = real(eltype(x0))(0)
-    Lf::Maybe{R} = nothing
-    gamma::Maybe{R} = Lf === nothing ? nothing : (1 / Lf)
+    Lf::TLf = nothing
+    gamma::Tgamma = Lf === nothing ? nothing : (1 / Lf)
     adaptive::Bool = false
     minimum_gamma::R = real(eltype(x0))(1e-7)
     theta::R = real(eltype(x0))(1)
@@ -63,26 +63,21 @@ Base.@kwdef mutable struct FastForwardBackwardState{R,Tx}
     res::Tx           # fixed-point residual at iterate (= z - x)
     theta::R          # acceleration sequence
     z_prev::Tx = copy(x)
+    Az::Tx=similar(x) # TODO not needed
+    grad_f_Az::Tx=similar(x)
 end
 
-function Base.iterate(iter::FastForwardBackwardIteration{R}) where {R}
+function Base.iterate(iter::FastForwardBackwardIteration)
     x = copy(iter.x0)
     grad_f_x, f_x = gradient(iter.f, x)
-
-    gamma = iter.gamma
-    if gamma === nothing
-        gamma = 1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x)
-    end
-
+    gamma = iter.gamma === nothing ? 1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x) : iter.gamma
     y = x - gamma .* grad_f_x
     z, g_z = prox(iter.g, y, gamma)
-
     state = FastForwardBackwardState(
         gamma=gamma, theta=iter.theta,
         x=x, f_x=f_x, grad_f_x=grad_f_x,
         y=y, z=z, g_z=g_z, res=x - z,
     )
-
     return state, state
 end
 
@@ -98,6 +93,7 @@ function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardB
         gamma, state.g_z = backtrack_stepsize!(
             state.gamma, iter.f, I, iter.g,
             state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res,
+            state.Az, state.grad_f_Az,
             minimum_gamma = iter.minimum_gamma,
         )
         gamma

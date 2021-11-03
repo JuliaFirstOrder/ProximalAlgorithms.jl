@@ -111,8 +111,8 @@ Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL}
     y0::Ty
     beta_f::R = real(eltype(x0))(0)
     beta_l::R = real(eltype(x0))(0)
-    theta = 1
-    mu = 1
+    theta::R = real(eltype(x0))(1)
+    mu::R = real(eltype(x0))(1)
     lambda::R = real(eltype(x0))(1)
     gamma::Tuple{R, R} = begin
         if lambda != 1
