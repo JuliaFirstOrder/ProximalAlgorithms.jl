@@ -120,6 +120,28 @@
 
     end
 
+    @testset "NOLIP" begin
+
+        # NOLIP/Nonadaptive
+
+        x0 = zeros(T, n)
+        solver = ProximalAlgorithms.NOLIP(tol = TOL, verbose = true)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = Lf)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+
+        ## NOLIP/Adaptive
+
+        x0 = zeros(T, n)
+        solver = ProximalAlgorithms.NOLIP(adaptive = true, tol = TOL, verbose = true)
+        x, it = solver(x0, f = f, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+
+    end
+
     @testset "DouglasRachford" begin
 
         # Douglas-Rachford

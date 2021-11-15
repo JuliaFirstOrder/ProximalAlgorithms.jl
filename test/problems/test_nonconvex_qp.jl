@@ -28,6 +28,16 @@ using Test
         @test x0 == x0_backup
     end
 
+    @testset "NOLIP" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.NOLIP()
+        x, it = solver(x0, f = f, g = g)
+        z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
+        @test norm(x - z, Inf) / gamma <= solver.tol
+        @test x0 == x0_backup
+    end
+
     @testset "ZeroFPR" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
@@ -76,6 +86,16 @@ end
             x0 = zeros(T, n)
             x0_backup = copy(x0)
             solver = ProximalAlgorithms.PANOC(tol = TOL)
+            x, it = solver(x0, f = f, g = g)
+            z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
+            @test norm(x - z, Inf) / gamma <= solver.tol
+            @test x0 == x0_backup
+        end
+
+        @testset "NOLIP" begin
+            x0 = zeros(T, n)
+            x0_backup = copy(x0)
+            solver = ProximalAlgorithms.NOLIP(tol = TOL)
             x, it = solver(x0, f = f, g = g)
             z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
             @test norm(x - z, Inf) / gamma <= solver.tol
