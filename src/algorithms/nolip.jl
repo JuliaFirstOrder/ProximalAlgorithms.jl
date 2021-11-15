@@ -92,10 +92,20 @@ function Base.iterate(iter::NOLIPIteration{R}) where {R}
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
     z, g_z = prox(iter.g, y, gamma)
+    res = x - z
+
+    if (iter.gamma === nothing || iter.adaptive == true)
+        gamma_prev = gamma
+        gamma, g_z, Az, f_Az, grad_f_Az, f_Az_upp = backtrack_stepsize!(
+            gamma, iter.f, iter.A, iter.g,
+            x, f_Ax, At_grad_f_Ax, y, z, g_z, res,
+            alpha = iter.alpha, minimum_gamma = iter.minimum_gamma,
+        )
+    end
 
     state = NOLIPState(
         x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
-        gamma=gamma, y=y, z=z, g_z=g_z, res=x - z, H=iter.H,
+        gamma=gamma, y=y, z=z, g_z=g_z, res=res, H=iter.H,
     )
 
     return state, state
@@ -108,99 +118,74 @@ function Base.iterate(
     Az, f_Az, grad_f_Az, At_grad_f_Az = nothing, nothing, nothing, nothing
     a, b, c = nothing, nothing, nothing
 
-    f_Az_upp = if (iter.gamma === nothing || iter.adaptive == true)
-        gamma_prev = state.gamma
-        state.gamma, state.g_z, Az, f_Az, grad_f_Az, f_Az_upp = backtrack_stepsize!(
-            state.gamma, iter.f, iter.A, iter.g,
-            state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.z, state.g_z, state.res,
-            alpha = iter.alpha, minimum_gamma = iter.minimum_gamma,
-        )
-        if state.gamma != gamma_prev
-            reset!(state.H)
-        end
-        f_Az_upp
-    else
-        f_model(iter, state)
-    end
-
-    # compute FBE
-    FBE_x = f_Az_upp + state.g_z
-
-    # compute direction
-    mul!(state.d, state.H, -state.res)
-
     # store iterate and residual for metric update later on
     state.x_prev .= state.x
     state.res_prev .= state.res
 
-    # backtrack tau 1 → 0
-    tau = R(1)
-    mul!(state.Ad, iter.A, state.d)
-
-    state.x_d .= state.x .+ state.d
-    state.Ax_d .= state.Ax .+ state.Ad
-    state.f_Ax_d = gradient!(state.grad_f_Ax_d, iter.f, state.Ax_d)
-    mul!(state.At_grad_f_Ax_d, adjoint(iter.A), state.grad_f_Ax_d)
-
-    state.x .= state.x_d
-    state.Ax .= state.Ax_d
-    state.f_Ax = state.f_Ax_d
-    state.grad_f_Ax .= state.grad_f_Ax_d
-    state.At_grad_f_Ax .= state.At_grad_f_Ax_d
-
-    copyto!(state.z_curr, state.z)
+    # compute FBE
+    FBE_x = f_model(iter, state) + state.g_z
 
     sigma = iter.beta * (0.5 / state.gamma) * (1 - iter.alpha)
     tol = 10 * eps(R) * (1 + abs(FBE_x))
     threshold = FBE_x - sigma * norm(state.res)^2 + tol
 
-    for _ in 1:iter.max_backtracks
+    tau_backtracks = 0
+    can_update_direction = true
+
+    while true
+
+        if can_update_direction
+            # compute direction
+            mul!(state.d, state.H, -state.res)
+            # backtrack tau 1 → 0
+            state.tau = R(1)
+            state.x .= state.x_prev .+ state.d
+        else
+            state.x .= (1 - state.tau) * (state.x_prev .- state.res_prev) + state.tau * (state.x_prev .+ state.d)
+        end
+
+        mul!(state.Ax, iter.A, state.x)
+        state.f_Ax = gradient!(state.grad_f_Ax, iter.f, state.Ax)
+        mul!(state.At_grad_f_Ax, adjoint(iter.A), state.grad_f_Ax)
+
         state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
         state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
         state.res .= state.x .- state.z
-        FBE_x_new = f_model(iter, state) + state.g_z
 
-        if FBE_x_new <= threshold
+        f_Az_upp = f_model(iter, state)
+
+        if (iter.gamma === nothing || iter.adaptive == true)
+            Az = iter.A * state.z
+            grad_f_Az, f_Az = gradient(iter.f, Az)
+            tol = 10 * eps(R) * (1 + abs(f_Az))
+            if f_Az > f_Az_upp + tol && state.gamma >= iter.minimum_gamma
+                state.gamma /= 2
+                if state.gamma < iter.minimum_gamma
+                    @warn "stepsize `gamma` became too small ($(state.gamma))"
+                end
+                can_update_direction = true
+                reset!(state.H)
+                continue
+            end
+        end
+
+        FBE_x = f_Az_upp + state.g_z
+        if FBE_x <= threshold
             # update metric
             update!(state.H, state.x - state.x_prev, state.res - state.res_prev)
-            state.tau = tau
             return state, state
-        end
-
-        if Az === nothing
-            Az = iter.A * state.z_curr
-        end
-
-        tau *= 0.5
-        state.x .= tau .* state.x_d .+ (1 - tau) .* state.z_curr
-        state.Ax .= tau .* state.Ax_d .+ (1 - tau) .* Az
-
-        if ProximalOperators.is_quadratic(iter.f)
-            # in case f is quadratic, we can compute its value and gradient
-            # along a line using interpolation and linear combinations
-            # this allows saving operations
-            if grad_f_Az === nothing
-                grad_f_Az, f_Az = gradient(iter.f, Az)
-            end
-            if At_grad_f_Az === nothing
-                At_grad_f_Az = iter.A' * grad_f_Az
-                c = f_Az
-                b = real(dot(state.Ax_d .- Az, grad_f_Az))
-                a = state.f_Ax_d - b - c
-            end
-            state.f_Ax = a * tau^2 + b * tau + c
-            state.grad_f_Ax .= tau .* state.grad_f_Ax_d .+ (1 - tau) .* grad_f_Az
-            state.At_grad_f_Ax .= tau .* state.At_grad_f_Ax_d .+ (1 - tau) .* At_grad_f_Az
         else
-            # otherwise, in the general case where f is only smooth, we compute
-            # one gradient and matvec per backtracking step
-            state.f_Ax = gradient!(state.grad_f_Ax, iter.f, state.Ax)
-            mul!(state.At_grad_f_Ax, adjoint(iter.A), state.grad_f_Ax)
+            state.tau *= 0.5
+            if tau_backtracks >= iter.max_backtracks
+                @warn "parameter `tau` became too small ($(state.tau)), stopping the iterations"
+                return nothing
+            end
+            tau_backtracks += 1
+            can_update_direction = false
         end
+
     end
 
-    @warn "stepsize `tau` became too small ($(tau)), stopping the iterations"
-    return nothing
 end
 
 # Solver
