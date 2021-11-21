@@ -111,7 +111,7 @@ function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where {R}
     update_direction_state!(iter, state)
 
     a, b, c = R(0), R(0), R(0)
-    u0, u1 = nothing, nothing
+    u0, u1 = state.xbar_prev, state.u
 
     for k in 1:iter.max_backtracks
         if iter.dre_sign * DRE(state) <= iter.dre_sign * DRE_curr - iter.c / iter.gamma * norm(state.res_prev)^2
