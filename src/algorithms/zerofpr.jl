@@ -46,7 +46,7 @@ Base.@kwdef struct ZeroFPRIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C
     beta::R = real(eltype(x0))(0.5)
     Lf::Maybe{R} = nothing
     gamma::Maybe{R} = Lf === nothing ? nothing : (alpha / Lf)
-    adaptive::Bool = false
+    adaptive::Bool = gamma === nothing
     minimum_gamma::R = real(eltype(x0))(1e-7)
     max_backtracks::Int = 20
     directions::D = LBFGS(5)
@@ -66,18 +66,17 @@ Base.@kwdef mutable struct ZeroFPRState{R,Tx,TAx,TH}
     g_xbar::R         # value of nonsmooth term (at xbar)
     res::Tx           # fixed-point residual at iterate (= x - xbar)
     H::TH             # variable metric
-    tau::Maybe{R} = nothing
-    Axbar::TAx = zero(Ax)
-    grad_f_Axbar::TAx = zero(Ax)
-    At_grad_f_Axbar::Tx = zero(x)
-    xbarbar::Tx = zero(x)
-    res_xbar::Tx = zero(x)
-    xbar_prev::Maybe{Tx} = nothing
-    res_xbar_prev::Maybe{Tx} = nothing
-    d::Tx = zero(x)
-    Ad::TAx = zero(Ax)
-    Az::TAx = similar(Ax)
-    grad_f_Az::Tx = similar(Ax)
+    tau::R = zero(gamma)
+    Axbar::TAx = similar(Ax)
+    grad_f_Axbar::TAx = similar(Ax)
+    At_grad_f_Axbar::Tx = similar(x)
+    xbarbar::Tx = similar(x)
+    res_xbar::Tx = similar(x)
+    xbar_prev::Tx = similar(x)
+    res_xbar_prev::Tx = similar(x)
+    is_prev_set::Bool = false
+    d::Tx = similar(x)
+    Ad::TAx = similar(Ax)
 end
 
 f_model(iter::ZeroFPRIteration, state::ZeroFPRState) =
@@ -87,21 +86,14 @@ function Base.iterate(iter::ZeroFPRIteration{R}) where {R}
     x = copy(iter.x0)
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
-
-    gamma = iter.gamma
-    if gamma === nothing
-        gamma = iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax)
-    end
-
+    gamma = iter.gamma === nothing ? iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) : iter.gamma
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
     xbar, g_xbar = prox(iter.g, y, gamma)
-
     state = ZeroFPRState(
         x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
         gamma=gamma, y=y, xbar=xbar, g_xbar=g_xbar, res=x - xbar, H=initialize(iter.directions, x),
     )
-
     return state, state
 end
 
@@ -121,12 +113,12 @@ function Base.iterate(
     iter::ZeroFPRIteration{R},
     state::ZeroFPRState{R,Tx,TAx},
 ) where {R,Tx,TAx}
-    f_Axbar_upp, f_Axbar = if iter.gamma === nothing || iter.adaptive == true
+    f_Axbar_upp, f_Axbar = if iter.adaptive == true
         gamma_prev = state.gamma
-        state.gamma, state.g_xbar, state.Axbar, f_Axbar, state.grad_f_Axbar, f_Axbar_upp = backtrack_stepsize!(
+        state.gamma, state.g_xbar, f_Axbar, f_Axbar_upp = backtrack_stepsize!(
             state.gamma, iter.f, iter.A, iter.g,
             state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.xbar, state.g_xbar, state.res,
-            state.Az, state.grad_f_Az,
+            state.Axbar, state.grad_f_Axbar,
             alpha = iter.alpha, minimum_gamma = iter.minimum_gamma,
         )
         if state.gamma != gamma_prev
@@ -138,11 +130,6 @@ function Base.iterate(
         f_model(iter, state), gradient!(state.grad_f_Axbar, iter.f, state.Axbar)
     end
 
-    if state.xbar_prev === nothing
-        state.xbar_prev = zero(state.x)
-        state.res_xbar_prev = zero(state.x)
-    end
-
     # compute FBE
     FBE_x = f_Axbar_upp + state.g_xbar
 
@@ -152,11 +139,13 @@ function Base.iterate(
     g_xbarbar = prox!(state.xbarbar, iter.g, state.y, state.gamma)
     state.res_xbar .= state.xbar .- state.xbarbar
 
-    if state.xbar_prev !== nothing
+    if state.is_prev_set == true
         update_direction_state!(iter, state)
-        copyto!(state.xbar_prev, state.xbar)
-        copyto!(state.res_xbar_prev, state.res_xbar)
     end
+
+    copyto!(state.xbar_prev, state.xbar)
+    copyto!(state.res_xbar_prev, state.res_xbar)
+    state.is_prev_set = true
 
     set_next_direction!(iter, state)
 
@@ -208,7 +197,7 @@ function (solver::ZeroFPR)(x0; kwargs...)
         it,
         state.gamma,
         norm(state.res, Inf) / state.gamma,
-        (state.tau === nothing ? 0.0 : state.tau)
+        state.tau,
     )
     iter = ZeroFPRIteration(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)

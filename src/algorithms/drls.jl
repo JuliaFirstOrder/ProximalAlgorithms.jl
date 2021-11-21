@@ -51,16 +51,20 @@ Base.@kwdef mutable struct DRLSState{R,Tx,TH}
     v::Tx
     w::Tx
     res::Tx
-    res_prev::Tx = zero(x)
+    res_prev::Tx = similar(x)
     xbar::Tx
-    xbar_prev::Tx = zero(x)
-    d::Tx = zero(x)
-    x_d::Tx = zero(x)
+    xbar_prev::Tx = similar(x)
+    d::Tx = similar(x)
+    x_d::Tx = similar(x)
     gamma::R
     f_u::R
     g_v::R
     H::TH
     tau::R = zero(gamma)
+    u0::Tx = similar(x)
+    u1::Tx = similar(x)
+    temp_x1::Tx = similar(x)
+    temp_x2::Tx = similar(x)
 end
 
 DRE(f_u::Number, g_v::Number, x, u, res, gamma) = f_u + g_v - real(dot(x - u, res)) / gamma + 1 / (2 * gamma) * norm(res)^2
@@ -111,7 +115,6 @@ function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where {R}
     update_direction_state!(iter, state)
 
     a, b, c = R(0), R(0), R(0)
-    u0, u1 = state.xbar_prev, state.u
 
     for k in 1:iter.max_backtracks
         if iter.dre_sign * DRE(state) <= iter.dre_sign * DRE_curr - iter.c / iter.gamma * norm(state.res_prev)^2
@@ -122,15 +125,16 @@ function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where {R}
         state.x .= state.tau .* state.x_d .+ (1 - state.tau) .* state.xbar_prev
 
         if k == 1 && ProximalOperators.is_generalized_quadratic(iter.f)
-            u1, f_u1 = copy(state.u), state.f_u
-            u0, f_u0 = prox(iter.f, state.xbar_prev, iter.gamma)
-            c = f_u0
-            b = dot(state.xbar_prev - state.x_d, state.xbar_prev - u0) / iter.gamma
-            a = f_u1 - b - c
+            copyto!(state.u1, state.u)
+            c = prox!(state.u0, iter.f, state.xbar_prev, iter.gamma)
+            state.temp_x1 .= state.xbar_prev .- state.x_d
+            state.temp_x2 .= state.xbar_prev .- state.u0
+            b = dot(state.temp_x1, state.temp_x2) / iter.gamma
+            a = state.f_u - b - c
         end
 
         if ProximalOperators.is_generalized_quadratic(iter.f)
-            state.u .= state.tau .* u1 .+ (1 - state.tau) .* u0
+            state.u .= state.tau .* state.u1 .+ (1 - state.tau) .* state.u0
             state.f_u = a * state.tau ^ 2 + b * state.tau + c
         else
             state.f_u = prox!(state.u, iter.f, state.x, iter.gamma)

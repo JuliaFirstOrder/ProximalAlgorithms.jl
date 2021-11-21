@@ -8,6 +8,11 @@ struct ComposeAffine <: ProximableFunction
     b
 end
 
+function (g::ComposeAffine)(x)
+    res = g.A * x .+ g.b
+    return g.f(res)
+end
+
 function compose_affine_gradient!(y, g::ComposeAffine, x)
     res = g.A * x .+ g.b
     gradres, v = gradient(g.f, res)

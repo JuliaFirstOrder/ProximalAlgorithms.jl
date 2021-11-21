@@ -45,7 +45,7 @@ Base.@kwdef struct PANOCIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},
     beta::R = real(eltype(x0))(0.5)
     Lf::TLf = nothing
     gamma::Tgamma = Lf === nothing ? nothing : (alpha / Lf)
-    adaptive::Bool = false
+    adaptive::Bool = gamma === nothing
     minimum_gamma::R = real(eltype(x0))(1e-7)
     max_backtracks::Int = 20
     directions::D = LBFGS(5)
@@ -66,18 +66,19 @@ Base.@kwdef mutable struct PANOCState{R,Tx,TAx,TH}
     res::Tx           # fixed-point residual at iterate (= x - z)
     H::TH             # variable metric
     tau::R = zero(gamma)
-    x_prev::Tx = zero(x)
-    res_prev::Tx = zero(x)
-    d::Tx = zero(x)
-    Ad::TAx = zero(Ax)
-    x_d::Tx = zero(x)
-    Ax_d::TAx = zero(Ax)
+    x_prev::Tx = similar(x)
+    res_prev::Tx = similar(x)
+    d::Tx = similar(x)
+    Ad::TAx = similar(Ax)
+    x_d::Tx = similar(x)
+    Ax_d::TAx = similar(Ax)
     f_Ax_d::R = zero(real(eltype(x)))
-    grad_f_Ax_d::TAx = zero(Ax)
-    At_grad_f_Ax_d::Tx = zero(x)
-    z_curr::Tx = zero(x)
+    grad_f_Ax_d::TAx = similar(Ax)
+    At_grad_f_Ax_d::Tx = similar(x)
+    z_curr::Tx = similar(x)
     Az::TAx = similar(Ax)
-    grad_f_Az::Tx = similar(Ax)
+    grad_f_Az::TAx = similar(Ax)
+    At_grad_f_Az::Tx = similar(x)
 end
 
 f_model(iter::PANOCIteration, state::PANOCState) =
@@ -87,21 +88,14 @@ function Base.iterate(iter::PANOCIteration{R}) where {R}
     x = copy(iter.x0)
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
-
-    gamma = iter.gamma
-    if gamma === nothing
-        gamma = iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax)
-    end
-
+    gamma = iter.gamma === nothing ? iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) : iter.gamma
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
     z, g_z = prox(iter.g, y, gamma)
-
     state = PANOCState(
         x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
         gamma=gamma, y=y, z=z, g_z=g_z, res=x - z, H=initialize(iter.directions, x),
     )
-
     return state, state
 end
 
@@ -121,12 +115,11 @@ function Base.iterate(
     iter::PANOCIteration{R},
     state::PANOCState{R,Tx,TAx},
 ) where {R,Tx,TAx}
-    Az, f_Az, grad_f_Az, At_grad_f_Az = nothing, nothing, nothing, nothing
-    a, b, c = nothing, nothing, nothing
+    f_Az, a, b, c = R(Inf), R(Inf), R(Inf), R(Inf)
 
-    f_Az_upp = if (iter.gamma === nothing || iter.adaptive == true)
+    f_Az_upp = if iter.adaptive == true
         gamma_prev = state.gamma
-        state.gamma, state.g_z, Az, f_Az, grad_f_Az, f_Az_upp = backtrack_stepsize!(
+        state.gamma, state.g_z, f_Az, f_Az_upp = backtrack_stepsize!(
             state.gamma, iter.f, iter.A, iter.g,
             state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.z, state.g_z, state.res,
             state.Az, state.grad_f_Az,
@@ -159,13 +152,12 @@ function Base.iterate(
     state.f_Ax_d = gradient!(state.grad_f_Ax_d, iter.f, state.Ax_d)
     mul!(state.At_grad_f_Ax_d, adjoint(iter.A), state.grad_f_Ax_d)
 
-    state.x .= state.x_d
-    state.Ax .= state.Ax_d
-    state.f_Ax = state.f_Ax_d
-    state.grad_f_Ax .= state.grad_f_Ax_d
-    state.At_grad_f_Ax .= state.At_grad_f_Ax_d
-
+    copyto!(state.x, state.x_d)
+    copyto!(state.Ax, state.Ax_d)
+    copyto!(state.grad_f_Ax, state.grad_f_Ax_d)
+    copyto!(state.At_grad_f_Ax, state.At_grad_f_Ax_d)
     copyto!(state.z_curr, state.z)
+    state.f_Ax = state.f_Ax_d
 
     sigma = iter.beta * (0.5 / state.gamma) * (1 - iter.alpha)
     tol = 10 * eps(R) * (1 + abs(FBE_x))
@@ -184,30 +176,30 @@ function Base.iterate(
             return state, state
         end
 
-        if Az === nothing
-            Az = iter.A * state.z_curr
+        if isinf(f_Az)
+            mul!(state.Az, iter.A, state.z_curr)
         end
 
         tau *= 0.5
         state.x .= tau .* state.x_d .+ (1 - tau) .* state.z_curr
-        state.Ax .= tau .* state.Ax_d .+ (1 - tau) .* Az
+        state.Ax .= tau .* state.Ax_d .+ (1 - tau) .* state.Az
 
         if ProximalOperators.is_quadratic(iter.f)
             # in case f is quadratic, we can compute its value and gradient
             # along a line using interpolation and linear combinations
             # this allows saving operations
-            if grad_f_Az === nothing
-                grad_f_Az, f_Az = gradient(iter.f, Az)
+            if isinf(f_Az)
+                f_Az = gradient!(state.grad_f_Az, iter.f, state.Az)
             end
-            if At_grad_f_Az === nothing
-                At_grad_f_Az = iter.A' * grad_f_Az
+            if isinf(c)
+                mul!(state.At_grad_f_Az, iter.A', state.grad_f_Az)
                 c = f_Az
-                b = real(dot(state.Ax_d .- Az, grad_f_Az))
+                b = real(dot(state.Ax_d, state.grad_f_Az)) - real(dot(state.Az, state.grad_f_Az))
                 a = state.f_Ax_d - b - c
             end
             state.f_Ax = a * tau^2 + b * tau + c
-            state.grad_f_Ax .= tau .* state.grad_f_Ax_d .+ (1 - tau) .* grad_f_Az
-            state.At_grad_f_Ax .= tau .* state.At_grad_f_Ax_d .+ (1 - tau) .* At_grad_f_Az
+            state.grad_f_Ax .= tau .* state.grad_f_Ax_d .+ (1 - tau) .* state.grad_f_Az
+            state.At_grad_f_Ax .= tau .* state.At_grad_f_Ax_d .+ (1 - tau) .* state.At_grad_f_Az
         else
             # otherwise, in the general case where f is only smooth, we compute
             # one gradient and matvec per backtracking step

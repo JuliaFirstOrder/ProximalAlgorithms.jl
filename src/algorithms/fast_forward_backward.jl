@@ -45,7 +45,7 @@ Base.@kwdef struct FastForwardBackwardIteration{R,Tx,Tf,Tg,TLf,Tgamma}
     m::R = real(eltype(x0))(0)
     Lf::TLf = nothing
     gamma::Tgamma = Lf === nothing ? nothing : (1 / Lf)
-    adaptive::Bool = false
+    adaptive::Bool = gamma === nothing
     minimum_gamma::R = real(eltype(x0))(1e-7)
     theta::R = real(eltype(x0))(1)
 end
@@ -63,8 +63,6 @@ Base.@kwdef mutable struct FastForwardBackwardState{R,Tx}
     res::Tx           # fixed-point residual at iterate (= z - x)
     theta::R          # acceleration sequence
     z_prev::Tx = copy(x)
-    Az::Tx=similar(x) # TODO not needed
-    grad_f_Az::Tx=similar(x)
 end
 
 function Base.iterate(iter::FastForwardBackwardIteration)
@@ -89,11 +87,10 @@ function update_theta(prev_theta, prev_gamma, gamma, m=0)
 end
 
 function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardBackwardState{R,Tx}) where {R,Tx}
-    gamma = if iter.gamma === nothing || iter.adaptive == true
+    gamma = if iter.adaptive == true
         gamma, state.g_z = backtrack_stepsize!(
-            state.gamma, iter.f, I, iter.g,
-            state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res,
-            state.Az, state.grad_f_Az,
+            state.gamma, iter.f, nothing, iter.g,
+            state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res, state.z, nothing,
             minimum_gamma = iter.minimum_gamma,
         )
         gamma

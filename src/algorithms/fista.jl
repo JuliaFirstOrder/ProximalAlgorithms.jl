@@ -127,5 +127,5 @@ function (solver::SFISTA)(y0; kwargs...)
     return state_final.y, num_iters
 end
 
-SFISTA(; maxit=1000, tol=1e-6, termination_type="", verbose=false, freq=(maxit < Inf ? Int(maxit/100) : 100), kwargs...) =
+SFISTA(; maxit=10_000, tol=1e-6, termination_type="", verbose=false, freq=(maxit < Inf ? Int(maxit/100) : 100), kwargs...) =
     SFISTA(maxit, tol, termination_type, verbose, freq, kwargs)

@@ -101,7 +101,7 @@ cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
 pp. 667-681 (2013).
 """
 
-Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL}
+Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL,Ttheta,Tmu}
     f::Tf = Zero()
     g::Tg = Zero()
     h::Th = Zero()
@@ -111,8 +111,8 @@ Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL}
     y0::Ty
     beta_f::R = real(eltype(x0))(0)
     beta_l::R = real(eltype(x0))(0)
-    theta::R = real(eltype(x0))(1)
-    mu::R = real(eltype(x0))(1)
+    theta::Ttheta = real(eltype(x0))(1)
+    mu::Tmu = real(eltype(x0))(1)
     lambda::R = real(eltype(x0))(1)
     gamma::Tuple{R, R} = begin
         if lambda != 1
