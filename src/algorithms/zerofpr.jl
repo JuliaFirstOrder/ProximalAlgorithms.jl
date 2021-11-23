@@ -37,7 +37,7 @@ nonconvex functions: Further properties and nonmonotone line-search algorithms",
 SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
 """
 
-Base.@kwdef struct ZeroFPRIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,D}
+Base.@kwdef struct ZeroFPRIteration{R,Tx,Tf,TA,Tg,D}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()

@@ -27,7 +27,7 @@ function drls_C(f, muf, Lf, gamma, lambda)
     return (lambda / ((1 + a)^2) * ((2 - lambda) / 2 - a * m))
 end
 
-Base.@kwdef struct DRLSIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg,Tmuf,TLf,D}
+Base.@kwdef struct DRLSIteration{R,Tx,Tf,Tg,Tmuf,TLf,D}
     f::Tf = Zero()
     g::Tg = Zero()
     x0::Tx
@@ -129,7 +129,7 @@ function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where {R}
             c = prox!(state.u0, iter.f, state.xbar_prev, iter.gamma)
             state.temp_x1 .= state.xbar_prev .- state.x_d
             state.temp_x2 .= state.xbar_prev .- state.u0
-            b = dot(state.temp_x1, state.temp_x2) / iter.gamma
+            b = real(dot(state.temp_x1, state.temp_x2)) / iter.gamma
             a = state.f_u - b - c
         end
 

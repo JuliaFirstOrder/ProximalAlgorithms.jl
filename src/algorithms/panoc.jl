@@ -36,7 +36,7 @@ for nonlinear model predictive control", 56th IEEE Conference on Decision
 and Control (2017).
 """
 
-Base.@kwdef struct PANOCIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TLf,Tgamma,D}
+Base.@kwdef struct PANOCIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()
