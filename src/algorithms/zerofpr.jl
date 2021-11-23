@@ -79,10 +79,9 @@ Base.@kwdef mutable struct ZeroFPRState{R,Tx,TAx,TH}
     Ad::TAx = similar(Ax)
 end
 
-f_model(iter::ZeroFPRIteration, state::ZeroFPRState) =
-    f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
+f_model(iter::ZeroFPRIteration, state::ZeroFPRState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
 
-function Base.iterate(iter::ZeroFPRIteration{R}) where {R}
+function Base.iterate(iter::ZeroFPRIteration{R}) where R
     x = copy(iter.x0)
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
@@ -109,10 +108,7 @@ reset_direction_state!(::QuasiNewtonStyle, ::ZeroFPRIteration, state::ZeroFPRSta
 reset_direction_state!(::NoAccelerationStyle, ::ZeroFPRIteration, state::ZeroFPRState) = return
 reset_direction_state!(iter::ZeroFPRIteration, state::ZeroFPRState) = reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-function Base.iterate(
-    iter::ZeroFPRIteration{R},
-    state::ZeroFPRState{R,Tx,TAx},
-) where {R,Tx,TAx}
+function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where R
     f_Axbar_upp, f_Axbar = if iter.adaptive == true
         gamma_prev = state.gamma
         state.gamma, state.g_xbar, f_Axbar, f_Axbar_upp = backtrack_stepsize!(

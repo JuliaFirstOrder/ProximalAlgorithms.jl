@@ -95,7 +95,7 @@ update_direction_state!(::NesterovStyle, ::DRLSIteration, state::DRLSState) = re
 update_direction_state!(::NoAccelerationStyle, ::DRLSIteration, state::DRLSState) = return
 update_direction_state!(iter::DRLSIteration, state::DRLSState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where {R}
+function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where R
     DRE_curr = DRE(state)
 
     set_next_direction!(iter, state)

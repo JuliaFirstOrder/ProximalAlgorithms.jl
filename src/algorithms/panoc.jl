@@ -81,10 +81,9 @@ Base.@kwdef mutable struct PANOCState{R,Tx,TAx,TH}
     At_grad_f_Az::Tx = similar(x)
 end
 
-f_model(iter::PANOCIteration, state::PANOCState) =
-    f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
+f_model(iter::PANOCIteration, state::PANOCState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
 
-function Base.iterate(iter::PANOCIteration{R}) where {R}
+function Base.iterate(iter::PANOCIteration{R}) where R
     x = copy(iter.x0)
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
@@ -111,10 +110,7 @@ reset_direction_state!(::QuasiNewtonStyle, ::PANOCIteration, state::PANOCState) 
 reset_direction_state!(::NoAccelerationStyle, ::PANOCIteration, state::PANOCState) = return
 reset_direction_state!(iter::PANOCIteration, state::PANOCState) = reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-function Base.iterate(
-    iter::PANOCIteration{R},
-    state::PANOCState{R,Tx,TAx},
-) where {R,Tx,TAx}
+function Base.iterate(iter::PANOCIteration{R}, state::PANOCState) where R
     f_Az, a, b, c = R(Inf), R(Inf), R(Inf), R(Inf)
 
     f_Az_upp = if iter.adaptive == true
