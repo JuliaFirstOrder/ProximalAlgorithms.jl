@@ -37,15 +37,15 @@ nonconvex functions: Further properties and nonmonotone line-search algorithms",
 SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
 """
 
-Base.@kwdef struct ZeroFPRIteration{R,Tx,Tf,TA,Tg,D}
+Base.@kwdef struct ZeroFPRIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()
     x0::Tx
     alpha::R = real(eltype(x0))(0.95)
     beta::R = real(eltype(x0))(0.5)
-    Lf::Maybe{R} = nothing
-    gamma::Maybe{R} = Lf === nothing ? nothing : (alpha / Lf)
+    Lf::TLf = nothing
+    gamma::Tgamma = Lf === nothing ? nothing : (alpha / Lf)
     adaptive::Bool = gamma === nothing
     minimum_gamma::R = real(eltype(x0))(1e-7)
     max_backtracks::Int = 20
