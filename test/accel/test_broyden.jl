@@ -1,6 +1,6 @@
 using Test
 using LinearAlgebra
-using ProximalAlgorithms: Broyden, initialize, BroydenOperator, update!
+using ProximalAlgorithms: Broyden, initialize, BroydenOperator, update!, reset!
 
 @testset "Broyden ($R)" for R in [Float32, Float64]
     H = R[
@@ -41,4 +41,8 @@ using ProximalAlgorithms: Broyden, initialize, BroydenOperator, update!
     end
 
     @test f(x) <= f_star + (1 + abs(f_star)) * sqrt(eps(R))
+
+    reset!(acc)
+
+    @test acc * x == x
 end

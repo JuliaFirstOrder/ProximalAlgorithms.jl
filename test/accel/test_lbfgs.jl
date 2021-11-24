@@ -1,6 +1,6 @@
 @testset "L-BFGS ($T)" for T in [Float32, Float64, Complex{Float32}, Complex{Float64}]
     using LinearAlgebra
-    using ProximalAlgorithms: LBFGS, initialize, LBFGSOperator, update!
+    using ProximalAlgorithms: LBFGS, initialize, LBFGSOperator, update!, reset!
     using RecursiveArrayTools: ArrayPartition, unpack
 
     Q = T[
@@ -126,6 +126,10 @@
 
             @test dir ≈ dirs_ref[i]
         end
+
+        reset!(H)
+
+        @test H * x == x
     end
 
     @testset "ArrayPartition" begin
@@ -155,5 +159,9 @@
             @test unpack(dir, 1) ≈ dirs_ref[i]
             @test unpack(dir, 2) ≈ dirs_ref[i]
         end
+
+        reset!(H)
+
+        @test H * x == x
     end
 end

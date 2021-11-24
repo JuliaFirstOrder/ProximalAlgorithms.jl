@@ -1,6 +1,6 @@
 using Test
 using LinearAlgebra
-using ProximalAlgorithms: AndersonAcceleration, initialize, AndersonAccelerationOperator, update!
+using ProximalAlgorithms: AndersonAcceleration, initialize, AndersonAccelerationOperator, update!, reset!
 
 @testset "Anderson accel. ($R)" for R in [Float32, Float64]
     H = R[
@@ -41,4 +41,8 @@ using ProximalAlgorithms: AndersonAcceleration, initialize, AndersonAcceleration
     end
 
     @test f(x) <= f_star + (1 + abs(f_star)) * sqrt(eps(R))
+
+    reset!(acc)
+
+    @test acc * x == x
 end
