@@ -1,23 +1,25 @@
 using LinearAlgebra
+import Base: *
+import LinearAlgebra: mul!
 
-mutable struct Broyden{R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C}}
+mutable struct BroydenOperator{R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C}}
     H
     theta_bar::R
-    function Broyden{R,C,T}(x::T, H, theta_bar) where {R,C,T}
+    function BroydenOperator{R,C,T}(x::T, H, theta_bar) where {R,C,T}
         new(H, theta_bar)
     end
 end
 
-Broyden(
+BroydenOperator(
     x::T;
     H = I,
     theta_bar = R(0.2),
 ) where {R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C}} =
-    Broyden{R,C,T}(x, H, theta_bar)
+    BroydenOperator{R,C,T}(x, H, theta_bar)
 
 _sign(x::R) where {R} = x == 0 ? R(1) : sign(x)
 
-function update!(L::Broyden{R,C,T}, s, y) where {R,C,T}
+function update!(L::BroydenOperator{R,C,T}, s, y) where {R,C,T}
     Hy = L.H * y
     sH = s' * L.H
     delta = dot(Hy, s) / norm(s)^2
@@ -29,13 +31,27 @@ function update!(L::Broyden{R,C,T}, s, y) where {R,C,T}
     L.H += (s - Hy) / dot(s, (1 / theta - 1) * s + Hy) * sH
 end
 
-import Base: *
-
-function (*)(L::Broyden, v)
-    w = similar(v)
-    mul!(w, L, v)
+function reset!(L::BroydenOperator{R,C,T}) where {R,C,T}
+    L.H = I
+    L.theta_bar = R(0.2)
 end
 
-import LinearAlgebra: mul!
+function (*)(L::BroydenOperator, v)
+    w = similar(v)
+    return mul!(w, L, v)
+end
 
-mul!(d::T, L::Broyden, v::T) where {T} = mul!(d, L.H, v)
+function mul!(d::T, L::BroydenOperator, v::T) where {T}
+    mul!(d, L.H, v)
+    return d
+end
+
+Base.@kwdef struct Broyden{R}
+    theta_bar::R = 0.2
+end
+
+acceleration_style(::Type{<:Broyden}) = QuasiNewtonStyle()
+
+function initialize(broyden::Broyden, x)
+    return BroydenOperator(x, theta_bar=broyden.theta_bar)
+end

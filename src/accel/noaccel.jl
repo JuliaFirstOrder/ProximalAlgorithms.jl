@@ -1,14 +1,5 @@
-struct Noaccel end
+struct NoAcceleration end
 
-function update!(_::Noaccel, _, _) end
+acceleration_style(::Type{<:NoAcceleration}) = NoAccelerationStyle()
 
-import Base: *
-
-function (*)(L::Noaccel, v)
-    w = similar(v)
-    mul!(w, L, v)
-end
-
-import LinearAlgebra: mul!
-
-mul!(d::T, _::Noaccel, v::T) where {T} = copyto!(d, v)
+initialize(::NoAcceleration, ::Any) = nothing

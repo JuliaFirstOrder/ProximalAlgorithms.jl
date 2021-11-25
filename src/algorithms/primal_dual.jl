@@ -101,7 +101,7 @@ cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3,
 pp. 667-681 (2013).
 """
 
-Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL}
+Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL,Ttheta,Tmu}
     f::Tf = Zero()
     g::Tg = Zero()
     h::Th = Zero()
@@ -111,8 +111,8 @@ Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL}
     y0::Ty
     beta_f::R = real(eltype(x0))(0)
     beta_l::R = real(eltype(x0))(0)
-    theta = 1
-    mu = 1
+    theta::Ttheta = real(eltype(x0))(1)
+    mu::Tmu = real(eltype(x0))(1)
     lambda::R = real(eltype(x0))(1)
     gamma::Tuple{R, R} = begin
         if lambda != 1
@@ -153,14 +153,14 @@ Base.IteratorSize(::Type{<:AFBAIteration}) = Base.IsInfinite()
 Base.@kwdef struct AFBAState{Tx,Ty}
     x::Tx
     y::Ty
-    xbar::Tx = zero(x)
-    ybar::Ty = zero(y)
-    gradf::Tx = zero(x)
-    gradl::Ty = zero(y)
-    FPR_x::Tx = zero(x)
-    FPR_y::Ty = zero(y)
-    temp_x::Tx = zero(x)
-    temp_y::Ty = zero(y)
+    xbar::Tx = similar(x)
+    ybar::Ty = similar(y)
+    gradf::Tx = similar(x)
+    gradl::Ty = similar(y)
+    FPR_x::Tx = similar(x)
+    FPR_y::Ty = similar(y)
+    temp_x::Tx = similar(x)
+    temp_y::Ty = similar(y)
 end
 
 function Base.iterate(iter::AFBAIteration, state::AFBAState = AFBAState(x=copy(iter.x0), y=copy(iter.y0)))

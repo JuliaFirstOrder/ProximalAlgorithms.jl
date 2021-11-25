@@ -38,14 +38,14 @@ for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
 pp. 183-202 (2009).
 """
 
-Base.@kwdef struct FastForwardBackwardIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
+Base.@kwdef struct FastForwardBackwardIteration{R,Tx,Tf,Tg,TLf,Tgamma}
     f::Tf = Zero()
     g::Tg = Zero()
     x0::Tx
     m::R = real(eltype(x0))(0)
-    Lf::Maybe{R} = nothing
-    gamma::Maybe{R} = Lf === nothing ? nothing : (1 / Lf)
-    adaptive::Bool = false
+    Lf::TLf = nothing
+    gamma::Tgamma = Lf === nothing ? nothing : (1 / Lf)
+    adaptive::Bool = gamma === nothing
     minimum_gamma::R = real(eltype(x0))(1e-7)
     theta::R = real(eltype(x0))(1)
 end
@@ -65,24 +65,17 @@ Base.@kwdef mutable struct FastForwardBackwardState{R,Tx}
     z_prev::Tx = copy(x)
 end
 
-function Base.iterate(iter::FastForwardBackwardIteration{R}) where {R}
+function Base.iterate(iter::FastForwardBackwardIteration)
     x = copy(iter.x0)
     grad_f_x, f_x = gradient(iter.f, x)
-
-    gamma = iter.gamma
-    if gamma === nothing
-        gamma = 1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x)
-    end
-
+    gamma = iter.gamma === nothing ? 1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x) : iter.gamma
     y = x - gamma .* grad_f_x
     z, g_z = prox(iter.g, y, gamma)
-
     state = FastForwardBackwardState(
         gamma=gamma, theta=iter.theta,
         x=x, f_x=f_x, grad_f_x=grad_f_x,
         y=y, z=z, g_z=g_z, res=x - z,
     )
-
     return state, state
 end
 
@@ -94,10 +87,10 @@ function update_theta(prev_theta, prev_gamma, gamma, m=0)
 end
 
 function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardBackwardState{R,Tx}) where {R,Tx}
-    gamma = if iter.gamma === nothing || iter.adaptive == true
+    gamma = if iter.adaptive == true
         gamma, state.g_z = backtrack_stepsize!(
-            state.gamma, iter.f, I, iter.g,
-            state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res,
+            state.gamma, iter.f, nothing, iter.g,
+            state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res, state.z, nothing,
             minimum_gamma = iter.minimum_gamma,
         )
         gamma

@@ -11,12 +11,11 @@ end
 
     Random.seed!(0)
 
-    Base.iterate(iter::FibonacciIterable) = iter.s0, (iter.s0, iter.s1)
-    Base.iterate(iter::FibonacciIterable, state) = state[2], (state[2], sum(state))
+    Base.iterate(iter::FibonacciIterable, state=(iter.s0, iter.s1)) = state[1], (state[2], sum(state))
 
     @testset "Looping" begin
         iter = rand(Float64, 10)
-        last = IterationTools.loop(iter)
+        last = @inferred IterationTools.loop(iter)
         @test last == iter[end]
     end
 
@@ -47,7 +46,7 @@ end
         truncated = IterationTools.halt(iter, x -> x >= 1000)
         @test Base.IteratorSize(truncated) == Base.IteratorSize(iter)
         @test eltype(truncated) == eltype(iter)
-        last = IterationTools.loop(truncated)
+        last = @inferred IterationTools.loop(truncated)
         @test last == 1597
     end
 

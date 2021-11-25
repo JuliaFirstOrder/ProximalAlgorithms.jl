@@ -14,6 +14,7 @@ include("utilities/iteration_tools.jl")
 
 # acceleration operators
 
+include("accel/traits.jl")
 include("accel/lbfgs.jl")
 include("accel/anderson.jl")
 include("accel/nesterov.jl")

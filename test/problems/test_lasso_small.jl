@@ -3,6 +3,9 @@ using Test
 
 using ProximalOperators
 using ProximalAlgorithms
+using ProximalAlgorithms:
+    LBFGS, Broyden, AndersonAcceleration,
+    NesterovExtrapolation, NesterovSequence, SimpleNesterovSequence
 
 @testset "Lasso small ($T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
     A = T[
@@ -30,148 +33,134 @@ using ProximalAlgorithms
 
     TOL = R(1e-4)
 
-    @testset "ForwardBackward" begin
-
-        ## Nonfast/Nonadaptive
-
+    @testset "ForwardBackward (fixed step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.ForwardBackward(tol = TOL)
-        x, it = solver(x0, f = f2, g = g, Lf = Lf)
+        x, it = @inferred solver(x0, f = f2, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 150
         @test x0 == x0_backup
+    end
 
-        # Nonfast/Adaptive
-
+    @testset "ForwardBackward (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
-        x, it = solver(x0, f = f2, g = g)
+        x, it = @inferred solver(x0, f = f2, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 300
         @test x0 == x0_backup
+    end
 
-        # Fast/Nonadaptive
-
+    @testset "FastForwardBackward (fixed step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
-        x, it = solver(x0, f = f2, g = g, Lf = Lf)
+        x, it = @inferred solver(x0, f = f2, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100
         @test x0 == x0_backup
+    end
 
-        # Fast/Adaptive
-
+    @testset "FastForwardBackward (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver =
             ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
-        x, it = solver(x0, f = f2, g = g)
+        x, it = @inferred solver(x0, f = f2, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 200
         @test x0 == x0_backup
     end
 
-    @testset "ZeroFPR" begin
-
-        # ZeroFPR/Nonadaptive
-
+    @testset "ZeroFPR (fixed step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.ZeroFPR(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, Lf = Lf)
+        x, it = @inferred solver(x0, f = f, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
         @test x0 == x0_backup
+    end
 
-        # ZeroFPR/Adaptive
-
+    @testset "ZeroFPR (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g)
+        x, it = @inferred solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
         @test x0 == x0_backup
-
     end
 
-    @testset "PANOC" begin
-
-        # PANOC/Nonadaptive
+    @testset "PANOC (fixed step)" begin
 
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.PANOC(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, Lf = Lf)
+        x, it = @inferred solver(x0, f = f, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
         @test x0 == x0_backup
+    
+    end
 
-        ## PANOC/Adaptive
-
+    @testset "PANOC (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.PANOC(adaptive = true, tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g)
+        x, it = @inferred solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
         @test x0 == x0_backup
-
     end
 
     @testset "DouglasRachford" begin
-
-        # Douglas-Rachford
-
         x0 = zeros(T, n)
         x0_backup = copy(x0)
-        solver =
-            ProximalAlgorithms.DouglasRachford(gamma = R(10) / opnorm(A)^2, tol = TOL)
-        y, z, it = solver(x0, f = f2, g = g)
+        solver = ProximalAlgorithms.DouglasRachford(gamma = R(10) / opnorm(A)^2, tol = TOL)
+        y, z, it = @inferred solver(x0, f = f2, g = g)
         @test eltype(y) == T
         @test eltype(z) == T
         @test norm(y - x_star, Inf) <= TOL
         @test norm(z - x_star, Inf) <= TOL
         @test it < 30
         @test x0 == x0_backup
-
     end
 
-    @testset "DouglasRachford line search" begin
-
-        # Douglas-Rachford line search
-
+    @testset "DouglasRachford line search ($acc)" for (acc, maxit) in [
+        (LBFGS(5), 17),
+        (Broyden(), 17),
+        (AndersonAcceleration(5), 12),
+        (NesterovExtrapolation(NesterovSequence), 36),
+        (NesterovExtrapolation(SimpleNesterovSequence), 36),
+    ]
         x0 = zeros(T, n)
         x0_backup = copy(x0)
-        solver = ProximalAlgorithms.DRLS(tol = 10 * TOL)
-        y, z, it = solver(x0, f = f2, g = g, Lf = Lf)
+        solver = ProximalAlgorithms.DRLS(tol = 10 * TOL, directions=acc)
+        y, z, it = @inferred solver(x0, f = f2, g = g, Lf = Lf)
         @test eltype(y) == T
         @test eltype(z) == T
         @test norm(y - x_star, Inf) <= 10 * TOL
         @test norm(z - x_star, Inf) <= 10 * TOL
-        @test it < 26
+        @test it < maxit
         @test x0 == x0_backup
-
     end
 
     @testset "AFBA" begin
-
         x0 = zeros(T, n)
         x0_backup = copy(x0)
-
         solver = ProximalAlgorithms.AFBA(theta = R(1), mu = R(1), tol = R(1e-6))
-        x_afba, y_afba, it_afba = solver(x0, zeros(T, n), f = f2, g = g, beta_f = opnorm(A)^2)
+        x_afba, y_afba, it_afba = @inferred solver(x0, zeros(T, n), f = f2, g = g, beta_f = opnorm(A)^2)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
@@ -179,7 +168,7 @@ using ProximalAlgorithms
         @test x0 == x0_backup
 
         solver = ProximalAlgorithms.AFBA(theta = R(1), mu = R(1), tol = R(1e-6))
-        x_afba, y_afba, it_afba = solver(x0, zeros(T, n), f = f2, h = g, beta_f = opnorm(A)^2)
+        x_afba, y_afba, it_afba = @inferred solver(x0, zeros(T, n), f = f2, h = g, beta_f = opnorm(A)^2)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
@@ -187,28 +176,23 @@ using ProximalAlgorithms
         @test x0 == x0_backup
 
         solver = ProximalAlgorithms.AFBA(theta = R(1), mu = R(1), tol = R(1e-6))
-        x_afba, y_afba, it_afba = solver(x0, zeros(T, m), h = f, L = A, g = g)
+        x_afba, y_afba, it_afba = @inferred solver(x0, zeros(T, m), h = f, L = A, g = g)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
         @test it_afba <= 150
         @test x0 == x0_backup
-
     end
 
     @testset "SFISTA" begin
-
-        # SFISTA
-
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.SFISTA(tol = 10 * TOL)
-        y, it = solver(x0, f = f2, h = g, Lf = Lf)
+        y, it = @inferred solver(x0, f = f2, h = g, Lf = Lf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= 10 * TOL
         @test it < 100
         @test x0 == x0_backup
-
     end
 
 end

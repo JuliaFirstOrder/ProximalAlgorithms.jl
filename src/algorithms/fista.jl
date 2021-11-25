@@ -64,18 +64,20 @@ Base.@kwdef mutable struct SFISTAState{R, Tx}
     gradf_xt::Tx = zero(yPrev)          # array containing ∇f(xt).
 end
 
-function Base.iterate(iter::SFISTAIteration,
-                      state::SFISTAState = SFISTAState(λ=1/iter.Lf, yPrev=copy(iter.y0)))
+function Base.iterate(
+    iter::SFISTAIteration,
+    state::SFISTAState = SFISTAState(λ=1/iter.Lf, yPrev=copy(iter.y0))
+)
     # Set up helper variables.
     state.τ = state.λ * (1 + iter.μf * state.APrev)
     state.a = (state.τ + sqrt(state.τ ^ 2 + 4 * state.τ * state.APrev)) / 2
     state.A = state.APrev + state.a
-    state.xt .= state.APrev / state.A * state.yPrev + state.a / state.A * state.xPrev
+    state.xt .= (state.APrev / state.A) .* state.yPrev + (state.a / state.A) .* state.xPrev
     gradient!(state.gradf_xt, iter.f, state.xt)
     λ2 = state.λ / (1 + state.λ * iter.μf)
     # FISTA acceleration steps.
     prox!(state.y, iter.h, state.xt - λ2 * state.gradf_xt, λ2)
-    state.x .= state.xPrev + state.a / (1 + state.A * iter.μf) * ((state.y - state.xt) / state.λ + iter.μf * (state.y - state.xPrev))
+    state.x .= state.xPrev .+ (state.a / (1 + state.A * iter.μf)) .* ((state.y .- state.xt) ./ state.λ .+ iter.μf .* (state.y .- state.xPrev))
     # Update state variables.
     state.yPrev .= state.y
     state.xPrev .= state.x
@@ -125,5 +127,5 @@ function (solver::SFISTA)(y0; kwargs...)
     return state_final.y, num_iters
 end
 
-SFISTA(; maxit=1000, tol=1e-6, termination_type="", verbose=false, freq=(maxit < Inf ? Int(maxit/100) : 100), kwargs...) =
+SFISTA(; maxit=10_000, tol=1e-6, termination_type="", verbose=false, freq=(maxit < Inf ? Int(maxit/100) : 100), kwargs...) =
     SFISTA(maxit, tol, termination_type, verbose, freq, kwargs)
