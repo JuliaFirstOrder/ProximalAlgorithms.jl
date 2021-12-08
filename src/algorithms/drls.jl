@@ -53,7 +53,7 @@ Base.@kwdef mutable struct DRLSState{R,Tx,TH}
     res::Tx
     res_prev::Tx = similar(x)
     xbar::Tx
-    xbar_prev::Tx = similar(x)
+    xbar_prev::Tx = copy(xbar)
     d::Tx = similar(x)
     x_d::Tx = similar(x)
     gamma::R
