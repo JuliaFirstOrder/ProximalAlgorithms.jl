@@ -139,7 +139,7 @@ using ProximalAlgorithms:
 
     @testset "DouglasRachford line search ($acc)" for (acc, maxit) in [
         (LBFGS(5), 17),
-        (Broyden(), 17),
+        (Broyden(), 19),
         (AndersonAcceleration(5), 12),
         (NesterovExtrapolation(NesterovSequence), 36),
         (NesterovExtrapolation(SimpleNesterovSequence), 36),
