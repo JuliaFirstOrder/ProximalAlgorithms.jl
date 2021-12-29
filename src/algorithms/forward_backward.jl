@@ -31,13 +31,13 @@ where `f` is smooth.
 operators,” SIAM Journal on Numerical Analysis, vol. 16, pp. 964–979 (1979).
 """
 
-Base.@kwdef struct ForwardBackwardIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
+Base.@kwdef struct ForwardBackwardIteration{R,Tx,Tf,Tg,TLf,Tgamma}
     f::Tf = Zero()
     g::Tg = Zero()
     x0::Tx
-    Lf::Maybe{R} = nothing
-    gamma::Maybe{R} = Lf === nothing ? nothing : (1 / Lf)
-    adaptive::Bool = false
+    Lf::TLf = nothing
+    gamma::Tgamma = Lf === nothing ? nothing : (1 / Lf)
+    adaptive::Bool = gamma === nothing
     minimum_gamma::R = real(eltype(x0))(1e-7)
 end
 
@@ -52,36 +52,32 @@ Base.@kwdef mutable struct ForwardBackwardState{R,Tx}
     z::Tx             # forward-backward point
     g_z::R            # value of g at z
     res::Tx           # fixed-point residual at iterate (= z - x)
+    Az::Tx=similar(x) # TODO not needed
+    grad_f_z::Tx=similar(x)
 end
 
-function Base.iterate(iter::ForwardBackwardIteration{R}) where {R}
+function Base.iterate(iter::ForwardBackwardIteration)
     x = copy(iter.x0)
     grad_f_x, f_x = gradient(iter.f, x)
-
-    gamma = iter.gamma
-    if gamma === nothing
-        gamma = 1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x)
-    end
-
+    gamma = iter.gamma === nothing ? 1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x) : iter.gamma
     y = x - gamma .* grad_f_x
     z, g_z = prox(iter.g, y, gamma)
-
     state = ForwardBackwardState(
         x=x, f_x=f_x, grad_f_x=grad_f_x,
         gamma=gamma, y=y, z=z, g_z=g_z, res=x - z,
     )
-
     return state, state
 end
 
 function Base.iterate(iter::ForwardBackwardIteration{R}, state::ForwardBackwardState{R,Tx}) where {R,Tx}
-    if iter.gamma === nothing || iter.adaptive == true
-        state.gamma, state.g_z, _, state.f_x, state.grad_f_x = backtrack_stepsize!(
-            state.gamma, iter.f, I, iter.g,
-            state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res,
+    if iter.adaptive == true
+        state.gamma, state.g_z, state.f_x = backtrack_stepsize!(
+            state.gamma, iter.f, nothing, iter.g,
+            state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res, state.z, state.grad_f_z,
             minimum_gamma = iter.minimum_gamma,
         )
         state.x, state.z = state.z, state.x
+        state.grad_f_x, state.grad_f_z = state.grad_f_z, state.grad_f_x
     else
         state.x, state.z = state.z, state.x
         state.f_x = gradient!(state.grad_f_x, iter.f, state.x)

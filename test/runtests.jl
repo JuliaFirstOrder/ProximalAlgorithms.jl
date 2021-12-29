@@ -12,7 +12,6 @@ include("accel/test_lbfgs.jl")
 include("accel/test_anderson.jl")
 include("accel/test_nesterov.jl")
 include("accel/test_broyden.jl")
-include("accel/test_noaccel.jl")
 
 include("problems/test_equivalence.jl")
 include("problems/test_elasticnet.jl")

@@ -41,10 +41,10 @@ Base.IteratorSize(::Type{<:DouglasRachfordIteration}) = Base.IsInfinite()
 
 Base.@kwdef struct DouglasRachfordState{Tx}
     x::Tx
-    y::Tx = zero(x)
-    r::Tx = zero(x)
-    z::Tx = zero(x)
-    res::Tx = zero(x)
+    y::Tx = similar(x)
+    r::Tx = similar(x)
+    z::Tx = similar(x)
+    res::Tx = similar(x)
 end
 
 function Base.iterate(iter::DouglasRachfordIteration, state::DouglasRachfordState = DouglasRachfordState(x=copy(iter.x0)))

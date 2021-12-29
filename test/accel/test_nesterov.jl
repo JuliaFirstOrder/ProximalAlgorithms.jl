@@ -1,62 +1,54 @@
 using Test
 
-@testset "Nesterov accel. ($R)" for R in [Float32, Float64]
-    using LinearAlgebra
-    using ProximalAlgorithms: NesterovAcceleration, update!
+using LinearAlgebra
+using ProximalAlgorithms: NesterovExtrapolation, initialize, SimpleNesterovSequence, NesterovSequence
 
-    H = R[
-        0.63287    0.330934   -0.156908   -0.294776    0.10761;
-        0.330934   0.673201    0.0459778   0.231011   -0.235265;
-       -0.156908   0.0459778   0.635812   -0.232261   -0.388775;
-       -0.294776   0.231011   -0.232261    0.726854   -0.0691783;
-        0.10761   -0.235265   -0.388775   -0.0691783   0.336262;
-    ]
-    l = R[1.0, 2.0, 3.0, 4.0, 5.0]
+for sequence_type in [SimpleNesterovSequence, NesterovSequence]
+    for R in [Float32, Float64]
+        @testset "Nesterov accel. ($sequence_type, $R)" begin
+            H = R[
+                0.63287    0.330934   -0.156908   -0.294776    0.10761;
+                0.330934   0.673201    0.0459778   0.231011   -0.235265;
+               -0.156908   0.0459778   0.635812   -0.232261   -0.388775;
+               -0.294776   0.231011   -0.232261    0.726854   -0.0691783;
+                0.10761   -0.235265   -0.388775   -0.0691783   0.336262;
+            ]
+            l = R[1.0, 2.0, 3.0, 4.0, 5.0]
 
-    n = length(l)
+            n = length(l)
 
-    f(x) = dot(x, H * x) / 2 + dot(x, l)
+            f(x) = dot(x, H * x) / 2 + dot(x, l)
+            grad_f(x) = H * x + l
 
-    x_star = -H \ l
-    f_star = f(x_star)
-    norm_x_star = norm(x_star)
+            x_star = -H \ l
+            f_star = f(x_star)
 
-    Lip = opnorm(H)
-    gamma = 1 / Lip
-    x = zeros(n)
-    res = zeros(n)
-    x_prev = zeros(n)
-    res_prev = zeros(n)
+            Lip = opnorm(H)
+            gamma = 1 / Lip
+            x = zeros(R, n)
+            x_prev = x
 
-    acc = NesterovAcceleration(x)
+            norm_initial_error = norm(x_star - x)
 
-    mul!(res, H, x)
-    res .+= l
-    res .*= gamma
+            @inferred initialize(NesterovExtrapolation(sequence_type), x)
 
-    d = acc * res
+            seq = sequence_type{R}()
 
-    for it = 1:100
-        # store iterate and residual for the operator update later
-        res_prev .= res
-        x_prev .= x
+            @inferred Iterators.peel(seq)
 
-        # compute accelerated direction
-        mul!(d, acc, res)
+            for (it, coeff) in Iterators.take(enumerate(seq), 100)
+                if it <= 2
+                    @test iszero(coeff)
+                end
 
-        # update iterate
-        x .-= d
+                y = x + coeff * (x - x_prev)
+                grad_f_y = grad_f(y)
+                x_prev = x
+                x = y - gamma * grad_f_y
 
-        # compute new residual
-        mul!(res, H, x)
-        res .+= l
-        res .*= gamma
-
-        # update operator
-        update!(acc, x - x_prev, res - res_prev)
-
-        # test that iterates satisfy Thm 4.4 from Beck, Teboulle (2009)
-        @test f(x) - f_star <= 2 / (gamma * (it + 1)^2) * norm_x_star^2
+                # test that iterates satisfy Thm 4.4 from Beck, Teboulle (2009)
+                @test f(x) - f_star <= 2 / (gamma * (it + 1)^2) * norm_initial_error^2
+            end
+        end
     end
-
 end

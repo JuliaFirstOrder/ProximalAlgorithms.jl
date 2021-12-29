@@ -8,6 +8,8 @@
 *.bbl
 *.blg
 
+.DS_store
+
 docs/build/
 docs/site/
 
