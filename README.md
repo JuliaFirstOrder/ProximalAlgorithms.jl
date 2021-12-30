@@ -31,6 +31,7 @@ Vũ-Condat primal-dual algorithm[^chambolle_2011][^vu_2013][^condat_2013] | [`Vu
 Davis-Yin splitting[^davis_2017] | [`DavisYin`](src/algorithms/davis_yin.jl)
 Asymmetric forward-backward-adjoint splitting[^latafat_2017] | [`AFBA`](src/algorithms/primal_dual.jl)
 PANOC (L-BFGS)[^stella_2017] | [`PANOC`](src/algorithms/panoc.jl)
+PANOC+ (L-BFGS)[^demarchi_2021] | [`NOLIP`](src/algorithms/nolip.jl)
 ZeroFPR (L-BFGS)[^themelis_2018] | [`ZeroFPR`](src/algorithms/zerofpr.jl)
 Douglas-Rachford line-search (L-BFGS)[^themelis_2020] | [`DRLS`](src/algorithms/drls.jl)
 
@@ -65,3 +66,5 @@ Contributions are welcome in the form of [issues notification](https://github.co
 [^themelis_2018]: Themelis, Stella, Patrinos, *Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms*, SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018). [link](https://epubs.siam.org/doi/10.1137/16M1080240)
 
 [^themelis_2020]: Themelis, Stella, Patrinos, *Douglas-Rachford splitting and ADMM for nonconvex optimization: Accelerated and Newton-type algorithms*, arXiv preprint (2020). [link](https://arxiv.org/abs/2005.10230)
+
+[^demarchi_2021]: De Marchi, Themelis, *Proximal gradient algorithms under local Lipschitz gradient continuity: a convergence and robustness analysis of PANOC*, arXiv preprint (2021). [link](https://arxiv.org/abs/2112.13000)

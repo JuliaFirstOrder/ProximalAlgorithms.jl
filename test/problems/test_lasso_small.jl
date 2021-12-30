@@ -124,30 +124,26 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
     end
 
-    @testset "NOLIP" begin
-
-        # NOLIP/Nonadaptive
-
+    @testset "NOLIP (fixed step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.NOLIP(tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g, Lf = Lf)
+        x, it = @inferred solver(x0, f = f, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
         @test x0 == x0_backup
+    end
 
-        ## NOLIP/Adaptive
-
+    @testset "NOLIP (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.NOLIP(adaptive = true, tol = TOL)
-        x, it = solver(x0, f = f, A = A, g = g)
+        x, it = @inferred solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
         @test x0 == x0_backup
-
     end
 
     @testset "DouglasRachford" begin
