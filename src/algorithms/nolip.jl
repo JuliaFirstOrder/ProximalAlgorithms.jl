@@ -1,5 +1,6 @@
-# Themelis, De Marchi, "A linesearch splitting algorithm for structured optimization
-# without global smoothness" (2021).
+# De Marchi, Themelis, "Proximal gradient algorithms under local Lipschitz
+# gradient continuity: a convergence and robustness analysis of PANOC",
+# preprint on arXiv:2112.13000 (2021).
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
@@ -27,26 +28,27 @@ where `f` is locally smooth and `A` is a linear mapping (for example, a matrix).
 - `adaptive=false`: forces the method stepsize to be adaptively adjusted.
 - `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
 - `max_backtracks=20`: maximum number of line-search backtracks.
-- `H=LBFGS(x0, 5)`: variable metric to use to compute line-search directions.
+- `directions=LBFGS(5)`: strategy to use to compute line-search directions.
 
 # References
-- [1] Themelis, De Marchi, "A linesearch splitting algorithm for structured
-optimization without global smoothness", (2021).
+- [1] De Marchi, Themelis, "Proximal gradient algorithms under local Lipschitz
+gradient continuity: a convergence and robustness analysis of PANOC",
+preprint on arXiv:2112.13000 (2021).
 """
 
-Base.@kwdef struct NOLIPIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,TA,Tg,TH}
+Base.@kwdef struct NOLIPIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()
     x0::Tx
     alpha::R = real(eltype(x0))(0.95)
     beta::R = real(eltype(x0))(0.5)
-    Lf::Maybe{R} = nothing
-    gamma::Maybe{R} = Lf === nothing ? nothing : (alpha / Lf)
-    adaptive::Bool = false
+    Lf::TLf = nothing
+    gamma::Tgamma = Lf === nothing ? nothing : (alpha / Lf)
+    adaptive::Bool = gamma === nothing
     minimum_gamma::R = real(eltype(x0))(1e-7)
     max_backtracks::Int = 20
-    H::TH = LBFGS(x0, 5)
+    directions::D = LBFGS(5)
 end
 
 Base.IteratorSize(::Type{<:NOLIPIteration}) = Base.IsInfinite()
@@ -63,60 +65,61 @@ Base.@kwdef mutable struct NOLIPState{R,Tx,TAx,TH}
     g_z::R            # value of nonsmooth term (at z)
     res::Tx           # fixed-point residual at iterate (= x - z)
     H::TH             # variable metric
-    tau::Maybe{R} = nothing
-    x_prev::Tx = zero(x)
-    res_prev::Tx = zero(x)
-    d::Tx = zero(x)
-    Ad::TAx = zero(Ax)
-    x_d::Tx = zero(x)
-    Ax_d::TAx = zero(Ax)
+    tau::R = zero(gamma)
+    x_prev::Tx = similar(x)
+    res_prev::Tx = similar(x)
+    d::Tx = similar(x)
+    Ad::TAx = similar(Ax)
+    x_d::Tx = similar(x)
+    Ax_d::TAx = similar(Ax)
     f_Ax_d::R = zero(real(eltype(x)))
-    grad_f_Ax_d::TAx = zero(Ax)
-    At_grad_f_Ax_d::Tx = zero(x)
-    z_curr::Tx = zero(x)
+    grad_f_Ax_d::TAx = similar(Ax)
+    At_grad_f_Ax_d::Tx = similar(x)
+    z_curr::Tx = similar(x)
+    Az::TAx = similar(Ax)
+    grad_f_Az::TAx = similar(Ax)
+    At_grad_f_Az::Tx = similar(x)
 end
 
-f_model(iter::NOLIPIteration, state::NOLIPState) =
-    f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
+f_model(iter::NOLIPIteration, state::NOLIPState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
 
 function Base.iterate(iter::NOLIPIteration{R}) where {R}
     x = copy(iter.x0)
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
-
-    gamma = iter.gamma
-    if gamma === nothing
-        gamma = iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax)
-    end
-
+    gamma = iter.gamma === nothing ? iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) : iter.gamma
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
     z, g_z = prox(iter.g, y, gamma)
-    res = x - z
-
+    state = NOLIPState(
+        x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
+        gamma=gamma, y=y, z=z, g_z=g_z, res=x-z, H=initialize(iter.directions, x),
+    )
     if (iter.gamma === nothing || iter.adaptive == true)
-        gamma_prev = gamma
-        gamma, g_z, Az, f_Az, grad_f_Az, f_Az_upp = backtrack_stepsize!(
-            gamma, iter.f, iter.A, iter.g,
-            x, f_Ax, At_grad_f_Ax, y, z, g_z, res,
+        state.gamma, state.g_z, f_Az, f_Az_upp = backtrack_stepsize!(
+            state.gamma, iter.f, iter.A, iter.g,
+            state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.z, state.g_z, state.res,
+            state.Az, state.grad_f_Az,
             alpha = iter.alpha, minimum_gamma = iter.minimum_gamma,
         )
     end
-
-    state = NOLIPState(
-        x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
-        gamma=gamma, y=y, z=z, g_z=g_z, res=res, H=iter.H,
-    )
-
     return state, state
 end
 
-function Base.iterate(
-    iter::NOLIPIteration{R},
-    state::NOLIPState{R,Tx,TAx},
-) where {R,Tx,TAx}
-    Az, f_Az, grad_f_Az, At_grad_f_Az = nothing, nothing, nothing, nothing
-    a, b, c = nothing, nothing, nothing
+set_next_direction!(::QuasiNewtonStyle, ::NOLIPIteration, state::NOLIPState) = mul!(state.d, state.H, -state.res)
+set_next_direction!(::NoAccelerationStyle, ::NOLIPIteration, state::NOLIPState) = state.d .= .-state.res
+set_next_direction!(iter::NOLIPIteration, state::NOLIPState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
+
+update_direction_state!(::QuasiNewtonStyle, ::NOLIPIteration, state::NOLIPState) = update!(state.H, state.x - state.x_prev, state.res - state.res_prev)
+update_direction_state!(::NoAccelerationStyle, ::NOLIPIteration, state::NOLIPState) = return
+update_direction_state!(iter::NOLIPIteration, state::NOLIPState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
+
+reset_direction_state!(::QuasiNewtonStyle, ::NOLIPIteration, state::NOLIPState) = reset!(state.H)
+reset_direction_state!(::NoAccelerationStyle, ::NOLIPIteration, state::NOLIPState) = return
+reset_direction_state!(iter::NOLIPIteration, state::NOLIPState) = reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
+
+function Base.iterate(iter::NOLIPIteration{R}, state::NOLIPState) where R
+    f_Az, a, b, c = R(Inf), R(Inf), R(Inf), R(Inf)
 
     # store iterate and residual for metric update later on
     state.x_prev .= state.x
@@ -136,7 +139,7 @@ function Base.iterate(
 
         if can_update_direction
             # compute direction
-            mul!(state.d, state.H, -state.res)
+            set_next_direction!(iter, state)
             # backtrack tau 1 → 0
             state.tau = R(1)
             state.x .= state.x_prev .+ state.d
@@ -155,34 +158,33 @@ function Base.iterate(
         f_Az_upp = f_model(iter, state)
 
         if (iter.gamma === nothing || iter.adaptive == true)
-            Az = iter.A * state.z
-            grad_f_Az, f_Az = gradient(iter.f, Az)
+            mul!(state.Az, iter.A, state.z)
+            f_Az = gradient!(state.grad_f_Az, iter.f, state.Az)
             tol = 10 * eps(R) * (1 + abs(f_Az))
             if f_Az > f_Az_upp + tol && state.gamma >= iter.minimum_gamma
-                state.gamma /= 2
+                state.gamma *= 0.5
                 if state.gamma < iter.minimum_gamma
                     @warn "stepsize `gamma` became too small ($(state.gamma))"
                 end
                 can_update_direction = true
-                reset!(state.H)
+                reset_direction_state!(iter, state)
                 continue
             end
         end
 
-        FBE_x = f_Az_upp + state.g_z
-        if FBE_x <= threshold
+        FBE_x_new = f_Az_upp + state.g_z
+        if FBE_x_new <= threshold
             # update metric
-            update!(state.H, state.x - state.x_prev, state.res - state.res_prev)
+            update_direction_state!(iter, state)
             return state, state
-        else
-            state.tau *= 0.5
-            if tau_backtracks >= iter.max_backtracks
-                @warn "parameter `tau` became too small ($(state.tau)), stopping the iterations"
-                return nothing
-            end
-            tau_backtracks += 1
-            can_update_direction = false
         end
+        state.tau *= 0.5
+        if tau_backtracks > iter.max_backtracks
+            @warn "stepsize `tau` became too small ($(state.tau)), stopping the iterations"
+            return nothing
+        end
+        tau_backtracks += 1
+        can_update_direction = false
 
     end
 
@@ -205,7 +207,7 @@ function (solver::NOLIP)(x0; kwargs...)
         it,
         state.gamma,
         norm(state.res, Inf) / state.gamma,
-        (state.tau === nothing ? 0.0 : state.tau)
+        state.tau,
     )
     iter = NOLIPIteration(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)

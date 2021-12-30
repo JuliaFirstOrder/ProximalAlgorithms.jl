@@ -69,6 +69,15 @@ using ProximalAlgorithms
         @test x0 == x0_backup
     end
 
+    @testset "PANOC" begin
+        solver = ProximalAlgorithms.PANOC(tol = TOL)
+        y, it = solver(x0, f = f, g = h, Lf = Lf)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 45
+        @test x0 == x0_backup
+    end
+
     @testset "NOLIP" begin
         solver = ProximalAlgorithms.NOLIP(tol = TOL)
         y, it = solver(x0, f = f, g = h, Lf = Lf)
