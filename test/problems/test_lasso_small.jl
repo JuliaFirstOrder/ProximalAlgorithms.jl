@@ -5,7 +5,7 @@ using ProximalOperators
 using ProximalAlgorithms
 using ProximalAlgorithms:
     LBFGS, Broyden, AndersonAcceleration,
-    NesterovExtrapolation, NesterovSequence, SimpleNesterovSequence
+    NesterovExtrapolation, FixedNesterovSequence, SimpleNesterovSequence
 
 @testset "Lasso small ($T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
     A = T[
@@ -163,7 +163,7 @@ using ProximalAlgorithms:
         (LBFGS(5), 17),
         (Broyden(), 19),
         (AndersonAcceleration(5), 12),
-        (NesterovExtrapolation(NesterovSequence), 36),
+        (NesterovExtrapolation(FixedNesterovSequence), 36),
         (NesterovExtrapolation(SimpleNesterovSequence), 36),
     ]
         x0 = zeros(T, n)

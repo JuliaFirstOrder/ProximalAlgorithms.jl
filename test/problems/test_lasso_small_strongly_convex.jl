@@ -37,7 +37,7 @@ using ProximalAlgorithms
         y, it = solver(x0, f = f, h = h, Lf = Lf, μf = μf)
         @test eltype(y) == T
         @test norm(y - x_star) <= TOL
-        @test it < 45
+        @test it < 40
         @test x0 == x0_backup
     end
 
@@ -52,10 +52,10 @@ using ProximalAlgorithms
 
     @testset "FastForwardBackward" begin
         solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
-        y, it = solver(x0, f = f, g = h, Lf = Lf, m = μf)
+        y, it = solver(x0, f = f, g = h, Lf = Lf, mf = μf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
-        @test it < 45
+        @test it < 35
         @test x0 == x0_backup
     end
 

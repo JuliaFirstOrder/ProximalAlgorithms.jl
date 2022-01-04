@@ -25,30 +25,32 @@ where `f` is smooth.
 - `x0`: initial point.
 - `f=Zero()`: smooth objective term.
 - `g=Zero()`: proximable objective term.
+- `mf=0`: convexity modulus of `f`.
 - `Lf=nothing`: Lipschitz constant of the gradient of `f`.
-- `gamma=nothing`: stepsize to use, defaults to `1/Lf` if not set (but `Lf` is).
-- `adaptive=false`: forces the method stepsize to be adaptively adjusted.
+- `gamma=nothing`: stepsize, defaults to `1/Lf` if `Lf` is set, and `nothing` otherwise.
+- `adaptive=true`: makes `gamma` adaptively adjust during the iterations; this is by default `gamma === nothing`.
 - `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
+- `extrapolation_sequence=nothing`: sequence (iterator) of extrapolation coefficients to use for acceleration.
 
 # References
 1. Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave Optimization" (2008).
 2. Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183-202 (2009).
 """
-Base.@kwdef struct FastForwardBackwardIteration{R,Tx,Tf,Tg,TLf,Tgamma}
+Base.@kwdef struct FastForwardBackwardIteration{R,Tx,Tf,Tg,TLf,Tgamma,Textr}
     f::Tf = Zero()
     g::Tg = Zero()
     x0::Tx
-    m::R = real(eltype(x0))(0)
+    mf::R = real(eltype(x0))(0)
     Lf::TLf = nothing
     gamma::Tgamma = Lf === nothing ? nothing : (1 / Lf)
     adaptive::Bool = gamma === nothing
     minimum_gamma::R = real(eltype(x0))(1e-7)
-    theta::R = real(eltype(x0))(1)
+    extrapolation_sequence::Textr = nothing
 end
 
 Base.IteratorSize(::Type{<:FastForwardBackwardIteration}) = Base.IsInfinite()
 
-Base.@kwdef mutable struct FastForwardBackwardState{R,Tx}
+Base.@kwdef mutable struct FastForwardBackwardState{R,Tx,Textr}
     x::Tx             # iterate
     f_x::R            # value f at x
     grad_f_x::Tx      # gradient of f at x
@@ -57,8 +59,8 @@ Base.@kwdef mutable struct FastForwardBackwardState{R,Tx}
     z::Tx             # forward-backward point
     g_z::R            # value of g at z
     res::Tx           # fixed-point residual at iterate (= z - x)
-    theta::R          # acceleration sequence
     z_prev::Tx = copy(x)
+    extrapolation_sequence::Textr
 end
 
 function Base.iterate(iter::FastForwardBackwardIteration)
@@ -68,22 +70,22 @@ function Base.iterate(iter::FastForwardBackwardIteration)
     y = x - gamma .* grad_f_x
     z, g_z = prox(iter.g, y, gamma)
     state = FastForwardBackwardState(
-        gamma=gamma, theta=iter.theta,
-        x=x, f_x=f_x, grad_f_x=grad_f_x,
+        x=x, f_x=f_x, grad_f_x=grad_f_x, gamma=gamma,
         y=y, z=z, g_z=g_z, res=x - z,
+        extrapolation_sequence=if iter.extrapolation_sequence !== nothing
+            Iterators.Stateful(iter.extrapolation_sequence)
+        else
+            AdaptiveNesterovSequence(iter.mf)
+        end,
     )
     return state, state
 end
 
-function update_theta(prev_theta, prev_gamma, gamma, m=0)
-    # Solves for theta: theta^2 / gamma + (theta - 1) * theta'^2 / gamma' - m * theta = 0
-    b = prev_theta^2 / prev_gamma - m
-    delta = b^2 + 4 * (prev_theta^2) / (prev_gamma * gamma)
-    return gamma * (-b + sqrt(delta)) / 2
-end
+get_next_extrapolation_coefficient!(state::FastForwardBackwardState{R,Tx,<:Iterators.Stateful}) where {R, Tx} = first(state.extrapolation_sequence)
+get_next_extrapolation_coefficient!(state::FastForwardBackwardState{R,Tx,<:AdaptiveNesterovSequence}) where {R, Tx} = next!(state.extrapolation_sequence, state.gamma)
 
 function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardBackwardState{R,Tx}) where {R,Tx}
-    gamma = if iter.adaptive == true
+    state.gamma = if iter.adaptive == true
         gamma, state.g_z = backtrack_stepsize!(
             state.gamma, iter.f, nothing, iter.g,
             state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res, state.z, nothing,
@@ -94,11 +96,7 @@ function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardB
         iter.gamma
     end
 
-    theta = update_theta(state.theta, state.gamma, gamma, iter.m)
-    beta = gamma * (state.theta) * (1 - state.theta) / (state.gamma * theta + gamma * state.theta ^ 2)
-    state.gamma = gamma
-    state.theta = theta
-
+    beta = get_next_extrapolation_coefficient!(state)
     state.x .= state.z .+ beta .* (state.z .- state.z_prev)
     state.z_prev, state.z = state.z, state.z_prev
 
