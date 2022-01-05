@@ -33,6 +33,6 @@ include("algorithms/primal_dual.jl")
 include("algorithms/davis_yin.jl")
 include("algorithms/li_lin.jl")
 include("algorithms/fista.jl")
-include("algorithms/nolip.jl")
+include("algorithms/panocplus.jl")
 
 end # module
