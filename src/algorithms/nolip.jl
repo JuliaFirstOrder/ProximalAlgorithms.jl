@@ -1,6 +1,6 @@
 # De Marchi, Themelis, "Proximal gradient algorithms under local Lipschitz
 # gradient continuity: a convergence and robustness analysis of PANOC",
-# preprint on arXiv:2112.13000 (2021).
+# arXiv:2112.13000 (2021).
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
@@ -33,7 +33,7 @@ where `f` is locally smooth and `A` is a linear mapping (for example, a matrix).
 # References
 - [1] De Marchi, Themelis, "Proximal gradient algorithms under local Lipschitz
 gradient continuity: a convergence and robustness analysis of PANOC",
-preprint on arXiv:2112.13000 (2021).
+arXiv:2112.13000 (2021).
 """
 
 Base.@kwdef struct NOLIPIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
@@ -180,7 +180,7 @@ function Base.iterate(iter::NOLIPIteration{R}, state::NOLIPState) where R
         end
         state.tau *= 0.5
         if tau_backtracks > iter.max_backtracks
-            @warn "stepsize `tau` became too small ($(state.tau)), stopping the iterations"
+            @warn "stepsize `tau` became too small ($(state.tau))"
             return nothing
         end
         tau_backtracks += 1
