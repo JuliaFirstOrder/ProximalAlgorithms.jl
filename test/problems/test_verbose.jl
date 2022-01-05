@@ -120,6 +120,28 @@
 
     end
 
+    @testset "PANOCplus" begin
+
+        # PANOCplus/Nonadaptive
+
+        x0 = zeros(T, n)
+        solver = ProximalAlgorithms.PANOCplus(tol = TOL, verbose = true)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = Lf)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+
+        ## PANOCplus/Adaptive
+
+        x0 = zeros(T, n)
+        solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL, verbose = true)
+        x, it = solver(x0, f = f, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+
+    end
+
     @testset "DouglasRachford" begin
 
         # Douglas-Rachford

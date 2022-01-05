@@ -135,4 +135,30 @@
 
     end
 
+    @testset "PANOCplus" begin
+
+        # PANOCplus/Nonadaptive
+
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOCplus(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = opnorm([A1; A2])^2)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+        @test x0 == x0_backup
+
+        ## PANOCplus/Adaptive
+
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+        @test x0 == x0_backup
+
+    end
+
 end

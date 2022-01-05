@@ -142,4 +142,30 @@
 
     end
 
+    @testset "PANOCplus" begin
+
+        # PANOCplus/Nonadaptive
+
+        x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOCplus(tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g, Lf = Lf)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+        @test x0 == x0_backup
+
+        ## PANOCplus/Adaptive
+
+        x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL)
+        x, it = solver(x0, f = f, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+        @test x0 == x0_backup
+
+    end
+
 end

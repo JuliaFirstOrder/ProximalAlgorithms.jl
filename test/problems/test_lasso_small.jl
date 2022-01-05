@@ -124,6 +124,28 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
     end
 
+    @testset "PANOCplus (fixed step)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOCplus(tol = TOL)
+        x, it = @inferred solver(x0, f = f, A = A, g = g, Lf = Lf)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+        @test x0 == x0_backup
+    end
+
+    @testset "PANOCplus (adaptive step)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL)
+        x, it = @inferred solver(x0, f = f, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+        @test x0 == x0_backup
+    end
+
     @testset "DouglasRachford" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
