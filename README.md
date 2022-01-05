@@ -31,7 +31,7 @@ Vũ-Condat primal-dual algorithm[^chambolle_2011][^vu_2013][^condat_2013] | [`Vu
 Davis-Yin splitting[^davis_2017] | [`DavisYin`](src/algorithms/davis_yin.jl)
 Asymmetric forward-backward-adjoint splitting[^latafat_2017] | [`AFBA`](src/algorithms/primal_dual.jl)
 PANOC (L-BFGS)[^stella_2017] | [`PANOC`](src/algorithms/panoc.jl)
-PANOC+ (L-BFGS)[^demarchi_2021] | [`NOLIP`](src/algorithms/nolip.jl)
+PANOC+ (L-BFGS)[^demarchi_2021] | [`PANOCplus`](src/algorithms/nolip.jl)
 ZeroFPR (L-BFGS)[^themelis_2018] | [`ZeroFPR`](src/algorithms/zerofpr.jl)
 Douglas-Rachford line-search (L-BFGS)[^themelis_2020] | [`DRLS`](src/algorithms/drls.jl)
 

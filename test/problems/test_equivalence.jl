@@ -5,7 +5,7 @@ using ProximalOperators
 using ProximalAlgorithms:
     DouglasRachfordIteration, DRLSIteration,
     ForwardBackwardIteration, PANOCIteration,
-    NOLIPIteration,
+    PANOCplusIteration,
     NoAcceleration
 
 @testset "DR/DRLS equivalence ($T)" for T in [Float32, Float64]
@@ -64,7 +64,7 @@ end
     end
 end
 
-@testset "PANOC/NOLIP equivalence ($T)" for T in [Float32, Float64]
+@testset "PANOC/PANOCplus equivalence ($T)" for T in [Float32, Float64]
     A = T[
         1.0 -2.0 3.0 -4.0 5.0
         2.0 -1.0 0.0 -1.0 3.0
@@ -85,9 +85,9 @@ end
     x0 = zeros(R, n)
 
     panoc_iter = PANOCIteration(f=f, g=g, x0=x0, gamma=R(0.95) / opnorm(A)^2)
-    nolip_iter = NOLIPIteration(f=f, g=g, x0=x0, gamma=R(0.95) / opnorm(A)^2)
+    panocplus_iter = PANOCplusIteration(f=f, g=g, x0=x0, gamma=R(0.95) / opnorm(A)^2)
 
-    for (panoc_state, nolip_state) in Iterators.take(zip(panoc_iter, nolip_iter), 10)
-        @test isapprox(panoc_state.z, nolip_state.z)
+    for (panoc_state, panocplus_state) in Iterators.take(zip(panoc_iter, panocplus_iter), 10)
+        @test isapprox(panoc_state.z, panocplus_state.z)
     end
 end

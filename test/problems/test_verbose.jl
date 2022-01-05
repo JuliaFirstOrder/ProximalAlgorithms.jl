@@ -120,21 +120,21 @@
 
     end
 
-    @testset "NOLIP" begin
+    @testset "PANOCplus" begin
 
-        # NOLIP/Nonadaptive
+        # PANOCplus/Nonadaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.NOLIP(tol = TOL, verbose = true)
+        solver = ProximalAlgorithms.PANOCplus(tol = TOL, verbose = true)
         x, it = solver(x0, f = f, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
 
-        ## NOLIP/Adaptive
+        ## PANOCplus/Adaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.NOLIP(adaptive = true, tol = TOL, verbose = true)
+        solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL, verbose = true)
         x, it = solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL

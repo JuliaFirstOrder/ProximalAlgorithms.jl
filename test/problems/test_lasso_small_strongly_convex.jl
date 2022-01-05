@@ -78,8 +78,8 @@ using ProximalAlgorithms
         @test x0 == x0_backup
     end
 
-    @testset "NOLIP" begin
-        solver = ProximalAlgorithms.NOLIP(tol = TOL)
+    @testset "PANOCplus" begin
+        solver = ProximalAlgorithms.PANOCplus(tol = TOL)
         y, it = solver(x0, f = f, g = h, Lf = Lf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL

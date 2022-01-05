@@ -124,10 +124,10 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
     end
 
-    @testset "NOLIP (fixed step)" begin
+    @testset "PANOCplus (fixed step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
-        solver = ProximalAlgorithms.NOLIP(tol = TOL)
+        solver = ProximalAlgorithms.PANOCplus(tol = TOL)
         x, it = @inferred solver(x0, f = f, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
@@ -135,10 +135,10 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
     end
 
-    @testset "NOLIP (adaptive step)" begin
+    @testset "PANOCplus (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
-        solver = ProximalAlgorithms.NOLIP(adaptive = true, tol = TOL)
+        solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL)
         x, it = @inferred solver(x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL

@@ -9,9 +9,9 @@ using LinearAlgebra
 using Printf
 
 """
-    NOLIPIteration(; <keyword-arguments>)
+    PANOCplusIteration(; <keyword-arguments>)
 
-Instantiate the NOLIP algorithm (see [1]) for solving optimization problems
+Instantiate the PANOCplus algorithm (see [1]) for solving optimization problems
 of the form
 
     minimize f(Ax) + g(x),
@@ -36,7 +36,7 @@ gradient continuity: a convergence and robustness analysis of PANOC",
 arXiv:2112.13000 (2021).
 """
 
-Base.@kwdef struct NOLIPIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
+Base.@kwdef struct PANOCplusIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
     f::Tf = Zero()
     A::TA = I
     g::Tg = Zero()
@@ -51,9 +51,9 @@ Base.@kwdef struct NOLIPIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
     directions::D = LBFGS(5)
 end
 
-Base.IteratorSize(::Type{<:NOLIPIteration}) = Base.IsInfinite()
+Base.IteratorSize(::Type{<:PANOCplusIteration}) = Base.IsInfinite()
 
-Base.@kwdef mutable struct NOLIPState{R,Tx,TAx,TH}
+Base.@kwdef mutable struct PANOCplusState{R,Tx,TAx,TH}
     x::Tx             # iterate
     Ax::TAx           # A times x
     f_Ax::R           # value of smooth term
@@ -81,9 +81,9 @@ Base.@kwdef mutable struct NOLIPState{R,Tx,TAx,TH}
     At_grad_f_Az::Tx = similar(x)
 end
 
-f_model(iter::NOLIPIteration, state::NOLIPState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
+f_model(iter::PANOCplusIteration, state::PANOCplusState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
 
-function Base.iterate(iter::NOLIPIteration{R}) where {R}
+function Base.iterate(iter::PANOCplusIteration{R}) where {R}
     x = copy(iter.x0)
     Ax = iter.A * x
     grad_f_Ax, f_Ax = gradient(iter.f, Ax)
@@ -91,7 +91,7 @@ function Base.iterate(iter::NOLIPIteration{R}) where {R}
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
     z, g_z = prox(iter.g, y, gamma)
-    state = NOLIPState(
+    state = PANOCplusState(
         x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
         gamma=gamma, y=y, z=z, g_z=g_z, res=x-z, H=initialize(iter.directions, x),
     )
@@ -106,19 +106,19 @@ function Base.iterate(iter::NOLIPIteration{R}) where {R}
     return state, state
 end
 
-set_next_direction!(::QuasiNewtonStyle, ::NOLIPIteration, state::NOLIPState) = mul!(state.d, state.H, -state.res)
-set_next_direction!(::NoAccelerationStyle, ::NOLIPIteration, state::NOLIPState) = state.d .= .-state.res
-set_next_direction!(iter::NOLIPIteration, state::NOLIPState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
+set_next_direction!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState) = mul!(state.d, state.H, -state.res)
+set_next_direction!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOCplusState) = state.d .= .-state.res
+set_next_direction!(iter::PANOCplusIteration, state::PANOCplusState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
 
-update_direction_state!(::QuasiNewtonStyle, ::NOLIPIteration, state::NOLIPState) = update!(state.H, state.x - state.x_prev, state.res - state.res_prev)
-update_direction_state!(::NoAccelerationStyle, ::NOLIPIteration, state::NOLIPState) = return
-update_direction_state!(iter::NOLIPIteration, state::NOLIPState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
+update_direction_state!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState) = update!(state.H, state.x - state.x_prev, state.res - state.res_prev)
+update_direction_state!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOCplusState) = return
+update_direction_state!(iter::PANOCplusIteration, state::PANOCplusState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-reset_direction_state!(::QuasiNewtonStyle, ::NOLIPIteration, state::NOLIPState) = reset!(state.H)
-reset_direction_state!(::NoAccelerationStyle, ::NOLIPIteration, state::NOLIPState) = return
-reset_direction_state!(iter::NOLIPIteration, state::NOLIPState) = reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
+reset_direction_state!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState) = reset!(state.H)
+reset_direction_state!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOCplusState) = return
+reset_direction_state!(iter::PANOCplusIteration, state::PANOCplusState) = reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-function Base.iterate(iter::NOLIPIteration{R}, state::NOLIPState) where R
+function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where R
     f_Az, a, b, c = R(Inf), R(Inf), R(Inf), R(Inf)
 
     # store iterate and residual for metric update later on
@@ -192,7 +192,7 @@ end
 
 # Solver
 
-struct NOLIP{R, K}
+struct PANOCplus{R, K}
     maxit::Int
     tol::R
     verbose::Bool
@@ -200,8 +200,8 @@ struct NOLIP{R, K}
     kwargs::K
 end
 
-function (solver::NOLIP)(x0; kwargs...)
-    stop(state::NOLIPState) = norm(state.res, Inf) / state.gamma <= solver.tol
+function (solver::PANOCplus)(x0; kwargs...)
+    stop(state::PANOCplusState) = norm(state.res, Inf) / state.gamma <= solver.tol
     disp((it, state)) = @printf(
         "%5d | %.3e | %.3e | %.3e\n",
         it,
@@ -209,7 +209,7 @@ function (solver::NOLIP)(x0; kwargs...)
         norm(state.res, Inf) / state.gamma,
         state.tau,
     )
-    iter = NOLIPIteration(; x0=x0, solver.kwargs..., kwargs...)
+    iter = PANOCplusIteration(; x0=x0, solver.kwargs..., kwargs...)
     iter = take(halt(iter, stop), solver.maxit)
     iter = enumerate(iter)
     if solver.verbose
@@ -219,5 +219,5 @@ function (solver::NOLIP)(x0; kwargs...)
     return state_final.z, num_iters
 end
 
-NOLIP(; maxit=1_000, tol=1e-8, verbose=false, freq=10, kwargs...) =
-    NOLIP(maxit, tol, verbose, freq, kwargs)
+PANOCplus(; maxit=1_000, tol=1e-8, verbose=false, freq=10, kwargs...) =
+    PANOCplus(maxit, tol, verbose, freq, kwargs)
