@@ -64,6 +64,15 @@ using ProximalAlgorithms
         @test x0 == x0_backup
     end
 
+    @testset "FastForwardBackward (custom extrapolation)" begin
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
+        y, it = solver(x0, f = f, g = h, gamma = 1/Lf, mf = μf, extrapolation_sequence=ProximalAlgorithms.ConstantNesterovSequence(μf, 1/Lf))
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 35
+        @test x0 == x0_backup
+    end
+
     @testset "DRLS" begin
         solver = ProximalAlgorithms.DRLS(tol = TOL)
         u, v, it = solver(x0, f = f, g = h, muf = μf)

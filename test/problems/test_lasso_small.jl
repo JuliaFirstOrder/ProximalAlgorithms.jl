@@ -78,6 +78,17 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
     end
 
+    @testset "FastForwardBackward (custom extrapolation)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
+        x, it = @inferred solver(x0, f = f2, g = g, Lf = Lf, extrapolation_sequence=FixedNesterovSequence(real(T)))
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 100
+        @test x0 == x0_backup
+    end
+
     @testset "ZeroFPR (fixed step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
