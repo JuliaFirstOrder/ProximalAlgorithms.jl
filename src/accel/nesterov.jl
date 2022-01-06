@@ -71,6 +71,10 @@ object.
 Note that this type, as opposed to e.g. [`FixedNesterovSequence`](@ref), is not a standard Julia iterator, in that it requires
 the sequence of stepsizes (input to [`next!`](@ref)) in order to produce the output sequence.
 
+Special cases: if `next!` is invoked with a constant stepsize `gamma`, then
+- If `m == 0`, the output sequence will be the same as for `FixedNesterovSequence(R)`.
+- If `m > 0`, the output sequence will be the same as for `ConstantNesterovSequence(m, gamma)`.
+
 See also: [`next!`](@ref).
 """
 AdaptiveNesterovSequence(m::R) where R = AdaptiveNesterovSequence{R}(m, -R(1), -R(1))
