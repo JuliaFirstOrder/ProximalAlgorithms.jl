@@ -83,8 +83,8 @@ plot(contour, box, point, Guide.xlabel(nothing), Guide.ylabel(nothing))
 # Under the hood, all algorithms are implemented as standard Julia iterators. Following the previous example,
 # the `FastForwardBackward` algorithm internally uses a `ForwardBackwardIteration` iterator object.
 # Each iterator outputs the complete iteration state: interacting directly with this object allows for more
-# fine-grained inspection and control over the algorithm, for example to report a custom view of the evolution
-# of algorithm state (cost decrease, or whatever other metric), or to interrupt the optimization based on a
+# fine-grained inspection and control over the algorithm, for example to report the algorithm's progress in a
+# custom way (cost decrease, or whatever other metric), or to interrupt the optimization based on a
 # custom stopping criterion.
 # 
 #md # !!! note
@@ -94,7 +94,7 @@ plot(contour, box, point, Guide.xlabel(nothing), Guide.ylabel(nothing))
 #md # 
 # 
 # For example, the optimization can be customized as follows: here we print the value of the cost function
-# every fifty iterations, and stop on a custom condition on the fixed-point residual norm.
+# every ten iterations, and stop on a custom condition on the fixed-point residual norm.
 
 ffbiter = ProximalAlgorithms.FastForwardBackwardIteration(x0=zeros(2), f=quadratic_cost, g=box_indicator)
 
