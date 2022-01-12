@@ -27,11 +27,8 @@ where `h` is smooth.
 - `gamma=nothing`: stepsize to use, defaults to `1/Lh` if not set (but `Lh` is).
 
 # References
-- [1] Davis, Yin. "A Three-Operator Splitting Scheme and its Optimization
-Applications", Set-Valued and Variational Analysis, vol. 25, no. 4,
-pp. 829–858 (2017).
+1. Davis, Yin. "A Three-Operator Splitting Scheme and its Optimization Applications", Set-Valued and Variational Analysis, vol. 25, no. 4, pp. 829–858 (2017).
 """
-
 Base.@kwdef struct DavisYinIteration{R,C<:Union{R,Complex{R}},T<:AbstractArray{C},Tf,Tg,Th}
     f::Tf = Zero()
     g::Tg = Zero()

@@ -1,0 +1,8 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterCitations = "daee34ce-89f3-4625-b898-19384cb65244"
+Gadfly = "c91e804a-d5a3-530f-b6f0-dfbca275c004"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+ProximalAlgorithms = "140ffc9f-1907-541a-a177-7475e0a401e9"
+ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"

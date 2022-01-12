@@ -23,13 +23,8 @@ convex optimization problems of the form
 - `gamma`: stepsize to use.
 
 # References
-- [1] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
-Optimization" (2008).
-- [2] Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
-for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
-pp. 183-202 (2009).
+1. Eckstein, Bertsekas, "On the Douglas-Rachford Splitting Method and the Proximal Point Algorithm for Maximal Monotone Operators", Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 """
-
 Base.@kwdef struct DouglasRachfordIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
     f::Tf = Zero()
     g::Tg = Zero()

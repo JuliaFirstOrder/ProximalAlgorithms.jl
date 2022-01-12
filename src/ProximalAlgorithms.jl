@@ -1,9 +1,28 @@
 module ProximalAlgorithms
 
 using ProximalOperators
+import ProximalOperators: prox!, gradient!
 
 const RealOrComplex{R} = Union{R,Complex{R}}
 const Maybe{T} = Union{T,Nothing}
+
+"""
+    prox!(y, f, x, gamma)
+
+Compute the proximal mapping of `f` at `x`, with stepsize `gamma`, and store the result in `y`.
+Return the value of `f` at `y`.
+"""
+prox!(y, f, x, gamma)
+
+"""
+    gradient!(g, f, x)
+
+Compute the gradient of `f` at `x`, and stores it in `y`. Return the value of `f` at `x`.
+"""
+gradient!(y, f, x)
+
+# TODO move out
+ProximalOperators.is_quadratic(::Any) = false
 
 # utilities
 

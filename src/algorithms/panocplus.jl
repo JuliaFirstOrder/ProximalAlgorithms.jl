@@ -31,11 +31,8 @@ where `f` is locally smooth and `A` is a linear mapping (for example, a matrix).
 - `directions=LBFGS(5)`: strategy to use to compute line-search directions.
 
 # References
-- [1] De Marchi, Themelis, "Proximal gradient algorithms under local Lipschitz
-gradient continuity: a convergence and robustness analysis of PANOC",
-arXiv:2112.13000 (2021).
+1. De Marchi, Themelis, "Proximal gradient algorithms under local Lipschitz gradient continuity: a convergence and robustness analysis of PANOC", arXiv:2112.13000 (2021).
 """
-
 Base.@kwdef struct PANOCplusIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
     f::Tf = Zero()
     A::TA = I

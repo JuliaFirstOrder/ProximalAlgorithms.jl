@@ -10,7 +10,7 @@ using Printf
 """
     ForwardBackwardIteration(; <keyword-arguments>)
 
-Instantiate the forward-backward splitting algorithm (see [1, 2]) for solving
+Instantiate the forward-backward splitting algorithm (see [1]) for solving
 optimization problems of the form
 
     minimize f(x) + g(x),
@@ -27,10 +27,8 @@ where `f` is smooth.
 - `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
 
 # References
-- [1] Lions, Mercier, “Splitting algorithms for the sum of two nonlinear
-operators,” SIAM Journal on Numerical Analysis, vol. 16, pp. 964–979 (1979).
+1. Lions, Mercier, “Splitting algorithms for the sum of two nonlinear operators,” SIAM Journal on Numerical Analysis, vol. 16, pp. 964–979 (1979).
 """
-
 Base.@kwdef struct ForwardBackwardIteration{R,Tx,Tf,Tg,TLf,Tgamma}
     f::Tf = Zero()
     g::Tg = Zero()

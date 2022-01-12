@@ -31,11 +31,8 @@ where `f` is smooth and `A` is a linear mapping (for example, a matrix).
 - `directions=LBFGS(5)`: strategy to use to compute line-search directions.
 
 # References
-- [1] Stella, Themelis, Sopasakis, Patrinos, "A simple and efficient algorithm
-for nonlinear model predictive control", 56th IEEE Conference on Decision
-and Control (2017).
+1. Stella, Themelis, Sopasakis, Patrinos, "A simple and efficient algorithm for nonlinear model predictive control", 56th IEEE Conference on Decision and Control (2017).
 """
-
 Base.@kwdef struct PANOCIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
     f::Tf = Zero()
     A::TA = I
