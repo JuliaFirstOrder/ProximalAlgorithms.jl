@@ -66,13 +66,6 @@ Base.@kwdef mutable struct PANOCplusState{R,Tx,TAx,TH}
     x_prev::Tx = similar(x)
     res_prev::Tx = similar(x)
     d::Tx = similar(x)
-    Ad::TAx = similar(Ax)
-    x_d::Tx = similar(x)
-    Ax_d::TAx = similar(Ax)
-    f_Ax_d::R = zero(real(eltype(x)))
-    grad_f_Ax_d::TAx = similar(Ax)
-    At_grad_f_Ax_d::Tx = similar(x)
-    z_curr::Tx = similar(x)
     Az::TAx = similar(Ax)
     grad_f_Az::TAx = similar(Ax)
     At_grad_f_Az::Tx = similar(x)
@@ -93,13 +86,17 @@ function Base.iterate(iter::PANOCplusIteration{R}) where {R}
         gamma=gamma, y=y, z=z, g_z=g_z, res=x-z, H=initialize(iter.directions, x),
     )
     if (iter.gamma === nothing || iter.adaptive == true)
-        state.gamma, state.g_z, f_Az, f_Az_upp = backtrack_stepsize!(
+        state.gamma, state.g_z, _, _ = backtrack_stepsize!(
             state.gamma, iter.f, iter.A, iter.g,
             state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.z, state.g_z, state.res,
             state.Az, state.grad_f_Az,
             alpha = iter.alpha, minimum_gamma = iter.minimum_gamma,
         )
+    else
+        mul!(state.Az, iter.A, state.z)
+        gradient!(state.grad_f_Az, iter.f, state.Az)
     end
+    mul!(state.At_grad_f_Az, adjoint(iter.A), state.grad_f_Az)
     return state, state
 end
 
@@ -167,7 +164,11 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
                 reset_direction_state!(iter, state)
                 continue
             end
+        else
+            mul!(state.Az, iter.A, state.z)
+            f_Az = gradient!(state.grad_f_Az, iter.f, state.Az)
         end
+        mul!(state.At_grad_f_Az, adjoint(iter.A), state.grad_f_Az)
 
         FBE_x_new = f_Az_upp + state.g_z
         if FBE_x_new <= threshold
@@ -198,7 +199,7 @@ struct PANOCplus{R, K}
 end
 
 function (solver::PANOCplus)(x0; kwargs...)
-    stop(state::PANOCplusState) = norm(state.res, Inf) / state.gamma <= solver.tol
+    stop(state::PANOCplusState) = norm((state.res / state.gamma) - state.At_grad_f_Ax + state.At_grad_f_Az, Inf) <= solver.tol
     disp((it, state)) = @printf(
         "%5d | %.3e | %.3e | %.3e\n",
         it,
