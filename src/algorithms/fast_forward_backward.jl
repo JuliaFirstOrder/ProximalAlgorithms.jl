@@ -31,13 +31,9 @@ where `f` is smooth.
 - `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
 
 # References
-- [1] Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave
-Optimization" (2008).
-- [2] Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm
-for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1,
-pp. 183-202 (2009).
+1. Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave Optimization" (2008).
+2. Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183-202 (2009).
 """
-
 Base.@kwdef struct FastForwardBackwardIteration{R,Tx,Tf,Tg,TLf,Tgamma}
     f::Tf = Zero()
     g::Tg = Zero()

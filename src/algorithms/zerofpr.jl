@@ -32,11 +32,8 @@ where `f` is smooth and `A` is a linear mapping (for example, a matrix).
 - `directions=LBFGS(5)`: strategy to use to compute line-search directions.
 
 # References
-- [1] Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two
-nonconvex functions: Further properties and nonmonotone line-search algorithms",
-SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
+1. Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms", SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
 """
-
 Base.@kwdef struct ZeroFPRIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
     f::Tf = Zero()
     A::TA = I

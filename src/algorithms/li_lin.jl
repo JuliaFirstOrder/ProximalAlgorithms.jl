@@ -25,10 +25,8 @@ where `f` is smooth.
 - `gamma=nothing`: stepsize to use, defaults to `1/Lf` if not set (but `Lf` is).
 
 # References
-- [1] Li, Lin, "Accelerated Proximal Gradient Methods for Nonconvex Programming",
-Proceedings of NIPS 2015 (2015).
+1. Li, Lin, "Accelerated Proximal Gradient Methods for Nonconvex Programming", Proceedings of NIPS 2015 (2015).
 """
-
 Base.@kwdef struct LiLinIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
     f::Tf = Zero()
     g::Tg = Zero()

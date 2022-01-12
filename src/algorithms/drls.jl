@@ -27,6 +27,29 @@ function drls_C(f, muf, Lf, gamma, lambda)
     return (lambda / ((1 + a)^2) * ((2 - lambda) / 2 - a * m))
 end
 
+"""
+    DRLSIteration(; <keyword-arguments>)
+
+Instantiate the Douglas-Rachford line-search algorithm (see [1]) for solving optimization problems
+of the form
+
+    minimize f(x) + g(x),
+
+where `f` is smooth.
+
+# Arguments
+- `x0`: initial point.
+- `f=Zero()`: smooth objective term.
+- `g=Zero()`: proximable objective term.
+- `muf=nothing`: convexity modulus of f.
+- `Lf=nothing`: Lipschitz constant of the gradient of f.
+- `gamma`: stepsize to use, chosen appropriately based on Lf and muf by defaults.
+- `max_backtracks=20`: maximum number of line-search backtracks.
+- `directions=LBFGS(5)`: strategy to use to compute line-search directions.
+
+# References
+1. Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM for nonconvex optimization: Accelerated and Newton-type linesearch algorithms", arXiv:2005.10230, 2020.
+"""
 Base.@kwdef struct DRLSIteration{R,Tx,Tf,Tg,Tmuf,TLf,D}
     f::Tf = Zero()
     g::Tg = Zero()
