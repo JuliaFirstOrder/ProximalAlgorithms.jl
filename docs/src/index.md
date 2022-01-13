@@ -13,6 +13,11 @@ Implemented algorithms include:
 
 Check out [this section](@ref problems_algorithms) for an overview of the available algorithms.
 
+## Citing
+
+If you use any of the algorithms from ProximalAlgorithms in your research, you are kindly asked to cite the relevant bibliography.
+Please check [this section of the manual](https://juliafirstorder.github.io/ProximalAlgorithms.jl/dev/implemented_algorithms/) for algorithm-specific references.
+
 ## Contributing
 
 Contributions are welcome in the form of [issue notifications](https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl/issues) or [pull requests](https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl/pulls). When contributing new algorithms, we highly recommend looking at already implemented ones to get inspiration on how to structure the code.
