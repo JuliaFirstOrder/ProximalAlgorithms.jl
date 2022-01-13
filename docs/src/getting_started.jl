@@ -88,8 +88,9 @@ plot(contour, box, point, Guide.xlabel(nothing), Guide.ylabel(nothing))
 
 # ## [Iterator interface](@id iterator_interface)
 # 
-# Under the hood, all algorithms are implemented as standard Julia iterators. Following the previous example,
-# the `FastForwardBackward` algorithm internally uses a `ForwardBackwardIteration` iterator object.
+# Under the hood, all algorithms are implemented as standard Julia iterators. In the above example,
+# the `FastForwardBackward` algorithm internally uses a [`FastForwardBackwardIteration`](@ref ProximalAlgorithms.FastForwardBackwardIteration)
+# iterator object.
 # Each iterator outputs the complete iteration state: interacting directly with this object allows for more
 # fine-grained inspection and control over the algorithm, for example to report the algorithm's progress in a
 # custom way (cost decrease, or whatever other metric), or to interrupt the optimization based on a
@@ -183,9 +184,10 @@ using ProximalOperators
 
 reg = ProximalOperators.NormL1(1)
 
-# We want to minimize the sum of `training_loss` and `reg`, and for this task we can use the fast proximal gradient method,
-# also known as fast forward-backward splitting, or FISTA. Therefore we construct the algorithm, then apply it to our problem
-# by providing a starting point, and the objective terms `f=training_loss` (smooth) and `g=reg` (non smooth).
+# We want to minimize the sum of `training_loss` and `reg`, and for this task we can use `FastForwardBackward`,
+# which implements the fast proximal gradient method (also known as fast forward-backward splitting, or FISTA).
+# Therefore we construct the algorithm, then apply it to our problem by providing a starting point,
+# and the objective terms `f=training_loss` (smooth) and `g=reg` (non smooth).
 
 using ProximalAlgorithms
 
