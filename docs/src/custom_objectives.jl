@@ -66,3 +66,48 @@ contour = layer(
 point = layer(x=[solution[1]], y=[solution[2]], Geom.point)
 circle = layer(x=cos.(0:0.01:2*pi), y=sin.(0:0.01:2*pi), Geom.path)
 plot(contour, circle, point, Guide.xlabel(nothing), Guide.ylabel(nothing))
+
+# ## Example: counting operations
+# 
+# It is often interesting to measure how many operations (gradient- or prox-evaluation) an algorithm is taking.
+# In fact, in algorithms involving backtracking or some other line-search logic, the iteration count may not be entirely
+# representative of the amount of operations are being performed; or maybe some specific implementations require
+# additional operations to be performed when checking stopping conditions. All of this makes it difficult to quantify the exact
+# iteration complexity.
+# 
+# We can achieve this by wrapping functions in a dedicated `Counting` type:
+
+mutable struct Counting{T} <: ProximalOperators.ProximableFunction
+    f::T
+    gradient_count::Int
+    prox_count::Int
+end
+
+Counting(f::T) where T = Counting{T}(f, 0, 0)
+
+# Now we only need to intercept any call to `gradient!` and `prox!` and increase counters there:
+
+function ProximalOperators.gradient!(y, f::Counting, x)
+    f.gradient_count += 1
+    return ProximalOperators.gradient!(y, f.f, x)
+end
+
+function ProximalOperators.prox!(y, f::Counting, x, gamma)
+    f.prox_count += 1
+    return ProximalOperators.prox!(y, f.f, x, gamma)
+end
+
+# We can run again the previous example, this time wrapping the objective terms within `Counting`:
+
+f = Counting(rosenbrock2D)
+g = Counting(IndUnitBall())
+
+solution, iterations = panoc(-ones(2), f=f, g=g)
+
+# and check how many operations where actually performed:
+
+println(f.gradient_count)
+println(g.prox_count)
+
+# Note that this idea can be applied also to linear operators, by appropriately extending the `mul!`
+# function for the counting type and its adjoint.
