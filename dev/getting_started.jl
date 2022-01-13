@@ -27,9 +27,17 @@
 # ```
 # 
 # where ``N`` depends on the specific algorithm, together with specific assumptions on the terms ``f_i`` (like smoothness, convexity, strong convexity).
-# The problem above is solved by iteratively accessing specific *first order information* on the terms ``f_i``, like their gradient ``\nabla f_i`` or their proximal mapping ``\operatorname{prox}_{f_i}``:
+# The problem above is solved by iteratively accessing specific *first order information* on the terms ``f_i``,
+# like their gradient ``\nabla f_i`` or their proximal mapping ``\operatorname{prox}_{f_i}``:
+# ```math
+# \mathrm{prox}_{\gamma f_i}(x) = \arg\min_z \left\{ f_i(z) + \tfrac{1}{2\gamma}\|z-x\|^2 \right\}
+# ```
+# The literature on proximal operators and algorithms is vast: for an overview, one can refer to [Parikh2014](@cite), [Beck2017](@cite).
+# 
+# To evaluate these first-order primitives, ProximalAlgorithms does the following:
 # * ``\nabla f_i`` falls back to using automatic differentiation (as provided by [Zygote](https://github.com/FluxML/Zygote.jl)).
-# * ``\operatorname{prox}_{f_i}`` relies on the intereface of [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl), which one can implement for custom function types in case none of functions there provided can be used to formulate the problem of interest.
+# * ``\operatorname{prox}_{f_i}`` relies on the intereface of [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl).
+# Both of the above can be implemented for custom function types, as [documented here](@ref custom_terms).
 # 
 #md # !!! note
 #md # 

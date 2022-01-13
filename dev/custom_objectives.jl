@@ -1,4 +1,4 @@
-# # Custom objective terms
+# # [Custom objective terms](@id custom_terms)
 # 
 # ProximalAlgorithms relies on the first-order primitives implemented in [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl):
 # while a rich library of function types is provided there, one may need to formulate
@@ -108,6 +108,3 @@ solution, iterations = panoc(-ones(2), f=f, g=g)
 
 println(f.gradient_count)
 println(g.prox_count)
-
-# Note that this idea can be applied also to linear operators, by appropriately extending the `mul!`
-# function for the counting type and its adjoint.
