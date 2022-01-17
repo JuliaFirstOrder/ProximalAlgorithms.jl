@@ -3,7 +3,6 @@
 # Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 
 using Base.Iterators
-using ProximalAlgorithms.IterationTools
 using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
@@ -53,27 +52,17 @@ end
 
 # Solver
 
-struct DouglasRachford{R, K}
-    maxit::Int
-    tol::R
-    verbose::Bool
-    freq::Int
-    kwargs::K
-end
+default_stopping_criterion(tol, iter::DouglasRachfordIteration, state::DouglasRachfordState) = norm(state.res, Inf) / iter.gamma <= tol
+default_solution(::DouglasRachfordIteration, state::DouglasRachfordState) = state.y
+default_display(it, iter::DouglasRachfordIteration, state::DouglasRachfordState) = @printf("%5d | %.3e\n", it, norm(state.res, Inf) / iter.gamma)
 
-function (solver::DouglasRachford)(x0; kwargs...)
-    iter = DouglasRachfordIteration(; x0=x0, solver.kwargs..., kwargs...)
-    gamma = iter.gamma
-    stop(state::DouglasRachfordState) = norm(state.res, Inf) / gamma <= solver.tol
-    disp((it, state)) = @printf("%5d | %.3e\n", it, norm(state.res, Inf) / gamma)
-    iter = take(halt(iter, stop), solver.maxit)
-    iter = enumerate(iter)
-    if solver.verbose
-        iter = tee(sample(iter, solver.freq), disp)
-    end
-    num_iters, state_final = loop(iter)
-    return state_final.y, state_final.z, num_iters
-end
-
-DouglasRachford(; maxit=1_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
-    DouglasRachford(maxit, tol, verbose, freq, kwargs)
+DouglasRachford(;
+    maxit=1_000,
+    tol=1e-8,
+    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution=default_solution,
+    verbose=false,
+    freq=100,
+    display=default_display,
+    kwargs...
+) = IterativeAlgorithm(DouglasRachfordIteration; maxit, stop, solution, verbose, freq, display, kwargs...)

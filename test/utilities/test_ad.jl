@@ -31,7 +31,7 @@ using ProximalAlgorithms
         x_star = T[-3.877278911564627e-01, 0, 0, 2.174149659863943e-02, 6.168435374149660e-01]
         TOL = R(1e-4)
         solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
-        x, it = solver(zeros(T, n), f = f, g = g, Lf = Lf)
+        x, it = solver(x0 = zeros(T, n), f = f, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100

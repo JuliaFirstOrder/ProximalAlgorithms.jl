@@ -135,27 +135,17 @@ end
 
 # Solver
 
-struct LiLin{R, K}
-    maxit::Int
-    tol::R
-    verbose::Bool
-    freq::Int
-    kwargs::K
-end
+default_stopping_criterion(tol, ::LiLinIteration, state::LiLinState) = norm(state.res, Inf) / state.gamma <= tol
+default_solution(::LiLinIteration, state::LiLinState) = state.z
+default_display(it, ::LiLinIteration, state::LiLinState) = @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
 
-function (solver::LiLin)(x0; kwargs...)
-    stop(state::LiLinState) = norm(state.res, Inf) / state.gamma <= solver.tol
-    disp((it, state)) =
-        @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
-    iter = LiLinIteration(; x0=x0, solver.kwargs..., kwargs...)
-    iter = take(halt(iter, stop), solver.maxit)
-    iter = enumerate(iter)
-    if solver.verbose
-        iter = tee(sample(iter, solver.freq), disp)
-    end
-    num_iters, state_final = loop(iter)
-    return state_final.z, num_iters
-end
-
-LiLin(; maxit=10_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
-    LiLin(maxit, tol, verbose, freq, kwargs)
+LiLin(;
+    maxit=10_000,
+    tol=1e-8,
+    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution=default_solution,
+    verbose=false,
+    freq=100,
+    display=default_display,
+    kwargs...
+) = IterativeAlgorithm(LiLinIteration; maxit, stop, solution, verbose, freq, display, kwargs...)

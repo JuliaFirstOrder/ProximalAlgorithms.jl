@@ -174,32 +174,19 @@ end
 
 # Solver
 
-struct DRLS{R, K}
-    maxit::Int
-    tol::R
-    verbose::Bool
-    freq::Int
-    kwargs::K
-end
+default_stopping_criterion(tol, ::DRLSIteration, state::DRLSState) = norm(state.res, Inf) / state.gamma <= tol
+default_solution(::DRLSIteration, state::DRLSState) = state.v
+default_display(it, ::DRLSIteration, state::DRLSState) = @printf(
+    "%5d | %.3e | %.3e | %.3e\n", it, state.gamma / state.gamma, norm(state.res, Inf), state.tau,
+)
 
-function (solver::DRLS)(x0; kwargs...)
-    stop(state::DRLSState) = norm(state.res, Inf) / state.gamma <= solver.tol
-    disp((it, state)) = @printf(
-        "%5d | %.3e | %.3e | %.3e\n",
-        it,
-        state.gamma / state.gamma,
-        norm(state.res, Inf),
-        state.tau,
-    )
-    iter = DRLSIteration(; x0=x0, solver.kwargs..., kwargs...)
-    iter = take(halt(iter, stop), solver.maxit)
-    iter = enumerate(iter)
-    if solver.verbose
-        iter = tee(sample(iter, solver.freq), disp)
-    end
-    num_iters, state_final = loop(iter)
-    return state_final.u, state_final.v, num_iters
-end
-
-DRLS(; maxit=1_000, tol=1e-8, verbose=false, freq=10, kwargs...) = 
-    DRLS(maxit, tol, verbose, freq, kwargs)
+DRLS(;
+    maxit=1_000,
+    tol=1e-8,
+    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution=default_solution,
+    verbose=false,
+    freq=10,
+    display=default_display,
+    kwargs...
+) = IterativeAlgorithm(DRLSIteration; maxit, stop, solution, verbose, freq, display, kwargs...)

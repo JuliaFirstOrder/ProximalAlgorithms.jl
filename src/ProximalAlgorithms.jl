@@ -24,14 +24,14 @@ gradient!(y, f, x)
 # TODO move out
 ProximalOperators.is_quadratic(::Any) = false
 
-# utilities
+# various utilities
 
 include("utilities/ad.jl")
 include("utilities/conjugate.jl")
 include("utilities/fb_tools.jl")
 include("utilities/iteration_tools.jl")
 
-# acceleration operators
+# acceleration utilities
 
 include("accel/traits.jl")
 include("accel/lbfgs.jl")
@@ -40,7 +40,35 @@ include("accel/nesterov.jl")
 include("accel/broyden.jl")
 include("accel/noaccel.jl")
 
-# algorithms
+# algorithm interface
+
+struct IterativeAlgorithm{IteratorType, H, S, D, K}
+    maxit::Int
+    stop::H
+    solution::S
+    verbose::Bool
+    freq::Int
+    display::D
+    kwargs::K
+end
+
+IterativeAlgorithm(T; maxit, stop, solution, verbose, freq, display, kwargs...) =
+    IterativeAlgorithm{T, typeof(stop), typeof(solution), typeof(display), typeof(kwargs)}(
+        maxit, stop, solution, verbose, freq, display, kwargs
+    )
+
+function (alg::IterativeAlgorithm{IteratorType})(; kwargs...) where IteratorType
+    iter = IteratorType(; alg.kwargs..., kwargs...)
+    for (k, state) in enumerate(iter)
+        if k >= alg.maxit || alg.stop(iter, state)
+            alg.verbose && alg.display(k, iter, state)
+            return (alg.solution(iter, state), k)
+        end
+        alg.verbose && mod(k, alg.freq) == 0 && alg.display(k, iter, state)
+    end
+end
+
+# algorithm implementations
 
 include("algorithms/forward_backward.jl")
 include("algorithms/fast_forward_backward.jl")

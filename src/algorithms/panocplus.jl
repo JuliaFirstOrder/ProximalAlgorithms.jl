@@ -171,51 +171,36 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
         mul!(state.At_grad_f_Az, adjoint(iter.A), state.grad_f_Az)
 
         FBE_x_new = f_Az_upp + state.g_z
-        if FBE_x_new <= threshold
-            # update metric
-            update_direction_state!(iter, state)
-            return state, state
+        if FBE_x_new <= threshold || tau_backtracks >= iter.max_backtracks
+            break
         end
-        state.tau *= 0.5
-        if tau_backtracks > iter.max_backtracks
-            @warn "stepsize `tau` became too small ($(state.tau))"
-            return nothing
-        end
+        state.tau = tau_backtracks >= iter.max_backtracks - 1 ? R(0) : state.tau / 2
         tau_backtracks += 1
         can_update_direction = false
 
     end
 
+    update_direction_state!(iter, state)
+
+    return state, state
+
 end
 
 # Solver
 
-struct PANOCplus{R, K}
-    maxit::Int
-    tol::R
-    verbose::Bool
-    freq::Int
-    kwargs::K
-end
+default_stopping_criterion(tol, ::PANOCplusIteration, state::PANOCplusState) = norm((state.res / state.gamma) - state.At_grad_f_Ax + state.At_grad_f_Az, Inf) <= tol
+default_solution(::PANOCplusIteration, state::PANOCplusState) = state.z
+default_display(it, ::PANOCplusIteration, state::PANOCplusState) = @printf(
+    "%5d | %.3e | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma, state.tau,
+)
 
-function (solver::PANOCplus)(x0; kwargs...)
-    stop(state::PANOCplusState) = norm((state.res / state.gamma) - state.At_grad_f_Ax + state.At_grad_f_Az, Inf) <= solver.tol
-    disp((it, state)) = @printf(
-        "%5d | %.3e | %.3e | %.3e\n",
-        it,
-        state.gamma,
-        norm(state.res, Inf) / state.gamma,
-        state.tau,
-    )
-    iter = PANOCplusIteration(; x0=x0, solver.kwargs..., kwargs...)
-    iter = take(halt(iter, stop), solver.maxit)
-    iter = enumerate(iter)
-    if solver.verbose
-        iter = tee(sample(iter, solver.freq), disp)
-    end
-    num_iters, state_final = loop(iter)
-    return state_final.z, num_iters
-end
-
-PANOCplus(; maxit=1_000, tol=1e-8, verbose=false, freq=10, kwargs...) =
-    PANOCplus(maxit, tol, verbose, freq, kwargs)
+PANOCplus(;
+    maxit=1_000,
+    tol=1e-8,
+    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution=default_solution,
+    verbose=false,
+    freq=10,
+    display=default_display,
+    kwargs...
+) = IterativeAlgorithm(PANOCplusIteration; maxit, stop, solution, verbose, freq, display, kwargs...)

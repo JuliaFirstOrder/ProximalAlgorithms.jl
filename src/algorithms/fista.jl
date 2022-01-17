@@ -108,19 +108,18 @@ function check_sc(state::SFISTAState, iter::SFISTAIteration, tol, termination_ty
     return res, (res <= tol || res ≈ tol)
 end
 
-# Functor ('function-like object') for the above type.
-function (solver::SFISTA)(y0; kwargs...)
-    raw_iter = SFISTAIteration(; y0=y0, solver.kwargs..., kwargs...)
-    stop(state::SFISTAState) = check_sc(state, raw_iter, solver.tol, solver.termination_type)[2]
-    disp((it, state)) = @printf("%5d | %.3e\n", it, check_sc(state, raw_iter, solver.tol, solver.termination_type)[1])
-    iter = take(halt(raw_iter, stop), solver.maxit)
-    iter = enumerate(iter)
-    if solver.verbose
-        iter = tee(sample(iter, solver.freq), disp)
-    end
-    num_iters, state_final = loop(iter)
-    return state_final.y, num_iters
-end
+# Solver
 
-SFISTA(; maxit=10_000, tol=1e-6, termination_type="", verbose=false, freq=(maxit < Inf ? Int(maxit/100) : 100), kwargs...) =
-    SFISTA(maxit, tol, termination_type, verbose, freq, kwargs)
+default_solution(::SFISTAIteration, state::SFISTAState) = state.y
+
+SFISTA(;
+    maxit=10_000,
+    tol=1e-6,
+    termination_type="",
+    stop=(iter, state) -> check_sc(state, iter, tol, termination_type)[2],
+    solution=default_solution,
+    verbose=false,
+    freq=100,
+    display=(it, iter, state) -> @printf("%5d | %.3e\n", it, check_sc(state, iter, tol, termination_type)[1]),
+    kwargs...
+) = IterativeAlgorithm(SFISTAIteration; maxit, stop, solution, verbose, freq, display, kwargs...)

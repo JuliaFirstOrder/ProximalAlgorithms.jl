@@ -193,36 +193,24 @@ end
 
 # Solver
 
-struct AFBA{R, K}
-    maxit::Int
-    tol::R
-    verbose::Bool
-    freq::Int
-    kwargs::K
-end
+default_stopping_criterion(tol, ::AFBAIteration, state::AFBAState) = norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= tol
+default_solution(::AFBAIteration, state::AFBAState) = (state.xbar, state.ybar)
+default_display(it, ::AFBAIteration, state::AFBAState) = @printf("%6d | %7.4e\n", it, norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf))
 
-function (solver::AFBA)(x0, y0; kwargs...)
-    stop(state::AFBAState) = norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= solver.tol
-    disp((it, state)) =
-        @printf("%6d | %7.4e\n", it, norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf))
-    iter = AFBAIteration(; x0=x0, y0=y0, solver.kwargs..., kwargs...)
-    iter = take(halt(iter, stop), solver.maxit)
-    iter = enumerate(iter)
-    if solver.verbose
-        iter = tee(sample(iter, solver.freq), disp)
-    end
-    num_iters, state_final = loop(iter)
-    return state_final.xbar, state_final.ybar, num_iters
-end
+AFBA(;
+    maxit=10_000,
+    tol=1e-5,
+    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution=default_solution,
+    verbose=false,
+    freq=100,
+    display=default_display,
+    kwargs...
+) = IterativeAlgorithm(AFBAIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
 
-AFBA(; maxit=10_000, tol=1e-5, verbose=false, freq=100, kwargs...) = 
-    AFBA(maxit, tol, verbose, freq, kwargs)
+VuCondat(; kwargs...) = AFBA(; kwargs..., theta=2)
 
-VuCondat(; maxit=10_000, tol=1e-5, verbose=false, freq=100, kwargs...) = 
-    AFBA(maxit=maxit, tol=tol, verbose=verbose, freq=freq, kwargs..., theta=2)
-
-ChambollePock(; maxit=10_000, tol=1e-5, verbose=false, freq=100, kwargs...) = 
-    AFBA(maxit=maxit, tol=tol, verbose=verbose, freq=freq, kwargs..., f=Zero(), l=IndZero())
+ChambollePock(; kwargs...) = AFBA(; kwargs..., f=Zero(), l=IndZero(), theta=2)
 
 function AFBA_default_stepsizes(L, h::Zero, theta::R, mu::R, beta_f::R, beta_l::R) where R
     return R(1.99) / beta_f, R(1)

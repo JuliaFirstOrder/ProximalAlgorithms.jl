@@ -91,30 +91,20 @@ end
 
 # Solver
 
-struct ForwardBackward{R, K}
-    maxit::Int
-    tol::R
-    verbose::Bool
-    freq::Int
-    kwargs::K
-end
+default_stopping_criterion(tol, ::ForwardBackwardIteration, state::ForwardBackwardState) = norm(state.res, Inf) / state.gamma <= tol
+default_solution(::ForwardBackwardIteration, state::ForwardBackwardState) = state.z
+default_display(it, ::ForwardBackwardIteration, state::ForwardBackwardState) = @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
 
-function (solver::ForwardBackward)(x0; kwargs...)
-    stop(state::ForwardBackwardState) = norm(state.res, Inf) / state.gamma <= solver.tol
-    disp((it, state)) =
-        @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
-    iter = ForwardBackwardIteration(; x0=x0, solver.kwargs..., kwargs...)
-    iter = take(halt(iter, stop), solver.maxit)
-    iter = enumerate(iter)
-    if solver.verbose
-        iter = tee(sample(iter, solver.freq), disp)
-    end
-    num_iters, state_final = loop(iter)
-    return state_final.z, num_iters
-end
-
-ForwardBackward(; maxit=10_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
-    ForwardBackward(maxit, tol, verbose, freq, kwargs)
+ForwardBackward(;
+    maxit=10_000,
+    tol=1e-8,
+    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution=default_solution,
+    verbose=false,
+    freq=100,
+    display=default_display,
+    kwargs...
+) = IterativeAlgorithm(ForwardBackwardIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
 
 # Aliases
 
