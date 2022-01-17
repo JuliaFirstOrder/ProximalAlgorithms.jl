@@ -64,7 +64,7 @@ end
     c = A' * y_star + s_star
 
     tol = 100 * eps(T)
-    maxit = 10_000
+    maxit = 100_000
 
     @testset "AFBA" begin
 
@@ -78,7 +78,7 @@ end
         y0_backup = copy(y0)
 
         solver = ProximalAlgorithms.AFBA(tol = tol, maxit = maxit)
-        x, y, it = solver(x0, y0, f = f, g = g, h = h, L = A)
+        x, y, it = solver(x0, y0, f = f, g = g, h = h, L = A, beta_f = 0)
 
         @test eltype(x) == T
         @test eltype(y) == T
@@ -104,7 +104,7 @@ end
         y0_backup = copy(y0)
 
         solver = ProximalAlgorithms.VuCondat(tol = tol, maxit = maxit)
-        x, y, it = solver(x0, y0, f = f, g = g, h = h, L = A)
+        x, y, it = solver(x0, y0, f = f, g = g, h = h, L = A, beta_f = 0)
 
         @test eltype(x) == T
         @test eltype(y) == T
@@ -118,7 +118,28 @@ end
 
     end
 
-    # TODO: add Chambolle-Pock (using separable sum of IndPoint and IndNonnegative)
+    @testset "ChambollePock" begin
+        g = Linear(c)
+        h = SlicedSeparableSum((IndPoint(b), IndNonnegative()), ((1:m,), (m+1:m+n,)))
+
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        y0 = zeros(T, m + n)
+        y0_backup = copy(y0)
+
+        solver = ProximalAlgorithms.ChambollePock(tol = tol, maxit = maxit)
+        x, y, it = solver(x0, y0, g = g, h = h, L = vcat(A, Matrix{T}(I, n, n)))
+
+        @test eltype(x) == T
+        @test eltype(y) == T
+
+        @test it <= maxit
+
+        assert_lp_solution(c, A, b, x, y[1:m], 1000 * tol)
+
+        @test x0 == x0_backup
+        @test y0 == y0_backup
+    end
 
     @testset "DavisYin" begin
 

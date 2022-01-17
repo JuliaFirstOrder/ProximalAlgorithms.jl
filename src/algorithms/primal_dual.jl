@@ -45,7 +45,7 @@ the Lipschitz constants `beta_f` and `beta_l` (see below).
 
 The iterator implements Algorithm 3 of [1] with constant stepsize (α_n=λ)
 for several prominant special cases:
-1) θ = 2          ==>   Corresponds to the Vu-Condat Algorithm [2,3].
+1) θ = 2          ==>   Corresponds to the Vu-Condat Algorithm [3, 4].
 2) θ = 1, μ=1
 3) θ = 0, μ=1
 4) θ ∈ [0,∞), μ=0
@@ -70,11 +70,11 @@ and relation to other algorithms.
 
 # References
 1. Latafat, Patrinos, "Asymmetric forward–backward–adjoint splitting for solving monotone inclusions involving three operators", Computational Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
-2. Latafat, Patrinos, "Primal-dual proximal algorithms for structured convex optimization : a unifying framework", In Large-Scale and Distributed Optimization, Giselsson and Rantzer, Eds. Springer International Publishing, pp. 97–120 ( 2018).
+2. Latafat, Patrinos, "Primal-dual proximal algorithms for structured convex optimization: a unifying framework", In Large-Scale and Distributed Optimization, Giselsson and Rantzer, Eds. Springer International Publishing, pp. 97–120 ( 2018).
 3. Condat, "A primal–dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms", Journal of Optimization Theory and Applications, vol. 158, no. 2, pp 460-479 (2013).
 4. Vũ, "A splitting algorithm for dual monotone inclusions involving cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3, pp. 667-681 (2013).
 """
-Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL,Ttheta,Tmu}
+Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL,Tbetaf,Tbetal,Ttheta,Tmu,Tlambda}
     f::Tf = Zero()
     g::Tg = Zero()
     h::Th = Zero()
@@ -82,19 +82,28 @@ Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL,Ttheta,Tmu}
     L::TL = if isa(h, Zero) L = 0 * I else I end
     x0::Tx
     y0::Ty
-    beta_f::R = real(eltype(x0))(0)
-    beta_l::R = real(eltype(x0))(0)
+    beta_f::Tbetaf = if isa(f, Zero)
+        real(eltype(x0))(0)
+    else
+        error("argument beta_f must be specified together with f")
+    end
+    beta_l::Tbetal = if isa(l, IndZero)
+        real(eltype(x0))(0)
+    else
+        error("argument beta_l must be specified together with l")
+    end
     theta::Ttheta = real(eltype(x0))(1)
     mu::Tmu = real(eltype(x0))(1)
-    lambda::R = real(eltype(x0))(1)
-    gamma::Tuple{R, R} = begin
-        if lambda != 1
-            @warn "default stepsizes are not supported with this choice of lamdba, reverted to default lambda"
-            lambda = real(eltype(x0))(1)
-        end
-        AFBA_default_stepsizes(L, h, theta, mu, beta_f, beta_l)
+    lambda::Tlambda = real(eltype(x0))(1)
+    gamma::Tuple{R, R} = if lambda != 1
+        error("if lambda != 1, then you need to provide stepsizes manually")
+    else
+        T = real(eltype(x0))
+        AFBA_default_stepsizes(L, h, T(theta), T(mu), T(beta_f), T(beta_l))
     end
 end
+
+Base.IteratorSize(::Type{<:AFBAIteration}) = Base.IsInfinite()
 
 """
     VuCondatIteration(; <keyword-arguments>)
@@ -107,15 +116,32 @@ for solving convex optimization problems of the form
 where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly
 convex. Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
 
-For the arguments see [`AFBAIteration`](@ref).
+This iteration is equivalent to [`AFBAIteration`](@ref) with `theta=2`;
+for all other arguments see [`AFBAIteration`](@ref).
 
 # References
 1. Condat, "A primal–dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms", Journal of Optimization Theory and Applications, vol. 158, no. 2, pp 460-479 (2013).
 2. Vũ, "A splitting algorithm for dual monotone inclusions involving cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3, pp. 667-681 (2013).
 """
-VuCondatIteration(kwargs...) = AFBAIteration(kwargs..., theta=2)
+VuCondatIteration(; kwargs...) = AFBAIteration(kwargs..., theta=2)
 
-Base.IteratorSize(::Type{<:AFBAIteration}) = Base.IsInfinite()
+"""
+    ChambollePockIteration(; <keyword-arguments>)
+
+Instantiate the Chambolle-Pock primal-dual algorithm (see [1])
+for solving convex optimization problems of the form
+
+    minimize g(x) + h(L x),
+
+where `g` and `h` are possibly nonsmooth, and `L` is a linear mapping.
+
+This iteration is equivalent to [`AFBAIteration`](@ref) with `theta=2`, `f=Zero()`, `l=IndZero()`;
+for all other arguments see [`AFBAIteration`](@ref).
+
+# References
+1. Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems with Applications to Imaging", Journal of Mathematical Imaging and Vision, vol. 40, no. 1, pp. 120-145 (2011).
+"""
+ChambollePockIteration(; kwargs...) = AFBAIteration(kwargs..., theta=2, f=Zero(), l=IndZero())
 
 Base.@kwdef struct AFBAState{Tx,Ty}
     x::Tx
@@ -195,17 +221,49 @@ AFBA(; maxit=10_000, tol=1e-5, verbose=false, freq=100, kwargs...) =
 VuCondat(; maxit=10_000, tol=1e-5, verbose=false, freq=100, kwargs...) = 
     AFBA(maxit=maxit, tol=tol, verbose=verbose, freq=freq, kwargs..., theta=2)
 
-function AFBA_default_stepsizes(L, h, theta, mu, beta_f::R, beta_l::R) where {R<:Real}
-    # lambda = 1
-    if isa(h, Zero)
-        gamma1 = R(1.99) / beta_f
-        gamma2 = R(1) # does not matter
-    else
-        par = R(5) # scaling parameter for comparing Lipschitz constants and \|L\|
-        par2 = R(100)   # scaling parameter for α
-        alpha = R(1)
-        nmL = R(opnorm(L))
-        if theta == 2 # default stepsize for Vu-Condat
+ChambollePock(; maxit=10_000, tol=1e-5, verbose=false, freq=100, kwargs...) = 
+    AFBA(maxit=maxit, tol=tol, verbose=verbose, freq=freq, kwargs..., f=Zero(), l=IndZero())
+
+function AFBA_default_stepsizes(L, h::Zero, theta::R, mu::R, beta_f::R, beta_l::R) where R
+    return R(1.99) / beta_f, R(1)
+end
+
+function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) where R
+    par = R(5) # scaling parameter for comparing Lipschitz constants and \|L\|
+    par2 = R(100)   # scaling parameter for α
+    alpha = R(1)
+    nmL = R(opnorm(L))
+
+    if theta ≈ 2 # default stepsize for Vu-Condat
+        if nmL > par * max(beta_l, beta_f)
+            alpha = R(1)
+        elseif beta_f > par * beta_l
+            alpha = par2 * nmL / beta_f
+        elseif beta_l > par * beta_f
+            alpha = beta_l / (par2 * nmL)
+        end
+        gamma1 = R(1) / (beta_f / 2 + nmL / alpha)
+        gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
+    elseif theta ≈ 1 && mu ≈ 1 # SPCA
+        if nmL > par2 * beta_l # for the case beta_f = 0
+            alpha = R(1)
+        elseif beta_l > par * beta_f
+            alpha = beta_l / (par2 * nmL)
+        end
+        gamma1 = beta_f > 0 ? R(1.99) / beta_f : R(1) / (nmL / alpha)
+        gamma2 = R(0.99) / (beta_l / 2 + gamma1 * nmL^2)
+    elseif theta ≈ 0 && mu ≈ 1 # PPCA
+        temp = R(3)
+        if beta_f ≈ 0
+            nmL *= sqrt(temp)
+            if nmL > par * beta_l
+                alpha = R(1)
+            else
+                alpha = beta_l / (par2 * nmL)
+            end
+            gamma1 = R(1) / (beta_f / 2 + nmL / alpha)
+            gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
+        else
             if nmL > par * max(beta_l, beta_f)
                 alpha = R(1)
             elseif beta_f > par * beta_l
@@ -213,79 +271,49 @@ function AFBA_default_stepsizes(L, h, theta, mu, beta_f::R, beta_l::R) where {R<
             elseif beta_l > par * beta_f
                 alpha = beta_l / (par2 * nmL)
             end
+            xi = 1 + 2 * nmL / (nmL + alpha * beta_f / 2)
             gamma1 = R(1) / (beta_f / 2 + nmL / alpha)
-            gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
-        elseif theta == 1 && mu == 1 # SPCA
-            if nmL > par2 * beta_l # for the case beta_f = 0
+            gamma2 = R(0.99) / (beta_l / 2 + xi * nmL * alpha)
+        end
+    elseif mu ≈ 0 # SDCA & PDCA
+        temp = theta^2 - 3 * theta + 3
+        if beta_l ≈ 0
+            nmL *= sqrt(temp)
+            if nmL > par * beta_f
                 alpha = R(1)
-            elseif beta_l > par * beta_f
-                alpha = beta_l / (par2 * nmL)
-            end
-            gamma1 = beta_f > 0 ? R(1.99) / beta_f : R(1) / (nmL / alpha)
-            gamma2 = R(0.99) / (beta_l / 2 + gamma1 * nmL^2)
-        elseif theta == 0 && mu == 1 # PPCA
-            temp = R(3)
-            if beta_f == 0
-                nmL *= sqrt(temp)
-                if nmL > par * beta_l
-                    alpha = R(1)
-                else
-                    alpha = beta_l / (par2 * nmL)
-                end
-                gamma1 = R(1) / (beta_f / 2 + nmL / alpha)
-                gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
             else
-                if nmL > par * max(beta_l, beta_f)
-                    alpha = R(1)
-                elseif beta_f > par * beta_l
-                    alpha = par2 * nmL / beta_f
-                elseif beta_l > par * beta_f
-                    alpha = beta_l / (par2 * nmL)
-                end
-                xi = 1 + 2 * nmL / (nmL + alpha * beta_f / 2)
-                gamma1 = R(1) / (beta_f / 2 + nmL / alpha)
-                gamma2 = R(0.99) / (beta_l / 2 + xi * nmL * alpha)
-            end
-        elseif mu == 0 # SDCA & PDCA
-            temp = theta^2 - 3 * theta + 3
-            if beta_l == R(0)
-                nmL *= sqrt(temp)
-                if nmL > par * beta_f
-                    alpha = R(1)
-                else
-                    alpha = par2 * nmL / beta_f
-                end
-                gamma1 = R(1) / (beta_f / 2 + nmL / alpha)
-                gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
-            else
-                if nmL > par * max(beta_l, beta_f)
-                    alpha = R(1)
-                elseif beta_f > par * beta_l
-                    alpha = par2 * nmL / beta_f
-                elseif beta_l > par * beta_f
-                    alpha = beta_l / (par2 * nmL)
-                end
-                eta = 1 + (temp - 1) * alpha * nmL / (alpha * nmL + beta_l / 2)
-                gamma1 = R(1) / (beta_f / 2 + eta * nmL / alpha)
-                gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
-            end
-        elseif theta == 0 && mu == 0.5 # PPDCA
-            if beta_l == 0 || beta_f == 0
-                if nmL > par * max(beta_l, beta_f)
-                    alpha = R(1)
-                elseif beta_f > par * beta_l
-                    alpha = par2 * nmL / beta_f
-                elseif beta_l > par * beta_f
-                    alpha = beta_l / (par2 * nmL)
-                end
-            else
-                alpha = sqrt(beta_l / beta_f) / 2
+                alpha = par2 * nmL / beta_f
             end
             gamma1 = R(1) / (beta_f / 2 + nmL / alpha)
             gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
         else
-            error("this choice of theta and mu is not supported!")
+            if nmL > par * max(beta_l, beta_f)
+                alpha = R(1)
+            elseif beta_f > par * beta_l
+                alpha = par2 * nmL / beta_f
+            elseif beta_l > par * beta_f
+                alpha = beta_l / (par2 * nmL)
+            end
+            eta = 1 + (temp - 1) * alpha * nmL / (alpha * nmL + beta_l / 2)
+            gamma1 = R(1) / (beta_f / 2 + eta * nmL / alpha)
+            gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
         end
+    elseif theta ≈ 0 && mu ≈ 0.5 # PPDCA
+        if beta_l ≈ 0 || beta_f ≈ 0
+            if nmL > par * max(beta_l, beta_f)
+                alpha = R(1)
+            elseif beta_f > par * beta_l
+                alpha = par2 * nmL / beta_f
+            elseif beta_l > par * beta_f
+                alpha = beta_l / (par2 * nmL)
+            end
+        else
+            alpha = sqrt(beta_l / beta_f) / 2
+        end
+        gamma1 = R(1) / (beta_f / 2 + nmL / alpha)
+        gamma2 = R(0.99) / (beta_l / 2 + nmL * alpha)
+    else
+        error("this choice of theta and mu is not supported!")
     end
 
     return gamma1, gamma2

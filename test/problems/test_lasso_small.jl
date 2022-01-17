@@ -192,7 +192,7 @@ using ProximalAlgorithms:
     @testset "AFBA" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
-        solver = ProximalAlgorithms.AFBA(theta = R(1), mu = R(1), tol = R(1e-6))
+        solver = ProximalAlgorithms.AFBA(theta = 1, mu = 1, tol = R(1e-6))
         x_afba, y_afba, it_afba = @inferred solver(x0, zeros(T, n), f = f2, g = g, beta_f = opnorm(A)^2)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
@@ -200,7 +200,7 @@ using ProximalAlgorithms:
         @test it_afba <= 80
         @test x0 == x0_backup
 
-        solver = ProximalAlgorithms.AFBA(theta = R(1), mu = R(1), tol = R(1e-6))
+        solver = ProximalAlgorithms.AFBA(theta = 1, mu = 1, tol = R(1e-6))
         x_afba, y_afba, it_afba = @inferred solver(x0, zeros(T, n), f = f2, h = g, beta_f = opnorm(A)^2)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
@@ -208,7 +208,7 @@ using ProximalAlgorithms:
         @test it_afba <= 100
         @test x0 == x0_backup
 
-        solver = ProximalAlgorithms.AFBA(theta = R(1), mu = R(1), tol = R(1e-6))
+        solver = ProximalAlgorithms.AFBA(theta = 1, mu = 1, tol = R(1e-6))
         x_afba, y_afba, it_afba = @inferred solver(x0, zeros(T, m), h = f, L = A, g = g)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
