@@ -1,9 +1,10 @@
 using Test
 
 using LinearAlgebra
-using ProximalAlgorithms: NesterovExtrapolation, initialize, SimpleNesterovSequence, NesterovSequence
+using ProximalAlgorithms
+using ProximalAlgorithms: NesterovExtrapolation, initialize, SimpleNesterovSequence, FixedNesterovSequence, AdaptiveNesterovSequence
 
-for sequence_type in [SimpleNesterovSequence, NesterovSequence]
+for sequence_type in [SimpleNesterovSequence, FixedNesterovSequence]
     for R in [Float32, Float64]
         @testset "Nesterov accel. ($sequence_type, $R)" begin
             H = R[
@@ -26,7 +27,7 @@ for sequence_type in [SimpleNesterovSequence, NesterovSequence]
             Lip = opnorm(H)
             gamma = 1 / Lip
             x = zeros(R, n)
-            x_prev = x
+            y = x
 
             norm_initial_error = norm(x_star - x)
 
@@ -37,18 +38,38 @@ for sequence_type in [SimpleNesterovSequence, NesterovSequence]
             @inferred Iterators.peel(seq)
 
             for (it, coeff) in Iterators.take(enumerate(seq), 100)
-                if it <= 2
+                if it == 1
                     @test iszero(coeff)
                 end
 
-                y = x + coeff * (x - x_prev)
                 grad_f_y = grad_f(y)
                 x_prev = x
                 x = y - gamma * grad_f_y
+                y = x + coeff * (x - x_prev)
 
                 # test that iterates satisfy Thm 4.4 from Beck, Teboulle (2009)
                 @test f(x) - f_star <= 2 / (gamma * (it + 1)^2) * norm_initial_error^2
             end
         end
+    end
+end
+
+@testset "Nesterov adaptive accel." begin
+    R = Float64
+    fixed_gamma = R(1.7)
+
+    adaptive_seq = AdaptiveNesterovSequence(R(0))
+    fixed_seq = FixedNesterovSequence{R}()
+    for el in Iterators.take(fixed_seq, 20)
+        @test isapprox(el, ProximalAlgorithms.next!(adaptive_seq, fixed_gamma))
+    end
+
+    m = R(1)
+    adaptive_seq = AdaptiveNesterovSequence(m)
+    for _ in 1:20
+        @test isapprox(
+            (1 - sqrt(m * fixed_gamma)) / (1 + sqrt(m * fixed_gamma)),
+            ProximalAlgorithms.next!(adaptive_seq, fixed_gamma)
+        )
     end
 end

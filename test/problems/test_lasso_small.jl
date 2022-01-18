@@ -5,7 +5,7 @@ using ProximalOperators
 using ProximalAlgorithms
 using ProximalAlgorithms:
     LBFGS, Broyden, AndersonAcceleration,
-    NesterovExtrapolation, NesterovSequence, SimpleNesterovSequence
+    NesterovExtrapolation, FixedNesterovSequence, SimpleNesterovSequence
 
 @testset "Lasso small ($T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
     A = T[
@@ -75,6 +75,17 @@ using ProximalAlgorithms:
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 200
+        @test x0 == x0_backup
+    end
+
+    @testset "FastForwardBackward (custom extrapolation)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
+        x, it = @inferred solver(x0, f = f2, g = g, Lf = Lf, extrapolation_sequence=FixedNesterovSequence(real(T)))
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 100
         @test x0 == x0_backup
     end
 
@@ -163,7 +174,7 @@ using ProximalAlgorithms:
         (LBFGS(5), 17),
         (Broyden(), 19),
         (AndersonAcceleration(5), 12),
-        (NesterovExtrapolation(NesterovSequence), 36),
+        (NesterovExtrapolation(FixedNesterovSequence), 36),
         (NesterovExtrapolation(SimpleNesterovSequence), 36),
     ]
         x0 = zeros(T, n)

@@ -1,26 +1,31 @@
 using LinearAlgebra
 using Test
-using Random
 
 using ProximalOperators
 using ProximalAlgorithms
 
 @testset "Lasso small (strongly convex, $T)" for T in [Float32, Float64]
-
-    Random.seed!(777)
     dim = 5
     μf = T(1)
     Lf = T(10)
 
-    x_star = convert(Vector{T}, 1.5 * rand(T, dim) .- 0.5)
+    x_star = T[0.8466800540711814, 0.17674262101590932, -0.4987234606672925, 0.5531315167924573, -0.14739365562631113]
 
     lam = (μf + Lf) / 2
-    @test typeof(lam) == T
 
-    D = Diagonal(sqrt(μf) .+ (sqrt(Lf) - sqrt(μf)) * rand(T, dim))
+    w = T[0.15823052457732423, 0.6874613398393697, 0.9357764685973888, 0.05863707298785681, 0.49087050154723844]
+    D = Diagonal(sqrt(μf) .+ (sqrt(Lf) - sqrt(μf)) * w)
     D[1] = sqrt(μf)
     D[end] = sqrt(Lf)
-    Q = qr(rand(T, (dim, dim))).Q
+
+    B = T[
+        0.6997086717991196 0.37124544422925876 0.31840520080247225 0.20097960566711592 0.038329117953706526;
+        0.1134636504826555 0.8273912343075426 0.8997522727456534 0.9821118072706589 0.9100659142463259;
+        0.9701886480567284 0.42825250593295605 0.6952640061565183 0.9699979632534245 0.6106722979088736;
+        0.4442755181780246 0.4641748710746476 0.9716060376558348 0.5951146731055232 0.5699044913634803;
+        0.6681510415197733 0.35423403325449887 0.28461925562068024 0.15941152427241456 0.6499046326711716
+    ]
+    Q = qr(B).Q
     A = Q * D * Q'
     b = A * x_star + lam * inv(A') * sign.(x_star)
 
@@ -37,7 +42,7 @@ using ProximalAlgorithms
         y, it = solver(x0, f = f, h = h, Lf = Lf, μf = μf)
         @test eltype(y) == T
         @test norm(y - x_star) <= TOL
-        @test it < 45
+        @test it < 40
         @test x0 == x0_backup
     end
 
@@ -52,10 +57,19 @@ using ProximalAlgorithms
 
     @testset "FastForwardBackward" begin
         solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
-        y, it = solver(x0, f = f, g = h, Lf = Lf, m = μf)
+        y, it = solver(x0, f = f, g = h, Lf = Lf, mf = μf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
-        @test it < 45
+        @test it < 35
+        @test x0 == x0_backup
+    end
+
+    @testset "FastForwardBackward (custom extrapolation)" begin
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
+        y, it = solver(x0, f = f, g = h, gamma = 1/Lf, mf = μf, extrapolation_sequence=ProximalAlgorithms.ConstantNesterovSequence(μf, 1/Lf))
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 35
         @test x0 == x0_backup
     end
 
