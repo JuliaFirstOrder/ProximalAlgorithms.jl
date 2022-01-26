@@ -18,6 +18,7 @@ makedocs(
             "getting_started.md",
             "implemented_algorithms.md",
             "custom_objectives.md",
+            "custom_algorithms.md",
         ],
         "Bibliography" => "bibliography.md",
     ],

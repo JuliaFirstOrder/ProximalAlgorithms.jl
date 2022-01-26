@@ -52,6 +52,29 @@ struct IterativeAlgorithm{IteratorType, H, S, D, K}
     kwargs::K
 end
 
+"""
+    IterativeAlgorithm(T; maxit, stop, solution, verbose, freq, display, kwargs...)
+
+Wrapper for an iterator type `T`, adding termination and verbosity options on top of it.
+
+This is a conveniency constructor to allow for "partial" instantiation of an iterator of type `T`.
+The resulting object `alg` can be called on a set of keyword arguments, which will be merged
+to `kwargs` and passed on to `T` to construct an iterator which will be looped over.
+
+# Note
+This constructor is not meant to be used directly: instead, algorithm-specific constructors
+should be defined on top of it and exposed to the user.
+
+# Arguments
+* `T::Type`: iterator type to use
+* `maxit::Int`: maximum number of iteration
+* `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+* `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+* `verbose::Bool`: whether the algorithm state should be displayed
+* `freq::Int`: every how many iterations to display the algorithm state
+* `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+* `kwargs`: keyword arguments to pass on to `T` when constructing the iterator
+"""
 IterativeAlgorithm(T; maxit, stop, solution, verbose, freq, display, kwargs...) =
     IterativeAlgorithm{T, typeof(stop), typeof(solution), typeof(display), typeof(kwargs)}(
         maxit, stop, solution, verbose, freq, display, kwargs
