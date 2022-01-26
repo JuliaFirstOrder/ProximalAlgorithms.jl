@@ -30,12 +30,15 @@ end
 """
     DRLSIteration(; <keyword-arguments>)
 
-Instantiate the Douglas-Rachford line-search algorithm (see [1]) for solving optimization problems
-of the form
+Iterator implementing the Douglas-Rachford line-search algorithm [1].
+
+This iterator solves optimization problems of the form
 
     minimize f(x) + g(x),
 
 where `f` is smooth.
+
+See also: [`DRLS`](@ref).
 
 # Arguments
 - `x0`: initial point.
@@ -172,14 +175,41 @@ function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where R
     return state, state
 end
 
-# Solver
-
 default_stopping_criterion(tol, ::DRLSIteration, state::DRLSState) = norm(state.res, Inf) / state.gamma <= tol
 default_solution(::DRLSIteration, state::DRLSState) = state.v
 default_display(it, ::DRLSIteration, state::DRLSState) = @printf(
     "%5d | %.3e | %.3e | %.3e\n", it, state.gamma / state.gamma, norm(state.res, Inf), state.tau,
 )
 
+"""
+    DRLS(; <keyword-arguments>)
+
+Constructs the Douglas-Rachford line-search algorithm [1].
+
+This algorithm solves convex optimization problems of the form
+
+    minimize f(x) + g(x),
+
+where `f` is smooth.
+
+The returned object has type `IterativeAlgorithm{DRLSIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`DRLSIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=1_000`: maximum number of iteration
+- `tol::1e-8`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=10`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs`: keyword arguments to pass on to the `DRLSIteration` constructor upon call
+
+# References
+1. Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM for nonconvex optimization: Accelerated and Newton-type linesearch algorithms", arXiv:2005.10230, 2020.
+"""
 DRLS(;
     maxit=1_000,
     tol=1e-8,

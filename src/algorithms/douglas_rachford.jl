@@ -10,10 +10,13 @@ using Printf
 """
     DouglasRachfordIteration(; <keyword-arguments>)
 
-Instantiate the Douglas-Rachford splitting algorithm (see [1]) for solving
-convex optimization problems of the form
+Iterator implementing the Douglas-Rachford splitting algorithm [1].
+
+This iterator solves convex optimization problems of the form
 
     minimize f(x) + g(x).
+
+See also: [`DouglasRachford`](@ref).
 
 # Arguments
 - `x0`: initial point.
@@ -50,12 +53,37 @@ function Base.iterate(iter::DouglasRachfordIteration, state::DouglasRachfordStat
     return state, state
 end
 
-# Solver
-
 default_stopping_criterion(tol, iter::DouglasRachfordIteration, state::DouglasRachfordState) = norm(state.res, Inf) / iter.gamma <= tol
 default_solution(::DouglasRachfordIteration, state::DouglasRachfordState) = state.y
 default_display(it, iter::DouglasRachfordIteration, state::DouglasRachfordState) = @printf("%5d | %.3e\n", it, norm(state.res, Inf) / iter.gamma)
 
+"""
+    DouglasRachford(; <keyword-arguments>)
+
+Constructs the Douglas-Rachford splitting algorithm [1].
+
+This algorithm solves convex optimization problems of the form
+
+    minimize f(x) + g(x).
+
+The returned object has type `IterativeAlgorithm{DouglasRachfordIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`DouglasRachfordIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=1_000`: maximum number of iteration
+- `tol::1e-8`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=100`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs`: keyword arguments to pass on to the `DouglasRachfordIteration` constructor upon call
+
+# References
+1. Eckstein, Bertsekas, "On the Douglas-Rachford Splitting Method and the Proximal Point Algorithm for Maximal Monotone Operators", Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
+"""
 DouglasRachford(;
     maxit=1_000,
     tol=1e-8,

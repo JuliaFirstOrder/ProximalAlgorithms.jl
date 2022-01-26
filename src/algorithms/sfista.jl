@@ -9,7 +9,9 @@ using Printf
 """
     SFISTAIteration(; <keyword-arguments>)
 
-Instantiate the FISTA-like method in [3] for solving strongly-convex composite optimization problems of the form
+Iterator implementing the FISTA-like algorithm in [3].
+
+This iterator solves strongly convex composite optimization problems of the form
 
     minimize f(x) + h(x),
 
@@ -108,10 +110,46 @@ function check_sc(state::SFISTAState, iter::SFISTAIteration, tol, termination_ty
     return res, (res <= tol || res ≈ tol)
 end
 
-# Solver
-
 default_solution(::SFISTAIteration, state::SFISTAState) = state.y
 
+"""
+    SFISTA(; <keyword-arguments>)
+
+Constructs the the FISTA-like algorithm in [3].
+
+This algorithm solves strongly convex composite optimization problems of the form
+
+    minimize f(x) + h(x),
+
+where h is proper closed convex and f is a continuously differentiable function that is μ-strongly convex and whose gradient is
+Lf-Lipschitz continuous.
+
+The scheme is based on Nesterov's accelerated gradient method [1, Eq. (4.9)] and Beck's method for the convex case [2]. Its full
+definition is given in [3, Algorithm 2.2.2.], and some analyses of this method are given in [3, 4, 5]. Another perspective is that
+it is a special instance of [4, Algorithm 1] in which μh=0.
+
+The returned object has type `IterativeAlgorithm{SFISTAIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`SFISTAIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=10_000`: maximum number of iteration
+- `tol::1e-6`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=100`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs`: keyword arguments to pass on to the `SFISTAIteration` constructor upon call
+
+# References
+1. Nesterov, Y. (2013). Gradient methods for minimizing composite functions. Mathematical Programming, 140(1), 125-161.
+2. Beck, A., & Teboulle, M. (2009). A fast iterative shrinkage-thresholding algorithm for linear inverse problems. SIAM journal on imaging sciences, 2(1), 183-202.
+3. Kong, W. (2021). Accelerated Inexact First-Order Methods for Solving Nonconvex Composite Optimization Problems. arXiv preprint arXiv:2104.09685.
+4. Kong, W., Melo, J. G., & Monteiro, R. D. (2021). FISTA and Extensions - Review and New Insights. arXiv preprint arXiv:2107.01267.
+5. Florea, M. I. (2018). Constructing Accelerated Algorithms for Large-scale Optimization-Framework, Algorithms, and Applications.
+"""
 SFISTA(;
     maxit=10_000,
     tol=1e-6,

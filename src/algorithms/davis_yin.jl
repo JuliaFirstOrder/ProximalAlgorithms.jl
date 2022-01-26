@@ -10,12 +10,15 @@ using Printf
 """
     DavisYinIteration(; <keyword-arguments>)
 
-Instantiate the Davis-Yin splitting algorithm (see [1]) for solving
-convex optimization problems of the form
+Iterator implementing the Davis-Yin splitting algorithm [1].
+
+This iterator solves convex optimization problems of the form
 
     minimize f(x) + g(x) + h(x),
 
 where `h` is smooth.
+
+See also [`DavisYin`](@ref).
 
 # Arguments
 - `x0`: initial point.
@@ -71,12 +74,39 @@ function Base.iterate(iter::DavisYinIteration, state::DavisYinState)
     return state, state
 end
 
-# Solver
-
 default_stopping_criterion(tol, ::DavisYinIteration, state::DavisYinState) = norm(state.res, Inf) <= tol
 default_solution(::DavisYinIteration, state::DavisYinState) = state.xf
 default_display(it, ::DavisYinIteration, state::DavisYinState) = @printf("%5d | %.3e\n", it, norm(state.res, Inf))
 
+"""
+    DavisYin(; <keyword-arguments>)
+
+Constructs the Davis-Yin splitting algorithm [1].
+
+This algorithm solves convex optimization problems of the form
+
+    minimize f(x) + g(x) + h(x),
+
+where `h` is smooth.
+
+The returned object has type `IterativeAlgorithm{DavisYinIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`DavisYinIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=10_000`: maximum number of iteration
+- `tol::1e-8`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=100`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs`: keyword arguments to pass on to the `DavisYinIteration` constructor upon call
+
+# References
+1. Davis, Yin. "A Three-Operator Splitting Scheme and its Optimization Applications", Set-Valued and Variational Analysis, vol. 25, no. 4, pp. 829–858 (2017).
+"""
 DavisYin(;
     maxit=10_000,
     tol=1e-8,

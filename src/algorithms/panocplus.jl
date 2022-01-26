@@ -11,8 +11,9 @@ using Printf
 """
     PANOCplusIteration(; <keyword-arguments>)
 
-Instantiate the PANOCplus algorithm (see [1]) for solving optimization problems
-of the form
+Iterator implementing the PANOCplus algorithm [1].
+
+This iterator solves optimization problems of the form
 
     minimize f(Ax) + g(x),
 
@@ -186,14 +187,41 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
 
 end
 
-# Solver
-
 default_stopping_criterion(tol, ::PANOCplusIteration, state::PANOCplusState) = norm((state.res / state.gamma) - state.At_grad_f_Ax + state.At_grad_f_Az, Inf) <= tol
 default_solution(::PANOCplusIteration, state::PANOCplusState) = state.z
 default_display(it, ::PANOCplusIteration, state::PANOCplusState) = @printf(
     "%5d | %.3e | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma, state.tau,
 )
 
+"""
+    PANOCplus(; <keyword-arguments>)
+
+Constructs the the PANOCplus algorithm [1].
+
+This algorithm solves optimization problems of the form
+
+minimize f(Ax) + g(x),
+
+where `f` is locally smooth and `A` is a linear mapping (for example, a matrix).
+
+The returned object has type `IterativeAlgorithm{PANOCplusIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`PANOCplusIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=1_000`: maximum number of iteration
+- `tol::1e-8`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=10`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs`: keyword arguments to pass on to the `PANOCplusIteration` constructor upon call
+
+# References
+1. De Marchi, Themelis, "Proximal gradient algorithms under local Lipschitz gradient continuity: a convergence and robustness analysis of PANOC", arXiv:2112.13000 (2021).
+"""
 PANOCplus(;
     maxit=1_000,
     tol=1e-8,

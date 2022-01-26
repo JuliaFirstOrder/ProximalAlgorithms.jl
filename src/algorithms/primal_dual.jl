@@ -29,8 +29,9 @@ using Printf
 """
     AFBAIteration(; <keyword-arguments>)
 
-Instantiate the asymmetric forward-backward-adjoint algorithm (AFBA, see [1])
-for solving convex optimization problems of the form
+Iterator implementing the asymmetric forward-backward-adjoint algorithm (AFBA, see [1]).
+
+This iterator solves convex optimization problems of the form
 
     minimize f(x) + g(x) + (h □ l)(L x),
 
@@ -69,9 +70,9 @@ and relation to other algorithms.
 - `gamma2`: dual stepsize (see [1] for the default choice).
 
 # References
-1. Latafat, Patrinos, "Asymmetric forward–backward–adjoint splitting for solving monotone inclusions involving three operators", Computational Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
-2. Latafat, Patrinos, "Primal-dual proximal algorithms for structured convex optimization: a unifying framework", In Large-Scale and Distributed Optimization, Giselsson and Rantzer, Eds. Springer International Publishing, pp. 97–120 ( 2018).
-3. Condat, "A primal–dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms", Journal of Optimization Theory and Applications, vol. 158, no. 2, pp 460-479 (2013).
+1. Latafat, Patrinos, "Asymmetric forward-backward-adjoint splitting for solving monotone inclusions involving three operators", Computational Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
+2. Latafat, Patrinos, "Primal-dual proximal algorithms for structured convex optimization: a unifying framework", In Large-Scale and Distributed Optimization, Giselsson and Rantzer, Eds. Springer International Publishing, pp. 97-120 (2018).
+3. Condat, "A primal-dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms", Journal of Optimization Theory and Applications, vol. 158, no. 2, pp 460-479 (2013).
 4. Vũ, "A splitting algorithm for dual monotone inclusions involving cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3, pp. 667-681 (2013).
 """
 Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL,Tbetaf,Tbetal,Ttheta,Tmu,Tlambda}
@@ -108,8 +109,9 @@ Base.IteratorSize(::Type{<:AFBAIteration}) = Base.IsInfinite()
 """
     VuCondatIteration(; <keyword-arguments>)
 
-Instantiate the Vũ-Condat primal-dual algorithm (see [1, 2])
-for solving convex optimization problems of the form
+Iterator implementing the Vũ-Condat primal-dual algorithm [1, 2].
+
+This iterator solves convex optimization problems of the form
 
     minimize f(x) + g(x) + (h □ l)(L x),
 
@@ -120,7 +122,7 @@ This iteration is equivalent to [`AFBAIteration`](@ref) with `theta=2`;
 for all other arguments see [`AFBAIteration`](@ref).
 
 # References
-1. Condat, "A primal–dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms", Journal of Optimization Theory and Applications, vol. 158, no. 2, pp 460-479 (2013).
+1. Condat, "A primal-dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms", Journal of Optimization Theory and Applications, vol. 158, no. 2, pp 460-479 (2013).
 2. Vũ, "A splitting algorithm for dual monotone inclusions involving cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3, pp. 667-681 (2013).
 """
 VuCondatIteration(; kwargs...) = AFBAIteration(kwargs..., theta=2)
@@ -128,8 +130,9 @@ VuCondatIteration(; kwargs...) = AFBAIteration(kwargs..., theta=2)
 """
     ChambollePockIteration(; <keyword-arguments>)
 
-Instantiate the Chambolle-Pock primal-dual algorithm (see [1])
-for solving convex optimization problems of the form
+Iterator implementing the Chambolle-Pock primal-dual algorithm [1].
+
+This iterator solves convex optimization problems of the form
 
     minimize g(x) + h(L x),
 
@@ -191,12 +194,41 @@ function Base.iterate(iter::AFBAIteration, state::AFBAState = AFBAState(x=copy(i
     return state, state
 end
 
-# Solver
-
 default_stopping_criterion(tol, ::AFBAIteration, state::AFBAState) = norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= tol
 default_solution(::AFBAIteration, state::AFBAState) = (state.xbar, state.ybar)
 default_display(it, ::AFBAIteration, state::AFBAState) = @printf("%6d | %7.4e\n", it, norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf))
 
+"""
+    AFBA(; <keyword-arguments>)
+
+Constructs the asymmetric forward-backward-adjoint algorithm (AFBA, see [1]).
+
+This algorithm solves convex optimization problems of the form
+
+    minimize f(x) + g(x) + (h □ l)(L x),
+
+where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly
+convex. Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
+
+The returned object has type `IterativeAlgorithm{AFBAIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`AFBAIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=10_000`: maximum number of iteration
+- `tol::1e-5`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=100`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs`: keyword arguments to pass on to the `AFBAIteration` constructor upon call
+
+# References
+1. Latafat, Patrinos, "Asymmetric forward-backward-adjoint splitting for solving monotone inclusions involving three operators", Computational Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
+2. Latafat, Patrinos, "Primal-dual proximal algorithms for structured convex optimization: a unifying framework", In Large-Scale and Distributed Optimization, Giselsson and Rantzer, Eds. Springer International Publishing, pp. 97-120 (2018).
+"""
 AFBA(;
     maxit=10_000,
     tol=1e-5,
@@ -208,8 +240,68 @@ AFBA(;
     kwargs...
 ) = IterativeAlgorithm(AFBAIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
 
+"""
+    VuCondat(; <keyword-arguments>)
+
+Constructs the Vũ-Condat primal-dual algorithm [1, 2].
+
+This algorithm solves convex optimization problems of the form
+
+    minimize f(x) + g(x) + (h □ l)(L x),
+
+where `f` is smooth, `g` and `h` are possibly nonsmooth and `l` is strongly
+convex. Symbol `□` denotes the infimal convolution, and `L` is a linear mapping.
+
+The returned object has type `IterativeAlgorithm{AFBAIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`VuCondatIteration`](@ref), [`AFBAIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=10_000`: maximum number of iteration
+- `tol::1e-5`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=100`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs`: keyword arguments to pass on to the `AFBAIteration` constructor upon call
+
+# References
+1. Condat, "A primal-dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms", Journal of Optimization Theory and Applications, vol. 158, no. 2, pp 460-479 (2013).
+2. Vũ, "A splitting algorithm for dual monotone inclusions involving cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3, pp. 667-681 (2013).
+"""
 VuCondat(; kwargs...) = AFBA(; kwargs..., theta=2)
 
+"""
+    ChambollePock(; <keyword-arguments>)
+
+Constructs the Chambolle-Pock primal-dual algorithm [1].
+
+This algorithm solves convex optimization problems of the form
+
+    minimize g(x) + h(L x),
+
+    where `g` and `h` are possibly nonsmooth, and `L` is a linear mapping.
+
+The returned object has type `IterativeAlgorithm{AFBAIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`ChambollePockIteration`](@ref), [`AFBAIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=10_000`: maximum number of iteration
+- `tol::1e-5`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=100`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs`: keyword arguments to pass on to the `AFBAIteration` constructor upon call
+
+# References
+1. Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems with Applications to Imaging", Journal of Mathematical Imaging and Vision, vol. 40, no. 1, pp. 120-145 (2011).
+"""
 ChambollePock(; kwargs...) = AFBA(; kwargs..., f=Zero(), l=IndZero(), theta=2)
 
 function AFBA_default_stepsizes(L, h::Zero, theta::R, mu::R, beta_f::R, beta_l::R) where R

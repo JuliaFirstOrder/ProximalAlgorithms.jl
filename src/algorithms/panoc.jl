@@ -11,8 +11,9 @@ using Printf
 """
     PANOCIteration(; <keyword-arguments>)
 
-Instantiate the PANOC algorithm (see [1]) for solving optimization problems
-of the form
+Iterator implementing the PANOC algorithm [1].
+
+This iterator solves optimization problems of the form
 
     minimize f(Ax) + g(x),
 
@@ -208,14 +209,41 @@ function Base.iterate(iter::PANOCIteration{R}, state::PANOCState) where R
     return state, state
 end
 
-# Solver
-
 default_stopping_criterion(tol, ::PANOCIteration, state::PANOCState) = norm(state.res, Inf) / state.gamma <= tol
 default_solution(::PANOCIteration, state::PANOCState) = state.z
 default_display(it, ::PANOCIteration, state::PANOCState) = @printf(
     "%5d | %.3e | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma, state.tau,
 )
 
+"""
+    PANOC(; <keyword-arguments>)
+
+Constructs the PANOC algorithm [1].
+
+This algorithm solves optimization problems of the form
+
+minimize f(Ax) + g(x),
+
+where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+
+The returned object has type `IterativeAlgorithm{PANOCIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`PANOCIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=1_000`: maximum number of iteration
+- `tol::1e-8`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=10`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs`: keyword arguments to pass on to the `PANOCIteration` constructor upon call
+
+# References
+1. Stella, Themelis, Sopasakis, Patrinos, "A simple and efficient algorithm for nonlinear model predictive control", 56th IEEE Conference on Decision and Control (2017).
+"""
 PANOC(;
     maxit=1_000,
     tol=1e-8,

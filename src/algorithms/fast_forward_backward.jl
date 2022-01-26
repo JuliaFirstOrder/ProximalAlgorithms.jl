@@ -14,8 +14,9 @@ using Printf
 """
     FastForwardBackwardIteration(; <keyword-arguments>)
 
-Instantiate the accelerated forward-backward splitting algorithm (see [1, 2]) for solving
-optimization problems of the form
+Iterator implementing the accelerated forward-backward splitting algorithm [1, 2].
+
+This iterator solves convex optimization problems of the form
 
     minimize f(x) + g(x),
 
@@ -108,12 +109,40 @@ function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardB
     return state, state
 end
 
-# Solver
-
 default_stopping_criterion(tol, ::FastForwardBackwardIteration, state::FastForwardBackwardState) = norm(state.res, Inf) / state.gamma <= tol
 default_solution(::FastForwardBackwardIteration, state::FastForwardBackwardState) = state.z
 default_display(it, ::FastForwardBackwardIteration, state::FastForwardBackwardState) = @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
 
+"""
+    FastForwardBackward(; <keyword-arguments>)
+
+Constructs the accelerated forward-backward splitting algorithm [1, 2].
+
+This algorithm solves convex optimization problems of the form
+
+    minimize f(x) + g(x),
+
+where `f` is smooth.
+
+The returned object has type `IterativeAlgorithm{FastForwardBackwardIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`FastForwardBackwardIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=10_000`: maximum number of iteration
+- `tol::1e-8`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=100`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs`: keyword arguments to pass on to the `FastForwardBackwardIteration` constructor upon call
+
+# References
+1. Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave Optimization" (2008).
+2. Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183-202 (2009).
+"""
 FastForwardBackward(;
     maxit=10_000,
     tol=1e-8,
