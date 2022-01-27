@@ -5,8 +5,20 @@ bib = CitationBibliography(joinpath(@__DIR__, "references.bib"))
 
 src_path = joinpath(@__DIR__, "src/")
 
-Literate.markdown(joinpath(src_path, "getting_started.jl"), src_path, documenter=true)
-Literate.markdown(joinpath(src_path, "custom_objectives.jl"), src_path, documenter=true)
+literate_directories = joinpath.(
+    src_path,
+    [
+        "guide",
+        "examples",
+    ]
+)
+
+for directory in literate_directories
+    jl_files = filter(p -> endswith(p, ".jl"), readdir(directory; join=true))
+    for src in jl_files
+        Literate.markdown(src, directory, documenter=true)
+    end
+end
 
 makedocs(
     bib,
@@ -15,10 +27,13 @@ makedocs(
     pages=[
         "Home" => "index.md",
         "User guide" => [
-            "getting_started.md",
-            "implemented_algorithms.md",
-            "custom_objectives.md",
-            "custom_algorithms.md",
+            joinpath("guide", "getting_started.md"),
+            joinpath("guide", "implemented_algorithms.md"),
+            joinpath("guide", "custom_objectives.md"),
+            joinpath("guide", "custom_algorithms.md"),
+        ],
+        "Examples" => [
+            joinpath("examples", "sparse_linear_regression.md"),
         ],
         "Bibliography" => "bibliography.md",
     ],
