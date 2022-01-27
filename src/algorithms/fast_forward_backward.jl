@@ -22,6 +22,8 @@ This iterator solves convex optimization problems of the form
 
 where `f` is smooth.
 
+See also: [`FastForwardBackward`](@ref).
+
 # Arguments
 - `x0`: initial point.
 - `f=Zero()`: smooth objective term.

@@ -18,6 +18,8 @@ This iterator solves optimization problems of the form
 
 where `f` is smooth.
 
+See also: [`ForwardBackward`](@ref).
+
 # Arguments
 - `x0`: initial point.
 - `f=Zero()`: smooth objective term.

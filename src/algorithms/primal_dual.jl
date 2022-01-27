@@ -54,6 +54,8 @@ for several prominant special cases:
 See [2, Section 5.2] and [1, Figure 1] for stepsize conditions, special cases,
 and relation to other algorithms.
 
+See also: [`AFBA`](@ref).
+
 # Arguments
 - `x0`: initial primal point.
 - `y0`: initial dual point.
@@ -121,6 +123,8 @@ convex. Symbol `□` denotes the infimal convolution, and `L` is a linear mappin
 This iteration is equivalent to [`AFBAIteration`](@ref) with `theta=2`;
 for all other arguments see [`AFBAIteration`](@ref).
 
+See also: [`AFBAIteration`](@ref), [`VuCondat`](@ref).
+
 # References
 1. Condat, "A primal-dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms", Journal of Optimization Theory and Applications, vol. 158, no. 2, pp 460-479 (2013).
 2. Vũ, "A splitting algorithm for dual monotone inclusions involving cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3, pp. 667-681 (2013).
@@ -137,6 +141,8 @@ This iterator solves convex optimization problems of the form
     minimize g(x) + h(L x),
 
 where `g` and `h` are possibly nonsmooth, and `L` is a linear mapping.
+
+See also: [`AFBAIteration`](@ref), [`ChambollePock`](@ref).
 
 This iteration is equivalent to [`AFBAIteration`](@ref) with `theta=2`, `f=Zero()`, `l=IndZero()`;
 for all other arguments see [`AFBAIteration`](@ref).

@@ -19,6 +19,8 @@ This iterator solves optimization problems of the form
 
 where `f` is smooth and `A` is a linear mapping (for example, a matrix).
 
+See also: [`PANOC`](@ref).
+
 # Arguments
 - `x0`: initial point.
 - `f=Zero()`: smooth objective term.
