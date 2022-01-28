@@ -217,7 +217,7 @@ using ProximalAlgorithms:
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.SFISTA(tol = 10 * TOL)
-        y, it = @inferred solver(y0 = x0, f = f2, h = g, Lf = Lf)
+        y, it = @inferred solver(x0 = x0, f = f2, g = g, Lf = Lf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= 10 * TOL
         @test it < 100
