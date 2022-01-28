@@ -55,11 +55,11 @@
     end
 
     afba_test_params = [
-        (R(2), R(0), 130),
-        (R(1), R(1), 1890),
-        (R(0), R(1), 320),
-        (R(0), R(0), 194),
-        (R(1), R(0), 130),
+        (2, 0, 130),
+        (1, 1, 1890),
+        (0, 1, 320),
+        (0, 0, 194),
+        (1, 0, 130),
     ]
 
     @testset "AFBA" for (theta, mu, maxit) in afba_test_params
@@ -73,7 +73,7 @@
 
         solver = ProximalAlgorithms.AFBA(theta = theta, mu = mu, tol = R(1e-6))
         x_afba, y_afba, it_afba =
-            solver(x0, y0, f = reg2, g = reg1, h = loss, L = A, beta_f = R(1))
+            solver(x0, y0, f = reg2, g = reg1, h = loss, L = A, beta_f = 1)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
@@ -90,7 +90,7 @@
 
         solver = ProximalAlgorithms.AFBA(theta = theta, mu = mu, tol = R(1e-6))
         x_afba, y_afba, it_afba =
-            solver(x0, y0, f = reg2, g = reg1, h = loss, L = A, beta_f = R(1))
+            solver(x0, y0, f = reg2, g = reg1, h = loss, L = A, beta_f = 1)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4

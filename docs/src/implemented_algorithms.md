@@ -53,10 +53,12 @@ For this reason, specific algorithms by the name of "primal-dual" splitting sche
 
 Algorithm | Assumptions | Oracle | Implementation | References
 ----------|-------------|--------|----------------|-----------
+Chambolle-Pock | ``f\equiv 0``, ``g, h`` convex, ``L`` linear operator | ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`ChambollePockIteration`](@ref ProximalAlgorithms.ChambollePockIteration) | [Chambolle2011](@cite)
 Vu-Condat | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`VuCodatIteration`](@ref ProximalAlgorithms.VuCondatIteration) | [Vu2013](@cite), [Condat2013](@cite)
 AFBA      | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`AFBAIteration`](@ref ProximalAlgorithms.AFBAIteration) | [Latafat2017](@cite)
 
 ```@docs
-ProximalAlgorithms.AFBAIteration
+ProximalAlgorithms.ChambollePockIteration
 ProximalAlgorithms.VuCondatIteration
+ProximalAlgorithms.AFBAIteration
 ```
