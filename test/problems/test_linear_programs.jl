@@ -143,9 +143,9 @@ end
 
     @testset "DavisYin" begin
 
-        f = IndAffine(A, b)
+        f = Linear(c)
         g = IndNonnegative()
-        h = Linear(c)
+        h = IndAffine(A, b)
 
         x0 = zeros(T, n)
         x0_backup = copy(x0)

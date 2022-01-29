@@ -229,7 +229,7 @@ See also: [`AFBAIteration`](@ref), [`IterativeAlgorithm`](@ref).
 - `verbose::Bool=false`: whether the algorithm state should be displayed
 - `freq::Int=100`: every how many iterations to display the algorithm state
 - `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
-- `kwargs`: keyword arguments to pass on to the `AFBAIteration` constructor upon call
+- `kwargs...`: additional keyword arguments to pass on to the `AFBAIteration` constructor upon call
 
 # References
 1. Latafat, Patrinos, "Asymmetric forward-backward-adjoint splitting for solving monotone inclusions involving three operators", Computational Optimization and Applications, vol. 68, no. 1, pp. 57-93 (2017).
@@ -271,7 +271,7 @@ See also: [`VuCondatIteration`](@ref), [`AFBAIteration`](@ref), [`IterativeAlgor
 - `verbose::Bool=false`: whether the algorithm state should be displayed
 - `freq::Int=100`: every how many iterations to display the algorithm state
 - `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
-- `kwargs`: keyword arguments to pass on to the `AFBAIteration` constructor upon call
+- `kwargs...`: additional keyword arguments to pass on to the `AFBAIteration` constructor upon call
 
 # References
 1. Condat, "A primal-dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms", Journal of Optimization Theory and Applications, vol. 158, no. 2, pp 460-479 (2013).
@@ -303,7 +303,7 @@ See also: [`ChambollePockIteration`](@ref), [`AFBAIteration`](@ref), [`Iterative
 - `verbose::Bool=false`: whether the algorithm state should be displayed
 - `freq::Int=100`: every how many iterations to display the algorithm state
 - `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
-- `kwargs`: keyword arguments to pass on to the `AFBAIteration` constructor upon call
+- `kwargs...`: additional keyword arguments to pass on to the `AFBAIteration` constructor upon call
 
 # References
 1. Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems with Applications to Imaging", Journal of Mathematical Imaging and Vision, vol. 40, no. 1, pp. 120-145 (2011).

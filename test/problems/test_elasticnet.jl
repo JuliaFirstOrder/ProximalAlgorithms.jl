@@ -32,7 +32,7 @@
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.DavisYin(tol = R(1e-6))
-        xf_dys, it_dys = @inferred solver(x0 = x0, f = reg1, g = reg2, h = cost, Lh = L)
+        xf_dys, it_dys = @inferred solver(x0 = x0, f = cost, g = reg1, h = reg2, Lf = L)
         @test eltype(xf_dys) == T
         @test norm(xf_dys - x_star, Inf) <= 1e-3
         @test it_dys <= 140
@@ -43,7 +43,7 @@
         x0 = randn(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.DavisYin(tol = R(1e-6))
-        xf_dys, it_dys = @inferred solver(x0 = x0, f = reg1, g = reg2, h = cost, Lh = L)
+        xf_dys, it_dys = @inferred solver(x0 = x0, f = cost, g = reg1, h = reg2, Lf = L)
         @test eltype(xf_dys) == T
         @test norm(xf_dys - x_star, Inf) <= 1e-3
         @test x0 == x0_backup

@@ -139,7 +139,7 @@ See also: [`FastForwardBackwardIteration`](@ref), [`IterativeAlgorithm`](@ref).
 - `verbose::Bool=false`: whether the algorithm state should be displayed
 - `freq::Int=100`: every how many iterations to display the algorithm state
 - `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
-- `kwargs`: keyword arguments to pass on to the `FastForwardBackwardIteration` constructor upon call
+- `kwargs...`: additional keyword arguments to pass on to the `FastForwardBackwardIteration` constructor upon call
 
 # References
 1. Tseng, "On Accelerated Proximal Gradient Methods for Convex-Concave Optimization" (2008).

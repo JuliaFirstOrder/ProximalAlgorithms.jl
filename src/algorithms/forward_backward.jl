@@ -120,7 +120,7 @@ See also: [`ForwardBackwardIteration`](@ref), [`IterativeAlgorithm`](@ref).
 - `verbose::Bool=false`: whether the algorithm state should be displayed
 - `freq::Int=100`: every how many iterations to display the algorithm state
 - `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
-- `kwargs`: keyword arguments to pass on to the `ForwardBackwardIteration` constructor upon call
+- `kwargs...`: additional keyword arguments to pass on to the `ForwardBackwardIteration` constructor upon call
 
 # References
 1. Lions, Mercier, “Splitting algorithms for the sum of two nonlinear operators,” SIAM Journal on Numerical Analysis, vol. 16, pp. 964–979 (1979).

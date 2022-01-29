@@ -131,7 +131,7 @@ See also: [`SFISTAIteration`](@ref), [`IterativeAlgorithm`](@ref).
 - `verbose::Bool=false`: whether the algorithm state should be displayed
 - `freq::Int=100`: every how many iterations to display the algorithm state
 - `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
-- `kwargs`: keyword arguments to pass on to the `SFISTAIteration` constructor upon call
+- `kwargs...`: additional keyword arguments to pass on to the `SFISTAIteration` constructor upon call
 
 # References
 1. Nesterov, Y. (2013). Gradient methods for minimizing composite functions. Mathematical Programming, 140(1), 125-161.

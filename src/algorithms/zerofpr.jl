@@ -204,7 +204,7 @@ See also: [`ZeroFPRIteration`](@ref), [`IterativeAlgorithm`](@ref).
 - `verbose::Bool=false`: whether the algorithm state should be displayed
 - `freq::Int=10`: every how many iterations to display the algorithm state
 - `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
-- `kwargs`: keyword arguments to pass on to the `ZeroFPRIteration` constructor upon call
+- `kwargs...`: additional keyword arguments to pass on to the `ZeroFPRIteration` constructor upon call
 
 # References
 1. Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms", SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274-2303 (2018).

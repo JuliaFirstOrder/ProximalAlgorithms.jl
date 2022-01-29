@@ -219,7 +219,7 @@ See also: [`PANOCplusIteration`](@ref), [`IterativeAlgorithm`](@ref).
 - `verbose::Bool=false`: whether the algorithm state should be displayed
 - `freq::Int=10`: every how many iterations to display the algorithm state
 - `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
-- `kwargs`: keyword arguments to pass on to the `PANOCplusIteration` constructor upon call
+- `kwargs...`: additional keyword arguments to pass on to the `PANOCplusIteration` constructor upon call
 
 # References
 1. De Marchi, Themelis, "Proximal gradient algorithms under local Lipschitz gradient continuity: a convergence and robustness analysis of PANOC", arXiv:2112.13000 (2021).

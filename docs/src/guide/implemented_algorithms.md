@@ -7,6 +7,10 @@
 Depending on the structure a problem can be reduced to, different types of algorithms will apply.
 The major distinctions are in the number of objective terms, whether any of them is differentiable,
 whether they are composed with some linear mapping (which in general complicates evaluating the proximal mapping).
+Based on this we can split problems, and algorithms that apply to them, in three categories:
+- [Two-terms: ``f + g``](@ref two_terms_splitting)
+- [Three-terms: ``f + g + h``](@ref three_terms_splitting)
+- [Primal-dual: ``f + g + h \circ L``](@ref primal_dual_splitting)
 
 ## [Two-terms: ``f + g``](@id two_terms_splitting)
 
@@ -14,35 +18,43 @@ This is the most popular model, by far the most thoroughly studied, and an abund
 
 Algorithm | Assumptions | Oracle | Implementation | References
 ----------|-------------|--------|----------------|-----------
-Forward-backward | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ForwardBackwardIteration`](@ref ProximalAlgorithms.ForwardBackwardIteration) | [Lions1979](@cite)
-Douglas-Rachford | | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DouglasRachfordIteration`](@ref ProximalAlgorithms.DouglasRachfordIteration) | [Eckstein1992](@cite)
-Fast forward-backward | ``f`` convex, smooth, ``g`` convex | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`FastForwardBackwardIteration`](@ref ProximalAlgorithms.FastForwardBackwardIteration) | [Tseng2008](@cite), [Beck2009](@cite)
-PANOC | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOCIteration`](@ref ProximalAlgorithms.PANOCIteration) | [Stella2017](@cite)
-ZeroFPR | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ZeroFPRIteration`](@ref ProximalAlgorithms.ZeroFPRIteration) | [Themelis2018](@cite)
-Douglas-Rachford line-search | ``f`` smooth | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DRLSIteration`](@ref ProximalAlgorithms.DRLSIteration) | [Themelis2020](@cite)
-PANOC+ | ``f`` locally smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOCplusIteration`](@ref ProximalAlgorithms.PANOCplusIteration) | [DeMarchi2021](@cite)
+Forward-backward | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ForwardBackward`](@ref ProximalAlgorithms.ForwardBackward) | [Lions1979](@cite)
+Douglas-Rachford | | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DouglasRachford`](@ref ProximalAlgorithms.DouglasRachford) | [Eckstein1992](@cite)
+Fast forward-backward | ``f`` convex, smooth, ``g`` convex | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`FastForwardBackward`](@ref ProximalAlgorithms.FastForwardBackward) | [Tseng2008](@cite), [Beck2009](@cite)
+PANOC | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOC`](@ref ProximalAlgorithms.PANOC) | [Stella2017](@cite)
+ZeroFPR | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ZeroFPR`](@ref ProximalAlgorithms.ZeroFPR) | [Themelis2018](@cite)
+Douglas-Rachford line-search | ``f`` smooth | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DRLS`](@ref ProximalAlgorithms.DRLS) | [Themelis2020](@cite)
+PANOC+ | ``f`` locally smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOCplus`](@ref ProximalAlgorithms.PANOCplus) | [DeMarchi2021](@cite)
 
 ```@docs
+ProximalAlgorithms.ForwardBackward
 ProximalAlgorithms.ForwardBackwardIteration
+ProximalAlgorithms.DouglasRachford
 ProximalAlgorithms.DouglasRachfordIteration
+ProximalAlgorithms.FastForwardBackward
 ProximalAlgorithms.FastForwardBackwardIteration
+ProximalAlgorithms.PANOC
 ProximalAlgorithms.PANOCIteration
+ProximalAlgorithms.ZeroFPR
 ProximalAlgorithms.ZeroFPRIteration
+ProximalAlgorithms.DRLS
 ProximalAlgorithms.DRLSIteration
+ProximalAlgorithms.PANOCplus
 ProximalAlgorithms.PANOCplusIteration
 ```
 
 ## [Three-terms: ``f + g + h``](@id three_terms_splitting)
 
 When more than one non-differentiable term is there in the objective, algorithms from the [previous section](@ref two_terms_splitting)
-do not *in general* apply out of the box, since ``\operatorname{prox}_{\gamma (f + g)}`` does not have a closed form unless in particular cases.
-Therefore, ad-hoc iteration schemese have been studied.
+do not *in general* apply out of the box, since ``\operatorname{prox}_{\gamma (g + h)}`` does not have a closed form unless in particular cases.
+Therefore, ad-hoc iteration schemes have been studied.
 
 Algorithm | Assumptions | Oracle | Implementation | References
 ----------|-------------|--------|----------------|-----------
-Davis-Yin | ``f, g`` convex, ``h`` convex and smooth | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}``, ``\nabla h`` | [`DavisYinIteration`](@ref ProximalAlgorithms.DavisYinIteration) | [Davis2017](@cite) 
+Davis-Yin | ``f`` convex and smooth, ``g, h`` convex | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}`` | [`DavisYin`](@ref ProximalAlgorithms.DavisYin) | [Davis2017](@cite) 
 
 ```@docs
+ProximalAlgorithms.DavisYin
 ProximalAlgorithms.DavisYinIteration
 ```
 
@@ -53,12 +65,15 @@ For this reason, specific algorithms by the name of "primal-dual" splitting sche
 
 Algorithm | Assumptions | Oracle | Implementation | References
 ----------|-------------|--------|----------------|-----------
-Chambolle-Pock | ``f\equiv 0``, ``g, h`` convex, ``L`` linear operator | ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`ChambollePockIteration`](@ref ProximalAlgorithms.ChambollePockIteration) | [Chambolle2011](@cite)
-Vu-Condat | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`VuCodatIteration`](@ref ProximalAlgorithms.VuCondatIteration) | [Vu2013](@cite), [Condat2013](@cite)
-AFBA      | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`AFBAIteration`](@ref ProximalAlgorithms.AFBAIteration) | [Latafat2017](@cite)
+Chambolle-Pock | ``f\equiv 0``, ``g, h`` convex, ``L`` linear operator | ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`ChambollePock`](@ref ProximalAlgorithms.ChambollePock) | [Chambolle2011](@cite)
+Vu-Condat | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`VuCodat`](@ref ProximalAlgorithms.VuCondat) | [Vu2013](@cite), [Condat2013](@cite)
+AFBA      | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`AFBA`](@ref ProximalAlgorithms.AFBA) | [Latafat2017](@cite)
 
 ```@docs
+ProximalAlgorithms.ChambollePock
 ProximalAlgorithms.ChambollePockIteration
+ProximalAlgorithms.VuCondat
 ProximalAlgorithms.VuCondatIteration
+ProximalAlgorithms.AFBA
 ProximalAlgorithms.AFBAIteration
 ```

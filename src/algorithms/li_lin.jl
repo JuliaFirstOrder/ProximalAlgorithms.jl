@@ -166,7 +166,7 @@ See also: [`LiLinIteration`](@ref), [`IterativeAlgorithm`](@ref).
 - `verbose::Bool=false`: whether the algorithm state should be displayed
 - `freq::Int=100`: every how many iterations to display the algorithm state
 - `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
-- `kwargs`: keyword arguments to pass on to the `LiLinIteration` constructor upon call
+- `kwargs...`: additional keyword arguments to pass on to the `LiLinIteration` constructor upon call
 
 # References
 1. Li, Lin, "Accelerated Proximal Gradient Methods for Nonconvex Programming", Proceedings of NIPS 2015 (2015).
