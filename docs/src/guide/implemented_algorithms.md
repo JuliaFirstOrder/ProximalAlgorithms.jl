@@ -12,6 +12,9 @@ Based on this we can split problems, and algorithms that apply to them, in three
 - [Three-terms: ``f + g + h``](@ref three_terms_splitting)
 - [Primal-dual: ``f + g + h \circ L``](@ref primal_dual_splitting)
 
+In what follows, the list of available algorithms is given, with links to the documentation for their constructors
+and their underlying [iterator type](@ref iterator_interface).
+
 ## [Two-terms: ``f + g``](@id two_terms_splitting)
 
 This is the most popular model, by far the most thoroughly studied, and an abundance of algorithms exist to solve problems in this form.

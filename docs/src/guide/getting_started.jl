@@ -33,11 +33,14 @@
 #md #     rather, the user is expected to formulate their problem by providing the right objective terms to the algorithm of choice.
 #md #     Please refer to the [this section of the manual](@ref problems_algorithms) for information on what terms can be provided and under which assumptions.
 # 
-# ## Interface to algorithms
+# ## [Interface to algorithms](@id algorithm_interface)
 # 
 # At a high level, using algorithms from ProximalAlgorithms amounts to the following.
-# 1. Instantiate the algorithm, with options like termination condition, or other algorithm-specific parameters.
+# 1. Instantiate the algorithm, with options like the termination tolerance, verbosity level, or other algorithm-specific parameters.
 # 2. Call the algorithm on the problem description: this amounts to the initial point, the objective terms, and possibly additional required information (e.g. Lipschitz constants).
+# 
+# See [here](@ref problems_algorithms) for the list of available algorithm constructors, for different types of problems.
+# In general however, algorithms are instances of the [`IterativeAlgorithm`](@ref ProximalAlgorithms.IterativeAlgorithm) type.
 # 
 # ## [Example: box constrained quadratic](@id box_qp)
 # 
@@ -72,7 +75,7 @@ contour(-1:0.1:2, -1:0.1:2, (x,y) -> quadratic_cost([x, y]), fill=true, framesty
 plot!(Shape([0, 1, 1, 0], [0, 0, 1, 1]), opacity=.5, label="feasible set")
 scatter!([solution[1]], [solution[2]], color=:red, markershape=:star5, label="computed solution")
 
-# ## Iterator interface
+# ## [Iterator interface](@id iterator_interface)
 # 
 # Under the hood, algorithms are implemented in the form of standard Julia iterators:
 # constructing such iterator objects directly, and looping over them, allows for more fine-grained control over the termination condition,

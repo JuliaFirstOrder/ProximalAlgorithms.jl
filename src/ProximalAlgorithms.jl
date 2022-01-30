@@ -58,12 +58,24 @@ end
 Wrapper for an iterator type `T`, adding termination and verbosity options on top of it.
 
 This is a conveniency constructor to allow for "partial" instantiation of an iterator of type `T`.
-The resulting object `alg` can be called on a set of keyword arguments, which will be merged
+The resulting "algorithm" object `alg` can be called on a set of keyword arguments, which will be merged
 to `kwargs` and passed on to `T` to construct an iterator which will be looped over.
+Specifically, if an algorithm is constructed as
+
+    alg = IterativeAlgorithm(T; maxit, stop, solution, verbose, freq, display, kwargs...)
+
+then calling it with
+
+    alg(; more_kwargs...)
+
+will internally loop over an iterator constructed as
+
+    T(; alg.kwargs..., more_kwargs...)
 
 # Note
 This constructor is not meant to be used directly: instead, algorithm-specific constructors
-should be defined on top of it and exposed to the user.
+should be defined on top of it and exposed to the user, that set appropriate default functions
+for `stop`, `solution`, `display`.
 
 # Arguments
 * `T::Type`: iterator type to use
@@ -73,7 +85,7 @@ should be defined on top of it and exposed to the user.
 * `verbose::Bool`: whether the algorithm state should be displayed
 * `freq::Int`: every how many iterations to display the algorithm state
 * `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
-* `kwargs`: keyword arguments to pass on to `T` when constructing the iterator
+* `kwargs...`: keyword arguments to pass on to `T` when constructing the iterator
 """
 IterativeAlgorithm(T; maxit, stop, solution, verbose, freq, display, kwargs...) =
     IterativeAlgorithm{T, typeof(stop), typeof(solution), typeof(display), typeof(kwargs)}(
