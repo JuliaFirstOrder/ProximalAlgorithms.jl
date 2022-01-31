@@ -32,11 +32,9 @@
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.DavisYin(tol = R(1e-6))
-        xf_dys, xg_dys, it_dys = solver(x0, f = reg1, g = reg2, h = cost, Lh = L)
+        xf_dys, it_dys = @inferred solver(x0 = x0, f = cost, g = reg1, h = reg2, Lf = L)
         @test eltype(xf_dys) == T
-        @test eltype(xg_dys) == T
         @test norm(xf_dys - x_star, Inf) <= 1e-3
-        @test norm(xg_dys - x_star, Inf) <= 1e-3
         @test it_dys <= 140
         @test x0 == x0_backup
 
@@ -45,11 +43,9 @@
         x0 = randn(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.DavisYin(tol = R(1e-6))
-        xf_dys, xg_dys, it_dys = solver(x0, f = reg1, g = reg2, h = cost, Lh = L)
+        xf_dys, it_dys = @inferred solver(x0 = x0, f = cost, g = reg1, h = reg2, Lf = L)
         @test eltype(xf_dys) == T
-        @test eltype(xg_dys) == T
         @test norm(xf_dys - x_star, Inf) <= 1e-3
-        @test norm(xg_dys - x_star, Inf) <= 1e-3
         @test x0 == x0_backup
 
     end
@@ -72,8 +68,8 @@
         y0_backup = copy(y0)
 
         solver = ProximalAlgorithms.AFBA(theta = theta, mu = mu, tol = R(1e-6))
-        x_afba, y_afba, it_afba =
-            solver(x0, y0, f = reg2, g = reg1, h = loss, L = A, beta_f = 1)
+        (x_afba, y_afba), it_afba =
+            solver(x0 = x0, y0 = y0, f = reg2, g = reg1, h = loss, L = A, beta_f = 1)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
@@ -89,8 +85,8 @@
         y0_backup = copy(y0)
 
         solver = ProximalAlgorithms.AFBA(theta = theta, mu = mu, tol = R(1e-6))
-        x_afba, y_afba, it_afba =
-            solver(x0, y0, f = reg2, g = reg1, h = loss, L = A, beta_f = 1)
+        (x_afba, y_afba), it_afba =
+            solver(x0 = x0, y0 = y0, f = reg2, g = reg1, h = loss, L = A, beta_f = 1)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4

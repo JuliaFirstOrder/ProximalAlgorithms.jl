@@ -11,12 +11,15 @@ using Printf
 """
     PANOCIteration(; <keyword-arguments>)
 
-Instantiate the PANOC algorithm (see [1]) for solving optimization problems
-of the form
+Iterator implementing the PANOC algorithm [1].
+
+This iterator solves optimization problems of the form
 
     minimize f(Ax) + g(x),
 
 where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+
+See also: [`PANOC`](@ref).
 
 # Arguments
 - `x0`: initial point.
@@ -137,7 +140,7 @@ function Base.iterate(iter::PANOCIteration{R}, state::PANOCState) where R
     state.res_prev .= state.res
 
     # backtrack tau 1 → 0
-    tau = R(1)
+    state.tau = R(1)
     mul!(state.Ad, iter.A, state.d)
 
     state.x_d .= state.x .+ state.d
@@ -156,26 +159,23 @@ function Base.iterate(iter::PANOCIteration{R}, state::PANOCState) where R
     tol = 10 * eps(R) * (1 + abs(FBE_x))
     threshold = FBE_x - sigma * norm(state.res)^2 + tol
 
-    for _ in 1:iter.max_backtracks
-        state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
-        state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
-        state.res .= state.x .- state.z
-        FBE_x_new = f_model(iter, state) + state.g_z
+    state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
+    state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
+    state.res .= state.x .- state.z
+    FBE_x_new = f_model(iter, state) + state.g_z
 
+    for k in 1:iter.max_backtracks
         if FBE_x_new <= threshold
-            # update metric
-            update_direction_state!(iter, state)
-            state.tau = tau
-            return state, state
+            break
         end
 
         if isinf(f_Az)
             mul!(state.Az, iter.A, state.z_curr)
         end
 
-        tau *= 0.5
-        state.x .= tau .* state.x_d .+ (1 - tau) .* state.z_curr
-        state.Ax .= tau .* state.Ax_d .+ (1 - tau) .* state.Az
+        state.tau = k >= iter.max_backtracks ? R(0) : state.tau / 2
+        state.x .= state.tau .* state.x_d .+ (1 - state.tau) .* state.z_curr
+        state.Ax .= state.tau .* state.Ax_d .+ (1 - state.tau) .* state.Az
 
         if ProximalOperators.is_quadratic(iter.f)
             # in case f is quadratic, we can compute its value and gradient
@@ -190,49 +190,69 @@ function Base.iterate(iter::PANOCIteration{R}, state::PANOCState) where R
                 b = real(dot(state.Ax_d, state.grad_f_Az)) - real(dot(state.Az, state.grad_f_Az))
                 a = state.f_Ax_d - b - c
             end
-            state.f_Ax = a * tau^2 + b * tau + c
-            state.grad_f_Ax .= tau .* state.grad_f_Ax_d .+ (1 - tau) .* state.grad_f_Az
-            state.At_grad_f_Ax .= tau .* state.At_grad_f_Ax_d .+ (1 - tau) .* state.At_grad_f_Az
+            state.f_Ax = a * state.tau^2 + b * state.tau + c
+            state.grad_f_Ax .= state.tau .* state.grad_f_Ax_d .+ (1 - state.tau) .* state.grad_f_Az
+            state.At_grad_f_Ax .= state.tau .* state.At_grad_f_Ax_d .+ (1 - state.tau) .* state.At_grad_f_Az
         else
             # otherwise, in the general case where f is only smooth, we compute
             # one gradient and matvec per backtracking step
             state.f_Ax = gradient!(state.grad_f_Ax, iter.f, state.Ax)
             mul!(state.At_grad_f_Ax, adjoint(iter.A), state.grad_f_Ax)
         end
+
+        state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
+        state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
+        state.res .= state.x .- state.z
+        FBE_x_new = f_model(iter, state) + state.g_z
     end
 
-    @warn "stepsize `tau` became too small ($(tau)), stopping the iterations"
-    return nothing
+    update_direction_state!(iter, state)
+
+    return state, state
 end
 
-# Solver
+default_stopping_criterion(tol, ::PANOCIteration, state::PANOCState) = norm(state.res, Inf) / state.gamma <= tol
+default_solution(::PANOCIteration, state::PANOCState) = state.z
+default_display(it, ::PANOCIteration, state::PANOCState) = @printf(
+    "%5d | %.3e | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma, state.tau,
+)
 
-struct PANOC{R, K}
-    maxit::Int
-    tol::R
-    verbose::Bool
-    freq::Int
-    kwargs::K
-end
+"""
+    PANOC(; <keyword-arguments>)
 
-function (solver::PANOC)(x0; kwargs...)
-    stop(state::PANOCState) = norm(state.res, Inf) / state.gamma <= solver.tol
-    disp((it, state)) = @printf(
-        "%5d | %.3e | %.3e | %.3e\n",
-        it,
-        state.gamma,
-        norm(state.res, Inf) / state.gamma,
-        state.tau,
-    )
-    iter = PANOCIteration(; x0=x0, solver.kwargs..., kwargs...)
-    iter = take(halt(iter, stop), solver.maxit)
-    iter = enumerate(iter)
-    if solver.verbose
-        iter = tee(sample(iter, solver.freq), disp)
-    end
-    num_iters, state_final = loop(iter)
-    return state_final.z, num_iters
-end
+Constructs the PANOC algorithm [1].
 
-PANOC(; maxit=1_000, tol=1e-8, verbose=false, freq=10, kwargs...) = 
-    PANOC(maxit, tol, verbose, freq, kwargs)
+This algorithm solves optimization problems of the form
+
+minimize f(Ax) + g(x),
+
+where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+
+The returned object has type `IterativeAlgorithm{PANOCIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`PANOCIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=1_000`: maximum number of iteration
+- `tol::1e-8`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=10`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs...`: additional keyword arguments to pass on to the `PANOCIteration` constructor upon call
+
+# References
+1. Stella, Themelis, Sopasakis, Patrinos, "A simple and efficient algorithm for nonlinear model predictive control", 56th IEEE Conference on Decision and Control (2017).
+"""
+PANOC(;
+    maxit=1_000,
+    tol=1e-8,
+    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution=default_solution,
+    verbose=false,
+    freq=10,
+    display=default_display,
+    kwargs...
+) = IterativeAlgorithm(PANOCIteration; maxit, stop, solution, verbose, freq, display, kwargs...)

@@ -34,7 +34,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.ForwardBackward(tol = TOL, verbose = true)
-        x, it = solver(x0, f = f2, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = f2, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 150
@@ -47,7 +47,7 @@
             adaptive = true,
             verbose = true,
         )
-        x, it = solver(x0, f = f2, g = g)
+        x, it = solver(x0 = x0, f = f2, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 300
@@ -57,7 +57,7 @@
         x0 = zeros(T, n)
         solver =
             ProximalAlgorithms.FastForwardBackward(tol = TOL, verbose = true)
-        x, it = solver(x0, f = f2, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = f2, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100
@@ -70,7 +70,7 @@
             adaptive = true,
             verbose = true,
         )
-        x, it = solver(x0, f = f2, g = g)
+        x, it = solver(x0 = x0, f = f2, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 200
@@ -82,7 +82,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.ZeroFPR(tol = TOL, verbose = true)
-        x, it = solver(x0, f = f, A = A, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = f, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -91,7 +91,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL, verbose = true)
-        x, it = solver(x0, f = f, A = A, g = g)
+        x, it = solver(x0 = x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -104,7 +104,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.PANOC(tol = TOL, verbose = true)
-        x, it = solver(x0, f = f, A = A, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = f, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -113,7 +113,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.PANOC(adaptive = true, tol = TOL, verbose = true)
-        x, it = solver(x0, f = f, A = A, g = g)
+        x, it = solver(x0 = x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -126,7 +126,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.PANOCplus(tol = TOL, verbose = true)
-        x, it = solver(x0, f = f, A = A, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = f, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -135,7 +135,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL, verbose = true)
-        x, it = solver(x0, f = f, A = A, g = g)
+        x, it = solver(x0 = x0, f = f, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -152,11 +152,9 @@
             tol = TOL,
             verbose = true,
         )
-        y, z, it = solver(x0, f = f2, g = g)
+        y, it = solver(x0 = x0, f = f2, g = g)
         @test eltype(y) == T
-        @test eltype(z) == T
         @test norm(y - x_star, Inf) <= TOL
-        @test norm(z - x_star, Inf) <= TOL
         @test it < 30
 
     end

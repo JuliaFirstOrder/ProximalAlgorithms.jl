@@ -11,12 +11,15 @@ using Printf
 """
     PANOCplusIteration(; <keyword-arguments>)
 
-Instantiate the PANOCplus algorithm (see [1]) for solving optimization problems
-of the form
+Iterator implementing the PANOCplus algorithm [1].
+
+This iterator solves optimization problems of the form
 
     minimize f(Ax) + g(x),
 
 where `f` is locally smooth and `A` is a linear mapping (for example, a matrix).
+
+See also: [`PANOCplus`](@ref).
 
 # Arguments
 - `x0`: initial point.
@@ -171,51 +174,63 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
         mul!(state.At_grad_f_Az, adjoint(iter.A), state.grad_f_Az)
 
         FBE_x_new = f_Az_upp + state.g_z
-        if FBE_x_new <= threshold
-            # update metric
-            update_direction_state!(iter, state)
-            return state, state
+        if FBE_x_new <= threshold || tau_backtracks >= iter.max_backtracks
+            break
         end
-        state.tau *= 0.5
-        if tau_backtracks > iter.max_backtracks
-            @warn "stepsize `tau` became too small ($(state.tau))"
-            return nothing
-        end
+        state.tau = tau_backtracks >= iter.max_backtracks - 1 ? R(0) : state.tau / 2
         tau_backtracks += 1
         can_update_direction = false
 
     end
 
+    update_direction_state!(iter, state)
+
+    return state, state
+
 end
 
-# Solver
+default_stopping_criterion(tol, ::PANOCplusIteration, state::PANOCplusState) = norm((state.res / state.gamma) - state.At_grad_f_Ax + state.At_grad_f_Az, Inf) <= tol
+default_solution(::PANOCplusIteration, state::PANOCplusState) = state.z
+default_display(it, ::PANOCplusIteration, state::PANOCplusState) = @printf(
+    "%5d | %.3e | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma, state.tau,
+)
 
-struct PANOCplus{R, K}
-    maxit::Int
-    tol::R
-    verbose::Bool
-    freq::Int
-    kwargs::K
-end
+"""
+    PANOCplus(; <keyword-arguments>)
 
-function (solver::PANOCplus)(x0; kwargs...)
-    stop(state::PANOCplusState) = norm((state.res / state.gamma) - state.At_grad_f_Ax + state.At_grad_f_Az, Inf) <= solver.tol
-    disp((it, state)) = @printf(
-        "%5d | %.3e | %.3e | %.3e\n",
-        it,
-        state.gamma,
-        norm(state.res, Inf) / state.gamma,
-        state.tau,
-    )
-    iter = PANOCplusIteration(; x0=x0, solver.kwargs..., kwargs...)
-    iter = take(halt(iter, stop), solver.maxit)
-    iter = enumerate(iter)
-    if solver.verbose
-        iter = tee(sample(iter, solver.freq), disp)
-    end
-    num_iters, state_final = loop(iter)
-    return state_final.z, num_iters
-end
+Constructs the the PANOCplus algorithm [1].
 
-PANOCplus(; maxit=1_000, tol=1e-8, verbose=false, freq=10, kwargs...) =
-    PANOCplus(maxit, tol, verbose, freq, kwargs)
+This algorithm solves optimization problems of the form
+
+minimize f(Ax) + g(x),
+
+where `f` is locally smooth and `A` is a linear mapping (for example, a matrix).
+
+The returned object has type `IterativeAlgorithm{PANOCplusIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`PANOCplusIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=1_000`: maximum number of iteration
+- `tol::1e-8`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=10`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs...`: additional keyword arguments to pass on to the `PANOCplusIteration` constructor upon call
+
+# References
+1. De Marchi, Themelis, "Proximal gradient algorithms under local Lipschitz gradient continuity: a convergence and robustness analysis of PANOC", arXiv:2112.13000 (2021).
+"""
+PANOCplus(;
+    maxit=1_000,
+    tol=1e-8,
+    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution=default_solution,
+    verbose=false,
+    freq=10,
+    display=default_display,
+    kwargs...
+) = IterativeAlgorithm(PANOCplusIteration; maxit, stop, solution, verbose, freq, display, kwargs...)

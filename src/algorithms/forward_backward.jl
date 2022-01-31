@@ -10,12 +10,15 @@ using Printf
 """
     ForwardBackwardIteration(; <keyword-arguments>)
 
-Instantiate the forward-backward splitting algorithm (see [1]) for solving
-optimization problems of the form
+Iterator implementing the forward-backward splitting algorithm [1].
+
+This iterator solves optimization problems of the form
 
     minimize f(x) + g(x),
 
 where `f` is smooth.
+
+See also: [`ForwardBackward`](@ref).
 
 # Arguments
 - `x0`: initial point.
@@ -89,32 +92,49 @@ function Base.iterate(iter::ForwardBackwardIteration{R}, state::ForwardBackwardS
     return state, state
 end
 
-# Solver
+default_stopping_criterion(tol, ::ForwardBackwardIteration, state::ForwardBackwardState) = norm(state.res, Inf) / state.gamma <= tol
+default_solution(::ForwardBackwardIteration, state::ForwardBackwardState) = state.z
+default_display(it, ::ForwardBackwardIteration, state::ForwardBackwardState) = @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
 
-struct ForwardBackward{R, K}
-    maxit::Int
-    tol::R
-    verbose::Bool
-    freq::Int
-    kwargs::K
-end
+"""
+    ForwardBackward(; <keyword-arguments>)
 
-function (solver::ForwardBackward)(x0; kwargs...)
-    stop(state::ForwardBackwardState) = norm(state.res, Inf) / state.gamma <= solver.tol
-    disp((it, state)) =
-        @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
-    iter = ForwardBackwardIteration(; x0=x0, solver.kwargs..., kwargs...)
-    iter = take(halt(iter, stop), solver.maxit)
-    iter = enumerate(iter)
-    if solver.verbose
-        iter = tee(sample(iter, solver.freq), disp)
-    end
-    num_iters, state_final = loop(iter)
-    return state_final.z, num_iters
-end
+Constructs the forward-backward splitting algorithm [1].
 
-ForwardBackward(; maxit=10_000, tol=1e-8, verbose=false, freq=100, kwargs...) = 
-    ForwardBackward(maxit, tol, verbose, freq, kwargs)
+This algorithm solves optimization problems of the form
+
+    minimize f(x) + g(x),
+
+where `f` is smooth.
+
+The returned object has type `IterativeAlgorithm{ForwardBackwardIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`ForwardBackwardIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=10_000`: maximum number of iteration
+- `tol::1e-8`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=100`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs...`: additional keyword arguments to pass on to the `ForwardBackwardIteration` constructor upon call
+
+# References
+1. Lions, Mercier, “Splitting algorithms for the sum of two nonlinear operators,” SIAM Journal on Numerical Analysis, vol. 16, pp. 964–979 (1979).
+"""
+ForwardBackward(;
+    maxit=10_000,
+    tol=1e-8,
+    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution=default_solution,
+    verbose=false,
+    freq=100,
+    display=default_display,
+    kwargs...
+) = IterativeAlgorithm(ForwardBackwardIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
 
 # Aliases
 

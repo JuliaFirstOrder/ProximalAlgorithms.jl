@@ -10,9 +10,9 @@ using ProximalOperators: Zero
 using LinearAlgebra
 using Printf
 
-function drls_default_gamma(f, muf, Lf, alpha, lambda)
-    if muf !== nothing && muf > 0
-        return 1 / (alpha * muf)
+function drls_default_gamma(f, mf, Lf, alpha, lambda)
+    if mf !== nothing && mf > 0
+        return 1 / (alpha * mf)
     end
     if ProximalOperators.is_convex(f)
         return alpha / Lf
@@ -21,8 +21,8 @@ function drls_default_gamma(f, muf, Lf, alpha, lambda)
     end
 end
 
-function drls_C(f, muf, Lf, gamma, lambda)
-    a = muf === nothing || muf <= 0 ? gamma * Lf : 1 / (gamma * muf)
+function drls_C(f, mf, Lf, gamma, lambda)
+    a = mf === nothing || mf <= 0 ? gamma * Lf : 1 / (gamma * mf)
     m = ProximalOperators.is_convex(f) ? max(a - lambda / 2, 0) : 1
     return (lambda / ((1 + a)^2) * ((2 - lambda) / 2 - a * m))
 end
@@ -30,38 +30,41 @@ end
 """
     DRLSIteration(; <keyword-arguments>)
 
-Instantiate the Douglas-Rachford line-search algorithm (see [1]) for solving optimization problems
-of the form
+Iterator implementing the Douglas-Rachford line-search algorithm [1].
+
+This iterator solves optimization problems of the form
 
     minimize f(x) + g(x),
 
 where `f` is smooth.
 
+See also: [`DRLS`](@ref).
+
 # Arguments
 - `x0`: initial point.
 - `f=Zero()`: smooth objective term.
 - `g=Zero()`: proximable objective term.
-- `muf=nothing`: convexity modulus of f.
+- `mf=nothing`: convexity modulus of f.
 - `Lf=nothing`: Lipschitz constant of the gradient of f.
-- `gamma`: stepsize to use, chosen appropriately based on Lf and muf by defaults.
+- `gamma`: stepsize to use, chosen appropriately based on Lf and mf by defaults.
 - `max_backtracks=20`: maximum number of line-search backtracks.
 - `directions=LBFGS(5)`: strategy to use to compute line-search directions.
 
 # References
 1. Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM for nonconvex optimization: Accelerated and Newton-type linesearch algorithms", arXiv:2005.10230, 2020.
 """
-Base.@kwdef struct DRLSIteration{R,Tx,Tf,Tg,Tmuf,TLf,D}
+Base.@kwdef struct DRLSIteration{R,Tx,Tf,Tg,Tmf,TLf,D}
     f::Tf = Zero()
     g::Tg = Zero()
     x0::Tx
     alpha::R = real(eltype(x0))(0.95)
     beta::R = real(eltype(x0))(0.5)
     lambda::R = real(eltype(x0))(1)
-    muf::Tmuf = nothing
+    mf::Tmf = nothing
     Lf::TLf = nothing
-    gamma::R = drls_default_gamma(f, muf, Lf, alpha, lambda)
-    c::R = beta * drls_C(f, muf, Lf, gamma, lambda)
-    dre_sign::Int = muf === nothing || muf <= 0 ? 1 : -1
+    gamma::R = drls_default_gamma(f, mf, Lf, alpha, lambda)
+    c::R = beta * drls_C(f, mf, Lf, gamma, lambda)
+    dre_sign::Int = mf === nothing || mf <= 0 ? 1 : -1
     max_backtracks::Int = 20
     directions::D = LBFGS(5)
 end
@@ -172,34 +175,48 @@ function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where R
     return state, state
 end
 
-# Solver
+default_stopping_criterion(tol, ::DRLSIteration, state::DRLSState) = norm(state.res, Inf) / state.gamma <= tol
+default_solution(::DRLSIteration, state::DRLSState) = state.v
+default_display(it, ::DRLSIteration, state::DRLSState) = @printf(
+    "%5d | %.3e | %.3e | %.3e\n", it, state.gamma / state.gamma, norm(state.res, Inf), state.tau,
+)
 
-struct DRLS{R, K}
-    maxit::Int
-    tol::R
-    verbose::Bool
-    freq::Int
-    kwargs::K
-end
+"""
+    DRLS(; <keyword-arguments>)
 
-function (solver::DRLS)(x0; kwargs...)
-    stop(state::DRLSState) = norm(state.res, Inf) / state.gamma <= solver.tol
-    disp((it, state)) = @printf(
-        "%5d | %.3e | %.3e | %.3e\n",
-        it,
-        state.gamma / state.gamma,
-        norm(state.res, Inf),
-        state.tau,
-    )
-    iter = DRLSIteration(; x0=x0, solver.kwargs..., kwargs...)
-    iter = take(halt(iter, stop), solver.maxit)
-    iter = enumerate(iter)
-    if solver.verbose
-        iter = tee(sample(iter, solver.freq), disp)
-    end
-    num_iters, state_final = loop(iter)
-    return state_final.u, state_final.v, num_iters
-end
+Constructs the Douglas-Rachford line-search algorithm [1].
 
-DRLS(; maxit=1_000, tol=1e-8, verbose=false, freq=10, kwargs...) = 
-    DRLS(maxit, tol, verbose, freq, kwargs)
+This algorithm solves convex optimization problems of the form
+
+    minimize f(x) + g(x),
+
+where `f` is smooth.
+
+The returned object has type `IterativeAlgorithm{DRLSIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`DRLSIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=1_000`: maximum number of iteration
+- `tol::1e-8`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=10`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs...`: additional keyword arguments to pass on to the `DRLSIteration` constructor upon call
+
+# References
+1. Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM for nonconvex optimization: Accelerated and Newton-type linesearch algorithms", arXiv:2005.10230, 2020.
+"""
+DRLS(;
+    maxit=1_000,
+    tol=1e-8,
+    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution=default_solution,
+    verbose=false,
+    freq=10,
+    display=default_display,
+    kwargs...
+) = IterativeAlgorithm(DRLSIteration; maxit, stop, solution, verbose, freq, display, kwargs...)

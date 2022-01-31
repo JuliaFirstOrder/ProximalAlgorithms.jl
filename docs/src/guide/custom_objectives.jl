@@ -9,7 +9,7 @@
 # 
 # Defining the proximal mapping for a custom function type requires adding a method for [`prox!`](@ref ProximalAlgorithms.prox!).
 # 
-# For computing gradients, ProximalAlgorithms provides a fallback definition for [`gradient!`](@ref ProximalAlgorithms.gradient!), 
+# To compute gradients, ProximalAlgorithms provides a fallback definition for [`gradient!`](@ref ProximalAlgorithms.gradient!), 
 # relying on [Zygote](https://github.com/FluxML/Zygote.jl) to use automatic differentiation.
 # Therefore, you can provide any (differentiable) Julia function wherever gradients need to be taken,
 # and everything will work out of the box.
@@ -53,19 +53,15 @@ end
 using ProximalAlgorithms
 
 panoc = ProximalAlgorithms.PANOC()
-solution, iterations = panoc(-ones(2), f=rosenbrock2D, g=IndUnitBall())
+solution, iterations = panoc(x0=-ones(2), f=rosenbrock2D, g=IndUnitBall())
 
 # Plotting the solution against the cost function contour and constraint, gives an idea of its correctness.
 
-using Gadfly
+using Plots
 
-contour = layer(
-    z=(x,y) -> rosenbrock2D([x, y]), xmin=[-2], xmax=[2], ymin=[-2], ymax=[2],
-    Geom.contour(levels=vcat([1.0, 10.0], [100.0 + 200.0 * k for k in 0:30])),
-)
-point = layer(x=[solution[1]], y=[solution[2]], Geom.point)
-circle = layer(x=cos.(0:0.01:2*pi), y=sin.(0:0.01:2*pi), Geom.path)
-plot(contour, circle, point, Guide.xlabel(nothing), Guide.ylabel(nothing))
+contour(-2:0.1:2, -2:0.1:2, (x,y) -> rosenbrock2D([x, y]), fill=true, framestyle=:none, background=nothing)
+plot!(Shape(cos.(0:0.01:2*pi), sin.(0:0.01:2*pi)), opacity=.5, label="feasible set")
+scatter!([solution[1]], [solution[2]], color=:red, markershape=:star5, label="computed solution")
 
 # ## Example: counting operations
 # 
@@ -102,7 +98,7 @@ end
 f = Counting(rosenbrock2D)
 g = Counting(IndUnitBall())
 
-solution, iterations = panoc(-ones(2), f=f, g=g)
+solution, iterations = panoc(x0=-ones(2), f=f, g=g)
 
 # and check how many operations where actually performed:
 

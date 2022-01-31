@@ -78,7 +78,7 @@ end
         y0_backup = copy(y0)
 
         solver = ProximalAlgorithms.AFBA(tol = tol, maxit = maxit)
-        x, y, it = solver(x0, y0, f = f, g = g, h = h, L = A, beta_f = 0)
+        (x, y), it = solver(x0 = x0, y0 = y0, f = f, g = g, h = h, L = A, beta_f = 0)
 
         @test eltype(x) == T
         @test eltype(y) == T
@@ -104,7 +104,7 @@ end
         y0_backup = copy(y0)
 
         solver = ProximalAlgorithms.VuCondat(tol = tol, maxit = maxit)
-        x, y, it = solver(x0, y0, f = f, g = g, h = h, L = A, beta_f = 0)
+        (x, y), it = solver(x0 = x0, y0 = y0, f = f, g = g, h = h, L = A, beta_f = 0)
 
         @test eltype(x) == T
         @test eltype(y) == T
@@ -128,7 +128,7 @@ end
         y0_backup = copy(y0)
 
         solver = ProximalAlgorithms.ChambollePock(tol = tol, maxit = maxit)
-        x, y, it = solver(x0, y0, g = g, h = h, L = vcat(A, Matrix{T}(I, n, n)))
+        (x, y), it = solver(x0 = x0, y0 = y0, g = g, h = h, L = vcat(A, Matrix{T}(I, n, n)))
 
         @test eltype(x) == T
         @test eltype(y) == T
@@ -143,23 +143,21 @@ end
 
     @testset "DavisYin" begin
 
-        f = IndAffine(A, b)
+        f = Linear(c)
         g = IndNonnegative()
-        h = Linear(c)
+        h = IndAffine(A, b)
 
         x0 = zeros(T, n)
         x0_backup = copy(x0)
 
         solver = ProximalAlgorithms.DavisYin(gamma = T(1), tol = tol, maxit = maxit)
-        xf, xg, it = solver(x0, f = f, g = g, h = h)
+        xf, it = solver(x0 = x0, f = f, g = g, h = h)
 
         @test eltype(xf) == T
-        @test eltype(xg) == T
 
         @test it <= maxit
 
         @assert norm(xf - x_star) <= 1e2 * tol
-        @assert norm(xg - x_star) <= 1e2 * tol
 
         @test x0 == x0_backup
 

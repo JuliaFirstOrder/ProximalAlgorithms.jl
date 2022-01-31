@@ -12,12 +12,15 @@ using Printf
 """
     ZeroFPRIteration(; <keyword-arguments>)
 
-Instantiate the ZeroFPR algorithm (see [1]) for solving optimization problems
-of the form
+Iterator implementing the ZeroFPR algorithm [1].
+
+This iterator solves optimization problems of the form
 
     minimize f(Ax) + g(x),
 
 where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+
+See also: [`ZeroFPR`](@ref).
 
 # Arguments
 - `x0`: initial point.
@@ -32,7 +35,7 @@ where `f` is smooth and `A` is a linear mapping (for example, a matrix).
 - `directions=LBFGS(5)`: strategy to use to compute line-search directions.
 
 # References
-1. Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms", SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274–2303 (2018).
+1. Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms", SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274-2303 (2018).
 """
 Base.@kwdef struct ZeroFPRIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
     f::Tf = Zero()
@@ -143,16 +146,16 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where R
     set_next_direction!(iter, state)
 
     # Perform line-search over the FBE
-    tau = R(1)
+    state.tau = R(1)
     mul!(state.Ad, iter.A, state.d)
 
     sigma = iter.beta * (0.5 / state.gamma) * (1 - iter.alpha)
     tol = 10 * eps(R) * (1 + abs(FBE_x))
     threshold = FBE_x - sigma * norm(state.res)^2 + tol
 
-    for _ in 1:iter.max_backtracks
-        state.x .= state.xbar_prev .+ tau .* state.d
-        state.Ax .= state.Axbar .+ tau .* state.Ad
+    for k in 1:iter.max_backtracks
+        state.x .= state.xbar_prev .+ state.tau .* state.d
+        state.Ax .= state.Axbar .+ state.tau .* state.Ad
         # TODO: can precompute most of next line in case f is quadratic
         state.f_Ax = gradient!(state.grad_f_Ax, iter.f, state.Ax)
         mul!(state.At_grad_f_Ax, iter.A', state.grad_f_Ax)
@@ -162,45 +165,57 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where R
         FBE_x = f_model(iter, state) + state.g_xbar
 
         if FBE_x <= threshold
-            state.tau = tau
-            return state, state
+            break
         end
 
-        tau *= 0.5
+        state.tau = k >= iter.max_backtracks - 1 ? R(0) : state.tau / 2
     end
 
-    @warn "stepsize `tau` became too small ($(tau)), stopping the iterations"
-    return nothing
+    return state, state
 end
 
-# Solver
+default_stopping_criterion(tol, ::ZeroFPRIteration, state::ZeroFPRState) = norm(state.res, Inf) / state.gamma <= tol
+default_solution(::ZeroFPRIteration, state::ZeroFPRState) = state.xbar
+default_display(it, ::ZeroFPRIteration, state::ZeroFPRState) = @printf(
+    "%5d | %.3e | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma, state.tau,
+)
 
-struct ZeroFPR{R, K}
-    maxit::Int
-    tol::R
-    verbose::Bool
-    freq::Int
-    kwargs::K
-end
+"""
+    ZeroFPR(; <keyword-arguments>)
 
-function (solver::ZeroFPR)(x0; kwargs...)
-    stop(state::ZeroFPRState) = norm(state.res, Inf) / state.gamma <= solver.tol
-    disp((it, state)) = @printf(
-        "%5d | %.3e | %.3e | %.3e\n",
-        it,
-        state.gamma,
-        norm(state.res, Inf) / state.gamma,
-        state.tau,
-    )
-    iter = ZeroFPRIteration(; x0=x0, solver.kwargs..., kwargs...)
-    iter = take(halt(iter, stop), solver.maxit)
-    iter = enumerate(iter)
-    if solver.verbose
-        iter = tee(sample(iter, solver.freq), disp)
-    end
-    num_iters, state_final = loop(iter)
-    return state_final.xbar, num_iters
-end
+Constructs the ZeroFPR algorithm [1].
 
-ZeroFPR(; maxit=1_000, tol=1e-8, verbose=false, freq=10, kwargs...) = 
-    ZeroFPR(maxit, tol, verbose, freq, kwargs)
+This algorithm solves optimization problems of the form
+
+minimize f(Ax) + g(x),
+
+where `f` is smooth and `A` is a linear mapping (for example, a matrix).
+
+The returned object has type `IterativeAlgorithm{ZeroFPRIteration}`,
+and can be called with the problem's arguments to trigger its solution.
+
+See also: [`ZeroFPRIteration`](@ref), [`IterativeAlgorithm`](@ref).
+
+# Arguments
+- `maxit::Int=1_000`: maximum number of iteration
+- `tol::1e-8`: tolerance for the default stopping criterion
+- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `verbose::Bool=false`: whether the algorithm state should be displayed
+- `freq::Int=10`: every how many iterations to display the algorithm state
+- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `kwargs...`: additional keyword arguments to pass on to the `ZeroFPRIteration` constructor upon call
+
+# References
+1. Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms", SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274-2303 (2018).
+"""
+ZeroFPR(;
+    maxit=1_000,
+    tol=1e-8,
+    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution=default_solution,
+    verbose=false,
+    freq=10,
+    display=default_display,
+    kwargs...
+) = IterativeAlgorithm(ZeroFPRIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
