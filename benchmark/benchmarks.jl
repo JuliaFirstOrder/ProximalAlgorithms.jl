@@ -86,11 +86,11 @@ for (benchmark_name, file_name) in [
             g = NormL1($lam)
         end
 
-        SUITE[k]["SFISTA"] = @benchmarkable solver(x0=x0, f=f, Lf=Lf, h=h) setup=begin
+        SUITE[k]["SFISTA"] = @benchmarkable solver(x0=x0, f=f, Lf=Lf, g=g) setup=begin
             solver = ProximalAlgorithms.SFISTA(tol=$R(1e-3))
             x0 = zeros($T, size($A, 2))
             f = LeastSquares($A, $b)
-            h = NormL1($lam)
+            g = NormL1($lam)
             Lf = opnorm($A)^2
         end
     end
