@@ -224,7 +224,7 @@ Constructs the PANOC algorithm [1].
 
 This algorithm solves optimization problems of the form
 
-minimize f(Ax) + g(x),
+    minimize f(Ax) + g(x),
 
 where `f` is smooth and `A` is a linear mapping (for example, a matrix).
 

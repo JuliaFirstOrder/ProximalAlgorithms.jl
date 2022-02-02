@@ -288,7 +288,7 @@ This algorithm solves convex optimization problems of the form
 
     minimize g(x) + h(L x),
 
-    where `g` and `h` are possibly nonsmooth, and `L` is a linear mapping.
+where `g` and `h` are possibly nonsmooth, and `L` is a linear mapping.
 
 The returned object has type `IterativeAlgorithm{AFBAIteration}`,
 and can be called with the problem's arguments to trigger its solution.
