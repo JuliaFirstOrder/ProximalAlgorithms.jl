@@ -1,0 +1,13 @@
+authors:
+  - family-names: Stella
+    given-names: Lorenzo
+title: ProximalAlgorithms.jl: Proximal algorithms for nonsmooth optimization in Julia
+keywords:
+  - Proximal Algorithms
+  - Nonsmooth Optimization
+  - Julia
+type: software
+license: MIT Expat
+repository-code: https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl
+message: If you use this software, please cite it using the metadata from this file.
+cff-version: 1.2.0
