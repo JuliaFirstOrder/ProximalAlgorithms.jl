@@ -6,24 +6,20 @@
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
-using ProximalOperators: Zero
+using ProximalCore: Zero
 using LinearAlgebra
 using Printf
 
-function drls_default_gamma(f, mf, Lf, alpha, lambda)
+function drls_default_gamma(f::Tf, mf, Lf, alpha, lambda) where Tf
     if mf !== nothing && mf > 0
         return 1 / (alpha * mf)
     end
-    if ProximalOperators.is_convex(f)
-        return alpha / Lf
-    else
-        return alpha * (2 - lambda) / (2 * Lf)
-    end
+    return ProximalCore.is_convex(Tf) ? alpha / Lf : alpha * (2 - lambda) / (2 * Lf)
 end
 
-function drls_C(f, mf, Lf, gamma, lambda)
+function drls_C(f::Tf, mf, Lf, gamma, lambda) where Tf
     a = mf === nothing || mf <= 0 ? gamma * Lf : 1 / (gamma * mf)
-    m = ProximalOperators.is_convex(f) ? max(a - lambda / 2, 0) : 1
+    m = ProximalCore.is_convex(Tf) ? max(a - lambda / 2, 0) : 1
     return (lambda / ((1 + a)^2) * ((2 - lambda) / 2 - a * m))
 end
 
@@ -121,7 +117,7 @@ update_direction_state!(::NesterovStyle, ::DRLSIteration, state::DRLSState) = re
 update_direction_state!(::NoAccelerationStyle, ::DRLSIteration, state::DRLSState) = return
 update_direction_state!(iter::DRLSIteration, state::DRLSState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where R
+function Base.iterate(iter::DRLSIteration{R, Tx, Tf}, state::DRLSState) where {R, Tx, Tf}
     DRE_curr = DRE(state)
 
     set_next_direction!(iter, state)
@@ -150,16 +146,15 @@ function Base.iterate(iter::DRLSIteration{R}, state::DRLSState) where R
         state.tau = k == iter.max_backtracks ? R(0) : state.tau / 2
         state.x .= state.tau .* state.x_d .+ (1 - state.tau) .* state.xbar_prev
 
-        if k == 1 && ProximalOperators.is_generalized_quadratic(iter.f)
-            copyto!(state.u1, state.u)
-            c = prox!(state.u0, iter.f, state.xbar_prev, iter.gamma)
-            state.temp_x1 .= state.xbar_prev .- state.x_d
-            state.temp_x2 .= state.xbar_prev .- state.u0
-            b = real(dot(state.temp_x1, state.temp_x2)) / iter.gamma
-            a = state.f_u - b - c
-        end
-
-        if ProximalOperators.is_generalized_quadratic(iter.f)
+        if ProximalCore.is_generalized_quadratic(Tf)
+            if k == 1
+                copyto!(state.u1, state.u)
+                c = prox!(state.u0, iter.f, state.xbar_prev, iter.gamma)
+                state.temp_x1 .= state.xbar_prev .- state.x_d
+                state.temp_x2 .= state.xbar_prev .- state.u0
+                b = real(dot(state.temp_x1, state.temp_x2)) / iter.gamma
+                a = state.f_u - b - c
+            end
             state.u .= state.tau .* state.u1 .+ (1 - state.tau) .* state.u0
             state.f_u = a * state.tau ^ 2 + b * state.tau + c
         else

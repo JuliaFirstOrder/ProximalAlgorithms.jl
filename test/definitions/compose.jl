@@ -1,8 +1,7 @@
-using ProximalOperators: ProximableFunction
 using RecursiveArrayTools: ArrayPartition
-import ProximalOperators: gradient!, gradient
+using ProximalCore
 
-struct ComposeAffine <: ProximableFunction
+struct ComposeAffine
     f
     A
     b
@@ -20,11 +19,11 @@ function compose_affine_gradient!(y, g::ComposeAffine, x)
     return v
 end
 
-gradient!(y, g::ComposeAffine, x) = compose_affine_gradient!(y, g, x)
-gradient!(y::ArrayPartition, g::ComposeAffine, x::ArrayPartition) = compose_affine_gradient!(y, g, x)
+ProximalCore.gradient!(y, g::ComposeAffine, x) = compose_affine_gradient!(y, g, x)
+ProximalCore.gradient!(y::ArrayPartition, g::ComposeAffine, x::ArrayPartition) = compose_affine_gradient!(y, g, x)
 
-function ProximalOperators.gradient(h::ComposeAffine, x::ArrayPartition)
+function ProximalCore.gradient(h::ComposeAffine, x::ArrayPartition)
     grad_fx = similar(x)
-    fx = gradient!(grad_fx, h, x)
+    fx = ProximalCore.gradient!(grad_fx, h, x)
     return grad_fx, fx
 end

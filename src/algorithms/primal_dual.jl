@@ -22,7 +22,7 @@
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
-using ProximalOperators: Zero
+using ProximalCore: Zero, IndZero, convex_conjugate
 using LinearAlgebra
 using Printf
 
@@ -175,13 +175,13 @@ function Base.iterate(iter::AFBAIteration, state::AFBAState = AFBAState(x=copy(i
     prox!(state.xbar, iter.g, state.temp_x, iter.gamma[1])
 
     # perform ybar-update step
-    gradient!(state.gradl, Conjugate(iter.l), state.y)
+    gradient!(state.gradl, convex_conjugate(iter.l), state.y)
     state.temp_x .= iter.theta .* state.xbar .+ (1 - iter.theta) .* state.x
     mul!(state.temp_y, iter.L, state.temp_x)
     state.temp_y .-= state.gradl
     state.temp_y .*= iter.gamma[2]
     state.temp_y .+= state.y
-    prox!(state.ybar, Conjugate(iter.h), state.temp_y, iter.gamma[2])
+    prox!(state.ybar, convex_conjugate(iter.h), state.temp_y, iter.gamma[2])
 
     # the residues
     state.FPR_x .= state.xbar .- state.x
