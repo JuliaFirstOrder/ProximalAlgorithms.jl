@@ -3,23 +3,12 @@ uuid = "140ffc9f-1907-541a-a177-7475e0a401e9"
 version = "0.5.0"
 
 [deps]
-AbstractOperators = "d9c5613a-d543-52d8-9afd-8f241a8c3f1c"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 ProximalCore = "dc4f5ac2-75d1-4f31-931e-60435d74994b"
-ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 ProximalCore = "0.1"
 Zygote = "0.6"
 julia = "1.2"
-
-[extras]
-ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Random", "Test", "ProximalOperators", "RecursiveArrayTools"]
