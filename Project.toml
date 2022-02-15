@@ -9,6 +9,6 @@ ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-ProximalOperators = "0.14"
+ProximalOperators = "0.14, 0.15"
 Zygote = "0.6"
 julia = "1.2"
