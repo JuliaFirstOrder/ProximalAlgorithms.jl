@@ -103,8 +103,8 @@ function Base.iterate(iter::PANOCplusIteration{R}) where {R}
     return state, state
 end
 
-set_next_direction!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState) = mul!(state.d, state.H, -state.res)
-set_next_direction!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOCplusState) = state.d .= .-state.res
+set_next_direction!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState) = mul!(state.d, state.H, -state.res_prev)
+set_next_direction!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOCplusState) = state.d .= .-state.res_prev
 set_next_direction!(iter::PANOCplusIteration, state::PANOCplusState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
 
 update_direction_state!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState) = update!(state.H, state.x - state.x_prev, state.res - state.res_prev)
