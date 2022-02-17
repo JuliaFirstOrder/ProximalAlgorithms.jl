@@ -140,8 +140,10 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
             # backtrack tau 1 → 0
             state.tau = R(1)
             state.x .= state.x_prev .+ state.d
+            tau_backtracks = 0
         else
             state.x .= (1 - state.tau) * (state.x_prev .- state.res_prev) + state.tau * (state.x_prev .+ state.d)
+            tau_backtracks += 1
         end
 
         mul!(state.Ax, iter.A, state.x)
@@ -154,9 +156,9 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
 
         f_Az_upp = f_model(iter, state)
 
+        mul!(state.Az, iter.A, state.z)
+        f_Az = gradient!(state.grad_f_Az, iter.f, state.Az)
         if (iter.gamma === nothing || iter.adaptive == true)
-            mul!(state.Az, iter.A, state.z)
-            f_Az = gradient!(state.grad_f_Az, iter.f, state.Az)
             tol = 10 * eps(R) * (1 + abs(f_Az))
             if f_Az > f_Az_upp + tol && state.gamma >= iter.minimum_gamma
                 state.gamma *= 0.5
@@ -167,9 +169,6 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
                 reset_direction_state!(iter, state)
                 continue
             end
-        else
-            mul!(state.Az, iter.A, state.z)
-            f_Az = gradient!(state.grad_f_Az, iter.f, state.Az)
         end
         mul!(state.At_grad_f_Az, adjoint(iter.A), state.grad_f_Az)
 
@@ -178,7 +177,6 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
             break
         end
         state.tau = tau_backtracks >= iter.max_backtracks - 1 ? R(0) : state.tau / 2
-        tau_backtracks += 1
         can_update_direction = false
 
     end
