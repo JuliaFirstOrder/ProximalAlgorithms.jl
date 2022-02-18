@@ -8,4 +8,4 @@ ProximalAlgorithms = "140ffc9f-1907-541a-a177-7475e0a401e9"
 ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"
 
 [compat]
-ProximalOperators = "0.14"
+ProximalOperators = "0.15"
