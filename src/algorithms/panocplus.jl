@@ -4,7 +4,7 @@
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
-using ProximalOperators: Zero
+using ProximalCore: Zero
 using LinearAlgebra
 using Printf
 

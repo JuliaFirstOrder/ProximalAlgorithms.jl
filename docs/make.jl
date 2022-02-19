@@ -1,4 +1,5 @@
-using Documenter, DocumenterCitations, ProximalAlgorithms
+using Documenter, DocumenterCitations
+using ProximalAlgorithms, ProximalCore
 using Literate
 
 bib = CitationBibliography(joinpath(@__DIR__, "references.bib"))
@@ -22,7 +23,7 @@ end
 
 makedocs(
     bib,
-    modules=[ProximalAlgorithms],
+    modules=[ProximalAlgorithms, ProximalCore],
     sitename="ProximalAlgorithms.jl",
     pages=[
         "Home" => "index.md",

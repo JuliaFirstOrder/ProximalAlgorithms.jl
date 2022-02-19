@@ -3,7 +3,7 @@
 # pp. 829–858 (2017).
 
 using Printf
-using ProximalOperators: Zero
+using ProximalCore: Zero
 using LinearAlgebra
 using Printf
 

@@ -4,7 +4,7 @@
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
-using ProximalOperators: Zero
+using ProximalCore: Zero
 using LinearAlgebra
 using Printf
 
@@ -110,7 +110,7 @@ reset_direction_state!(::QuasiNewtonStyle, ::PANOCIteration, state::PANOCState) 
 reset_direction_state!(::NoAccelerationStyle, ::PANOCIteration, state::PANOCState) = return
 reset_direction_state!(iter::PANOCIteration, state::PANOCState) = reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-function Base.iterate(iter::PANOCIteration{R}, state::PANOCState) where R
+function Base.iterate(iter::PANOCIteration{R, Tx, Tf}, state::PANOCState) where {R, Tx, Tf}
     f_Az, a, b, c = R(Inf), R(Inf), R(Inf), R(Inf)
 
     f_Az_upp = if iter.adaptive == true
@@ -177,7 +177,7 @@ function Base.iterate(iter::PANOCIteration{R}, state::PANOCState) where R
         state.x .= state.tau .* state.x_d .+ (1 - state.tau) .* state.z_curr
         state.Ax .= state.tau .* state.Ax_d .+ (1 - state.tau) .* state.Az
 
-        if ProximalOperators.is_quadratic(iter.f)
+        if ProximalCore.is_generalized_quadratic(Tf)
             # in case f is quadratic, we can compute its value and gradient
             # along a line using interpolation and linear combinations
             # this allows saving operations

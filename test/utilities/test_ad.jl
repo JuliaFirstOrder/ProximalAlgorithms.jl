@@ -18,7 +18,7 @@ using ProximalAlgorithms
 
     @testset "Gradient" begin
         x = randn(T, n)
-        gradfx, fx = gradient(f, x)
+        gradfx, fx = ProximalAlgorithms.gradient(f, x)
         @test eltype(gradfx) == T
         @test typeof(fx) == R
         @test gradfx ≈ A' * (A * x - b)

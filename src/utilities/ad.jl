@@ -1,14 +1,8 @@
 using Zygote: pullback
-using ProximalOperators
+using ProximalCore
 
-function ProximalOperators.gradient(f, x)
+function ProximalCore.gradient!(grad, f, x)
     fx, pb = pullback(f, x)
-    grad = pb(one(fx))[1]
-    return grad, fx
-end
-
-function ProximalOperators.gradient!(grad, f, x)
-    y, fx = gradient(f, x)
-    grad .= y
+    grad .= pb(one(fx))[1]
     return fx
 end

@@ -5,7 +5,6 @@ include("definitions/compose.jl")
 
 include("utilities/test_ad.jl")
 include("utilities/test_iteration_tools.jl")
-include("utilities/test_conjugate.jl")
 include("utilities/test_fb_tools.jl")
 
 include("accel/test_lbfgs.jl")
