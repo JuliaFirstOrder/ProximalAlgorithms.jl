@@ -1,25 +1,27 @@
 # # [Custom objective terms](@id custom_terms)
 # 
-# ProximalAlgorithms relies on the first-order primitives implemented in [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl):
-# while a rich library of function types is provided there, one may need to formulate
-# problems using custom objective terms.
+# ProximalAlgorithms relies on the first-order primitives defined in [ProximalCore](https://github.com/JuliaFirstOrder/ProximalCore.jl).
+# While a rich library of function types, implementing such primitives, is provided by [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl),
+# one may need to formulate problems using custom objective terms.
 # When that is the case, one only needs to implement the right first-order primitive,
 # ``\nabla f`` or ``\operatorname{prox}_{\gamma f}`` or both, for algorithms to be able
 # to work with ``f``.
 # 
-# Defining the proximal mapping for a custom function type requires adding a method for [`prox!`](@ref ProximalAlgorithms.prox!).
+# Defining the proximal mapping for a custom function type requires adding a method for [`ProximalCore.prox!`](@ref).
 # 
-# To compute gradients, ProximalAlgorithms provides a fallback definition for [`gradient!`](@ref ProximalAlgorithms.gradient!), 
+# To compute gradients, ProximalAlgorithms provides a fallback definition for [`ProximalCore.gradient!`](@ref), 
 # relying on [Zygote](https://github.com/FluxML/Zygote.jl) to use automatic differentiation.
 # Therefore, you can provide any (differentiable) Julia function wherever gradients need to be taken,
 # and everything will work out of the box.
 # 
 # If however one would like to provide their own gradient implementation (e.g. for efficiency reasons),
-# they can simply implement a method for [`gradient!`](@ref ProximalAlgorithms.gradient!).
+# they can simply implement a method for [`ProximalCore.gradient!`](@ref).
 # 
 # ```@docs
-# ProximalAlgorithms.prox!(y, f, x, gamma)
-# ProximalAlgorithms.gradient!(g, f, x)
+# ProximalCore.prox
+# ProximalCore.prox!
+# ProximalCore.gradient
+# ProximalCore.gradient!
 # ```
 # 
 # ## Example: constrained Rosenbrock
@@ -33,13 +35,13 @@ rosenbrock2D(x) = 100 * (x[2] - x[1]^2)^2 + (1 - x[1])^2
 # outside of the set.
 
 using LinearAlgebra
-using ProximalOperators
+using ProximalCore
 
-struct IndUnitBall <: ProximalOperators.ProximableFunction end
+struct IndUnitBall end
 
 (::IndUnitBall)(x) = norm(x) > 1 ? eltype(x)(Inf) : eltype(x)(0)
 
-function ProximalOperators.prox!(y, ::IndUnitBall, x, gamma)
+function ProximalCore.prox!(y, ::IndUnitBall, x, gamma)
     if norm(x) > 1
         y .= x ./ norm(x)
     else
@@ -73,7 +75,7 @@ scatter!([solution[1]], [solution[2]], color=:red, markershape=:star5, label="co
 # 
 # We can achieve this by wrapping functions in a dedicated `Counting` type:
 
-mutable struct Counting{T} <: ProximalOperators.ProximableFunction
+mutable struct Counting{T}
     f::T
     gradient_count::Int
     prox_count::Int
@@ -83,14 +85,14 @@ Counting(f::T) where T = Counting{T}(f, 0, 0)
 
 # Now we only need to intercept any call to `gradient!` and `prox!` and increase counters there:
 
-function ProximalOperators.gradient!(y, f::Counting, x)
+function ProximalCore.gradient!(y, f::Counting, x)
     f.gradient_count += 1
-    return ProximalOperators.gradient!(y, f.f, x)
+    return ProximalCore.gradient!(y, f.f, x)
 end
 
-function ProximalOperators.prox!(y, f::Counting, x, gamma)
+function ProximalCore.prox!(y, f::Counting, x, gamma)
     f.prox_count += 1
-    return ProximalOperators.prox!(y, f.f, x, gamma)
+    return ProximalCore.prox!(y, f.f, x, gamma)
 end
 
 # We can run again the previous example, this time wrapping the objective terms within `Counting`:
