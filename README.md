@@ -2,6 +2,7 @@
 
 [![Build status](https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl/workflows/CI/badge.svg)](https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl/actions?query=workflow%3ACI)
 [![codecov.io](http://codecov.io/github/JuliaFirstOrder/ProximalAlgorithms.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaFirstOrderProximalAlgorithms.jl?branch=master)
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliafirstorder.github.io/ProximalAlgorithms.jl/stable)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliafirstorder.github.io/ProximalAlgorithms.jl/dev)
 
 A Julia package for non-smooth optimization algorithms.
@@ -16,6 +17,8 @@ Implemented algorithms include:
 * Newton-type methods
 
 ## Documentation
+
+[Stable version](https://juliafirstorder.github.io/ProximalAlgorithms.jl/stable) (latest release)
 
 [Development version](https://juliafirstorder.github.io/ProximalAlgorithms.jl/dev) (`master` branch)
 
