@@ -25,7 +25,7 @@ Implemented algorithms include:
 ## Citing
 
 If you use any of the algorithms from ProximalAlgorithms in your research, you are kindly asked to cite the relevant bibliography.
-Please check [this section of the manual](https://juliafirstorder.github.io/ProximalAlgorithms.jl/dev/implemented_algorithms/) for algorithm-specific references.
+Please check [this section of the manual](https://juliafirstorder.github.io/ProximalAlgorithms.jl/stable/guide/implemented_algorithms/) for algorithm-specific references.
 
 ## Contributing
 
