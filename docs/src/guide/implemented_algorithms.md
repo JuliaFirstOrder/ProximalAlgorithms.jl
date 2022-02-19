@@ -21,9 +21,9 @@ This is the most popular model, by far the most thoroughly studied, and an abund
 
 Algorithm | Assumptions | Oracle | Implementation | References
 ----------|-------------|--------|----------------|-----------
-Forward-backward | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ForwardBackward`](@ref ProximalAlgorithms.ForwardBackward) | [Lions1979](@cite)
+Proximal gradient | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ForwardBackward`](@ref ProximalAlgorithms.ForwardBackward) | [Lions1979](@cite)
 Douglas-Rachford | | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DouglasRachford`](@ref ProximalAlgorithms.DouglasRachford) | [Eckstein1992](@cite)
-Fast forward-backward | ``f`` convex, smooth, ``g`` convex | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`FastForwardBackward`](@ref ProximalAlgorithms.FastForwardBackward) | [Tseng2008](@cite), [Beck2009](@cite)
+Fast proximal gradient | ``f`` convex, smooth, ``g`` convex | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`FastForwardBackward`](@ref ProximalAlgorithms.FastForwardBackward) | [Tseng2008](@cite), [Beck2009](@cite)
 PANOC | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOC`](@ref ProximalAlgorithms.PANOC) | [Stella2017](@cite)
 ZeroFPR | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ZeroFPR`](@ref ProximalAlgorithms.ZeroFPR) | [Themelis2018](@cite)
 Douglas-Rachford line-search | ``f`` smooth | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DRLS`](@ref ProximalAlgorithms.DRLS) | [Themelis2020](@cite)
