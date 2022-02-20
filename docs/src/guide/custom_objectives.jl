@@ -1,3 +1,6 @@
+# ```@meta
+# CurrentModule = ProximalAlgorithms
+# ```
 # # [Custom objective terms](@id custom_terms)
 # 
 # ProximalAlgorithms relies on the first-order primitives defined in [ProximalCore](https://github.com/JuliaFirstOrder/ProximalCore.jl).
