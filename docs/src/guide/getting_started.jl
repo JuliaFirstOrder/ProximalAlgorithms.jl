@@ -1,3 +1,6 @@
+# ```@meta
+# CurrentModule = ProximalAlgorithms
+# ```
 # # Getting started
 #
 # The methods implemented in ProximalAlgorithms are commonly referred to as (you've guessed it) *proximal algorithms*,
