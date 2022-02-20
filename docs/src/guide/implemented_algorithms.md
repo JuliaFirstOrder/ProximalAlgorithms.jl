@@ -1,3 +1,6 @@
+```@meta
+CurrentModule = ProximalAlgorithms
+```
 # [Problem types and algorithms](@id problems_algorithms)
 
 !!! warning
@@ -21,13 +24,13 @@ This is the most popular model, by far the most thoroughly studied, and an abund
 
 Algorithm | Assumptions | Oracle | Implementation | References
 ----------|-------------|--------|----------------|-----------
-Proximal gradient | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ForwardBackward`](@ref ProximalAlgorithms.ForwardBackward) | [Lions1979](@cite)
-Douglas-Rachford | | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DouglasRachford`](@ref ProximalAlgorithms.DouglasRachford) | [Eckstein1992](@cite)
-Fast proximal gradient | ``f`` convex, smooth, ``g`` convex | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`FastForwardBackward`](@ref ProximalAlgorithms.FastForwardBackward) | [Tseng2008](@cite), [Beck2009](@cite)
-PANOC | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOC`](@ref ProximalAlgorithms.PANOC) | [Stella2017](@cite)
-ZeroFPR | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ZeroFPR`](@ref ProximalAlgorithms.ZeroFPR) | [Themelis2018](@cite)
-Douglas-Rachford line-search | ``f`` smooth | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DRLS`](@ref ProximalAlgorithms.DRLS) | [Themelis2020](@cite)
-PANOC+ | ``f`` locally smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOCplus`](@ref ProximalAlgorithms.PANOCplus) | [DeMarchi2021](@cite)
+Proximal gradient | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ForwardBackward`](@ref) | [Lions1979](@cite)
+Douglas-Rachford | | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DouglasRachford`](@ref) | [Eckstein1992](@cite)
+Fast proximal gradient | ``f`` convex, smooth, ``g`` convex | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`FastForwardBackward`](@ref) | [Tseng2008](@cite), [Beck2009](@cite)
+PANOC | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOC`](@ref) | [Stella2017](@cite)
+ZeroFPR | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ZeroFPR`](@ref) | [Themelis2018](@cite)
+Douglas-Rachford line-search | ``f`` smooth | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DRLS`](@ref) | [Themelis2020](@cite)
+PANOC+ | ``f`` locally smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOCplus`](@ref) | [DeMarchi2021](@cite)
 
 ```@docs
 ProximalAlgorithms.ForwardBackward
@@ -54,7 +57,7 @@ Therefore, ad-hoc iteration schemes have been studied.
 
 Algorithm | Assumptions | Oracle | Implementation | References
 ----------|-------------|--------|----------------|-----------
-Davis-Yin | ``f`` convex and smooth, ``g, h`` convex | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}`` | [`DavisYin`](@ref ProximalAlgorithms.DavisYin) | [Davis2017](@cite) 
+Davis-Yin | ``f`` convex and smooth, ``g, h`` convex | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}`` | [`DavisYin`](@ref) | [Davis2017](@cite) 
 
 ```@docs
 ProximalAlgorithms.DavisYin
@@ -68,9 +71,9 @@ For this reason, specific algorithms by the name of "primal-dual" splitting sche
 
 Algorithm | Assumptions | Oracle | Implementation | References
 ----------|-------------|--------|----------------|-----------
-Chambolle-Pock | ``f\equiv 0``, ``g, h`` convex, ``L`` linear operator | ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`ChambollePock`](@ref ProximalAlgorithms.ChambollePock) | [Chambolle2011](@cite)
-Vu-Condat | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`VuCodat`](@ref ProximalAlgorithms.VuCondat) | [Vu2013](@cite), [Condat2013](@cite)
-AFBA      | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`AFBA`](@ref ProximalAlgorithms.AFBA) | [Latafat2017](@cite)
+Chambolle-Pock | ``f\equiv 0``, ``g, h`` convex, ``L`` linear operator | ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`ChambollePock`](@ref) | [Chambolle2011](@cite)
+Vu-Condat | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`VuCodat`](@ref) | [Vu2013](@cite), [Condat2013](@cite)
+AFBA      | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`AFBA`](@ref) | [Latafat2017](@cite)
 
 ```@docs
 ProximalAlgorithms.ChambollePock
