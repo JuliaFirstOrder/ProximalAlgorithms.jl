@@ -1,3 +1,6 @@
+# ```@meta
+# CurrentModule = ProximalAlgorithms
+# ```
 # # [Custom objective terms](@id custom_terms)
 # 
 # ProximalAlgorithms relies on the first-order primitives defined in [ProximalCore](https://github.com/JuliaFirstOrder/ProximalCore.jl).
@@ -50,7 +53,7 @@ function ProximalCore.prox!(y, ::IndUnitBall, x, gamma)
     return zero(eltype(x))
 end
 
-# We can now minimize the function, for which we will use `PANOC`, which is a Newton-type method:
+# We can now minimize the function, for which we will use [`PANOC`](@ref), which is a Newton-type method:
 
 using ProximalAlgorithms
 

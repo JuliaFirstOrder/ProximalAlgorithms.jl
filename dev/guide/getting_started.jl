@@ -1,3 +1,6 @@
+# ```@meta
+# CurrentModule = ProximalAlgorithms
+# ```
 # # Getting started
 #
 # The methods implemented in ProximalAlgorithms are commonly referred to as (you've guessed it) *proximal algorithms*,
@@ -40,7 +43,7 @@
 # 2. Call the algorithm on the problem description: this amounts to the initial point, the objective terms, and possibly additional required information (e.g. Lipschitz constants).
 # 
 # See [here](@ref problems_algorithms) for the list of available algorithm constructors, for different types of problems.
-# In general however, algorithms are instances of the [`IterativeAlgorithm`](@ref ProximalAlgorithms.IterativeAlgorithm) type.
+# In general however, algorithms are instances of the [`IterativeAlgorithm`](@ref) type.
 # 
 # ## [Example: box constrained quadratic](@id box_qp)
 # 
@@ -57,7 +60,7 @@ box_indicator = ProximalOperators.IndBox(0, 1)
 ffb = ProximalAlgorithms.FastForwardBackward(maxit=1000, tol=1e-5, verbose=true)
 
 # Here, we defined the cost function `quadratic_cost`, and the constraint indicator `box_indicator`.
-# Then we set up the optimization algorithm of choice, `FastForwardBackward`,
+# Then we set up the optimization algorithm of choice, [`FastForwardBackward`](@ref),
 # with options for the maximum number of iterations, termination tolerance, verbosity.
 # Finally, we run the algorithm by providing an initial point and the objective terms defining the problem:
 
@@ -109,7 +112,7 @@ scatter!([solution[1]], [solution[2]], color=:red, markershape=:star5, label="co
 # ## [Example: box constrained quadratic (cont)](@id box_qp_cont)
 # 
 # Let's solve the problem from the [previous example](@ref box_qp) by directly interacting with the underlying iterator: 
-# the `FastForwardBackward` algorithm internally uses a [`FastForwardBackwardIteration`](@ref ProximalAlgorithms.FastForwardBackwardIteration) object.
+# the `FastForwardBackward` algorithm internally uses a [`FastForwardBackwardIteration`](@ref) object.
 
 ffbiter = ProximalAlgorithms.FastForwardBackwardIteration(x0=ones(2), f=quadratic_cost, g=box_indicator)
 
