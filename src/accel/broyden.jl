@@ -2,7 +2,7 @@ using LinearAlgebra
 import Base: *
 import LinearAlgebra: mul!
 
-mutable struct BroydenOperator{R,TH}
+struct BroydenOperator{R,TH}
     H::TH
     theta_bar::R
 end
@@ -27,7 +27,7 @@ function update!(L::BroydenOperator{R,TH}, s, y) where {R,TH}
     else
         (1 - _sign(delta) * L.theta_bar) / (1 - delta)
     end
-    L.H += (s - Hy) / dot(s, (1 / theta - 1) * s + Hy) * sH
+    L.H .+= (s - Hy) / dot(s, (1 / theta - 1) * s + Hy) * sH
 end
 
 function reset!(L::BroydenOperator{R,TH}) where {R,TH}
