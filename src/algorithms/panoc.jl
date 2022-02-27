@@ -98,11 +98,18 @@ function Base.iterate(iter::PANOCIteration{R}) where R
     return state, state
 end
 
-set_next_direction!(::QuasiNewtonStyle, ::PANOCIteration, state::PANOCState) = mul!(state.d, state.H, -state.res)
+function set_next_direction!(::QuasiNewtonStyle, ::PANOCIteration, state::PANOCState)
+    mul!(state.d, state.H, state.res)
+    state.d .*= -1
+end
 set_next_direction!(::NoAccelerationStyle, ::PANOCIteration, state::PANOCState) = state.d .= .-state.res
 set_next_direction!(iter::PANOCIteration, state::PANOCState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
 
-update_direction_state!(::QuasiNewtonStyle, ::PANOCIteration, state::PANOCState) = update!(state.H, state.x - state.x_prev, state.res - state.res_prev)
+function update_direction_state!(::QuasiNewtonStyle, ::PANOCIteration, state::PANOCState)
+    state.x_prev .= state.x .- state.x_prev
+    state.res_prev .= state.res .- state.res_prev
+    update!(state.H, state.x_prev, state.res_prev)
+end
 update_direction_state!(::NoAccelerationStyle, ::PANOCIteration, state::PANOCState) = return
 update_direction_state!(iter::PANOCIteration, state::PANOCState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 

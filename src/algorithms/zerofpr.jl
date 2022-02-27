@@ -96,11 +96,18 @@ function Base.iterate(iter::ZeroFPRIteration{R}) where R
     return state, state
 end
 
-set_next_direction!(::QuasiNewtonStyle, ::ZeroFPRIteration, state::ZeroFPRState) = mul!(state.d, state.H, -state.res_xbar)
+function set_next_direction!(::QuasiNewtonStyle, ::ZeroFPRIteration, state::ZeroFPRState)
+    mul!(state.d, state.H, state.res_xbar)
+    state.d .*= -1
+end
 set_next_direction!(::NoAccelerationStyle, ::ZeroFPRIteration, state::ZeroFPRState) = state.d .= .-state.res
 set_next_direction!(iter::ZeroFPRIteration, state::ZeroFPRState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
 
-update_direction_state!(::QuasiNewtonStyle, ::ZeroFPRIteration, state::ZeroFPRState) = update!(state.H, state.xbar - state.xbar_prev, state.res_xbar - state.res_xbar_prev)
+function update_direction_state!(::QuasiNewtonStyle, ::ZeroFPRIteration, state::ZeroFPRState)
+    state.xbar_prev .= state.xbar .- state.xbar_prev
+    state.res_xbar_prev .= state.res_xbar .- state.res_xbar_prev
+    update!(state.H, state.xbar_prev, state.res_xbar_prev)
+end
 update_direction_state!(::NoAccelerationStyle, ::ZeroFPRIteration, state::ZeroFPRState) = return
 update_direction_state!(iter::ZeroFPRIteration, state::ZeroFPRState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
