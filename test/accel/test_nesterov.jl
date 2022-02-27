@@ -34,6 +34,7 @@ for sequence_type in [SimpleNesterovSequence, FixedNesterovSequence]
             @inferred initialize(NesterovExtrapolation(sequence_type), x)
 
             seq = sequence_type{R}()
+            @test eltype(seq) == R
 
             @inferred Iterators.peel(seq)
 

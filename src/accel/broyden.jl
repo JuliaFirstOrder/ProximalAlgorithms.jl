@@ -2,24 +2,23 @@ using LinearAlgebra
 import Base: *
 import LinearAlgebra: mul!
 
-mutable struct BroydenOperator{R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C}}
-    H
+struct BroydenOperator{R,TH}
+    H::TH
     theta_bar::R
-    function BroydenOperator{R,C,T}(x::T, H, theta_bar) where {R,C,T}
-        new(H, theta_bar)
-    end
 end
 
-BroydenOperator(
-    x::T;
-    H = I,
-    theta_bar = R(0.2),
-) where {R<:Real,C<:Union{R,Complex{R}},T<:AbstractArray{C}} =
-    BroydenOperator{R,C,T}(x, H, theta_bar)
+function BroydenOperator(::Type{T}, n::Integer, theta_bar=T(0.2)) where T
+    H = Matrix{T}(I, n, n)
+    BroydenOperator(H, theta_bar)
+end
+
+function BroydenOperator(x::AbstractVector{T}, theta_bar=T(0.2)) where T
+    BroydenOperator(T, length(x), theta_bar)
+end
 
 _sign(x::R) where {R} = x == 0 ? R(1) : sign(x)
 
-function update!(L::BroydenOperator{R,C,T}, s, y) where {R,C,T}
+function update!(L::BroydenOperator{R,TH}, s, y) where {R,TH}
     Hy = L.H * y
     sH = s' * L.H
     delta = dot(Hy, s) / norm(s)^2
@@ -28,12 +27,12 @@ function update!(L::BroydenOperator{R,C,T}, s, y) where {R,C,T}
     else
         (1 - _sign(delta) * L.theta_bar) / (1 - delta)
     end
-    L.H += (s - Hy) / dot(s, (1 / theta - 1) * s + Hy) * sH
+    L.H .+= (s - Hy) / dot(s, (1 / theta - 1) * s + Hy) * sH
 end
 
-function reset!(L::BroydenOperator{R,C,T}) where {R,C,T}
-    L.H = I
-    L.theta_bar = R(0.2)
+function reset!(L::BroydenOperator{R,TH}) where {R,TH}
+    L.H .= 0
+    L.H[diagind(L.H)] .= 1
 end
 
 function (*)(L::BroydenOperator, v)
@@ -52,6 +51,6 @@ end
 
 acceleration_style(::Type{<:Broyden}) = QuasiNewtonStyle()
 
-function initialize(broyden::Broyden, x)
-    return BroydenOperator(x, theta_bar=broyden.theta_bar)
+function initialize(broyden::Broyden, x::AbstractVector{R}) where R
+    return BroydenOperator(x, broyden.theta_bar)
 end
