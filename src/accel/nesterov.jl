@@ -17,7 +17,7 @@ function Base.iterate(::FixedNesterovSequence{R}, t=R(1)) where R
 end
 
 Base.IteratorSize(::Type{<:FixedNesterovSequence}) = Base.IsInfinite()
-Base.IteratorEltype(::Type{FixedNesterovSequence{R}}) where R = R
+Base.eltype(::Type{FixedNesterovSequence{R}}) where R = R
 
 struct SimpleNesterovSequence{R} end
 
@@ -36,7 +36,7 @@ SimpleNesterovSequence(R) = SimpleNesterovSequence{R}()
 Base.iterate(::SimpleNesterovSequence{R}, k=1) where {R} = R(k - 1) / (k + 2), k + 1
 
 Base.IteratorSize(::Type{<:SimpleNesterovSequence}) = Base.IsInfinite()
-Base.IteratorEltype(::Type{SimpleNesterovSequence{R}}) where R = R
+Base.eltype(::Type{SimpleNesterovSequence{R}}) where R = R
 
 """
     ConstantNesterovSequence(m::R, stepsize::R)

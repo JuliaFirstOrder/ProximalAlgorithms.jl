@@ -1,6 +1,7 @@
 *.jl.cov
-*.jl.*.cov
 *.jl.mem
+*.jl.*.cov
+*.jl.*.mem
 *.swp
 *.log
 *.aux
