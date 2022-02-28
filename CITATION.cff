@@ -1,21 +1,21 @@
 # This CITATION.cff file was generated with cffinit.
 # Visit https://bit.ly/cffinit to generate yours today!
 
-authors:
-- given-names: Lorenzo
-  family-names: Stella
+cff-version: 1.2.0
 title: >-
   ProximalAlgorithms.jl: Proximal algorithms for
   nonsmooth optimization in Julia
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Lorenzo
+    family-names: Stella
+repository-code: >-
+  https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl
 keywords:
   - proximal algorithms
   - optimization
   - julia
-type: software
 license: MIT
-repository-code: >-
-  https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl
-message: >-
-If you use this software, please cite it using the
-metadata from this file.
-cff-version: 1.2.0
