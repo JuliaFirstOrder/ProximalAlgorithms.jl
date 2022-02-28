@@ -107,18 +107,25 @@ function Base.iterate(iter::DRLSIteration)
     return state, state
 end
 
-set_next_direction!(::QuasiNewtonStyle, ::DRLSIteration, state::DRLSState) = mul!(state.d, state.H, -state.res)
+function set_next_direction!(::QuasiNewtonStyle, ::DRLSIteration, state::DRLSState)
+    mul!(state.d, state.H, state.res)
+    state.d .*= -1
+end
 set_next_direction!(::NesterovStyle, ::DRLSIteration, state::DRLSState) = state.d .= iterate(state.H)[1] .* (state.xbar .- state.xbar_prev) .+ (state.xbar .- state.x)
 set_next_direction!(::NoAccelerationStyle, ::DRLSIteration, state::DRLSState) = state.d .= state.xbar .- state.x
 set_next_direction!(iter::DRLSIteration, state::DRLSState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
 
-update_direction_state!(::QuasiNewtonStyle, ::DRLSIteration, state::DRLSState) = update!(state.H, state.d, state.res - state.res_prev)
+function update_direction_state!(::QuasiNewtonStyle, ::DRLSIteration, state::DRLSState)
+    state.res_prev .= state.res .- state.res_prev
+    update!(state.H, state.d, state.res_prev)
+end
 update_direction_state!(::NesterovStyle, ::DRLSIteration, state::DRLSState) = return
 update_direction_state!(::NoAccelerationStyle, ::DRLSIteration, state::DRLSState) = return
 update_direction_state!(iter::DRLSIteration, state::DRLSState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
 function Base.iterate(iter::DRLSIteration{R, Tx, Tf}, state::DRLSState) where {R, Tx, Tf}
     DRE_curr = DRE(state)
+    threshold = iter.dre_sign * DRE_curr - iter.c / iter.gamma * norm(state.res_prev)^2
 
     set_next_direction!(iter, state)
 
@@ -139,7 +146,7 @@ function Base.iterate(iter::DRLSIteration{R, Tx, Tf}, state::DRLSState) where {R
     a, b, c = R(0), R(0), R(0)
 
     for k in 1:iter.max_backtracks
-        if iter.dre_sign * DRE(state) <= iter.dre_sign * DRE_curr - iter.c / iter.gamma * norm(state.res_prev)^2
+        if iter.dre_sign * DRE(state) <= threshold
             break
         end
 
