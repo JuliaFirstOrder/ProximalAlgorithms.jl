@@ -123,8 +123,6 @@ reset_direction_state!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOC
 reset_direction_state!(iter::PANOCplusIteration, state::PANOCplusState) = reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
 function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where R
-    f_Az, a, b, c = R(Inf), R(Inf), R(Inf), R(Inf)
-
     # store iterate and residual for metric update later on
     state.x_prev .= state.x
     state.res_prev .= state.res

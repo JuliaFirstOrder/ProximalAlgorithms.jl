@@ -89,7 +89,13 @@ Base.@kwdef mutable struct DRLSState{R,Tx,TH}
     temp_x2::Tx = similar(x)
 end
 
-DRE(f_u::Number, g_v::Number, x, u, res, gamma) = f_u + g_v - real(dot(x - u, res)) / gamma + 1 / (2 * gamma) * norm(res)^2
+function DRE(f_u::R, g_v, x, u, res, gamma) where R
+    dot_product = R(0)
+    for (x_i, u_i, res_i) in zip(x, u, res)
+        dot_product += (x_i - u_i) * res_i
+    end
+    return f_u + g_v - real(dot_product) / gamma + 1 / (2 * gamma) * norm(res)^2
+end
 
 DRE(state::DRLSState) = DRE(state.f_u, state.g_v, state.x, state.u, state.res, state.gamma)
 
