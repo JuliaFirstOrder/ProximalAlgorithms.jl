@@ -53,6 +53,13 @@ for (benchmark_name, file_name) in [
             g = NormL1($lam)
         end
 
+        SUITE[k]["PANOCplus"] = @benchmarkable solver(x0=x0, f=f, A=$A, g=g) setup=begin
+            solver = ProximalAlgorithms.PANOCplus(tol=1e-6)
+            x0 = zeros($T, size($A, 2))
+            f = Translate(SqrNormL2(), -$b)
+            g = NormL1($lam)
+        end
+
         SUITE[k]["DouglasRachford"] = @benchmarkable solver(x0=x0, f=f, g=g, gamma=$R(1)) setup=begin
             solver = ProximalAlgorithms.DouglasRachford(tol=1e-6)
             x0 = zeros($T, size($A, 2))
