@@ -131,7 +131,7 @@ update_direction_state!(iter::DRLSIteration, state::DRLSState) = update_directio
 
 function Base.iterate(iter::DRLSIteration{R, Tx, Tf}, state::DRLSState) where {R, Tx, Tf}
     DRE_curr = DRE(state)
-    threshold = iter.dre_sign * DRE_curr - iter.c / iter.gamma * norm(state.res_prev)^2
+    threshold = iter.dre_sign * DRE_curr - iter.c / iter.gamma * norm(state.res)^2
 
     set_next_direction!(iter, state)
 
