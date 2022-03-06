@@ -103,11 +103,18 @@ function Base.iterate(iter::PANOCplusIteration{R}) where {R}
     return state, state
 end
 
-set_next_direction!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState) = mul!(state.d, state.H, -state.res_prev)
+function set_next_direction!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState)
+    mul!(state.d, state.H, state.res_prev)
+    state.d .*= -1
+end
 set_next_direction!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOCplusState) = state.d .= .-state.res_prev
 set_next_direction!(iter::PANOCplusIteration, state::PANOCplusState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
 
-update_direction_state!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState) = update!(state.H, state.x - state.x_prev, state.res - state.res_prev)
+function update_direction_state!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState)
+    state.x_prev .= state.x .- state.x_prev
+    state.res_prev .= state.res .- state.res_prev
+    update!(state.H, state.x_prev, state.res_prev)
+end
 update_direction_state!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOCplusState) = return
 update_direction_state!(iter::PANOCplusIteration, state::PANOCplusState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
@@ -116,8 +123,6 @@ reset_direction_state!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOC
 reset_direction_state!(iter::PANOCplusIteration, state::PANOCplusState) = reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
 function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where R
-    f_Az, a, b, c = R(Inf), R(Inf), R(Inf), R(Inf)
-
     # store iterate and residual for metric update later on
     state.x_prev .= state.x
     state.res_prev .= state.res
