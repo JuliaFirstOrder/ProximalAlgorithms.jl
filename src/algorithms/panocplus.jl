@@ -147,7 +147,7 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
             state.x .= state.x_prev .+ state.d
             tau_backtracks = 0
         else
-            state.x .= (1 - state.tau) * (state.x_prev .- state.res_prev) + state.tau * (state.x_prev .+ state.d)
+            state.x .= (1 - state.tau) .* (state.x_prev .- state.res_prev) .+ state.tau .* (state.x_prev .+ state.d)
             tau_backtracks += 1
         end
 
