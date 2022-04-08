@@ -13,6 +13,14 @@ Implemented algorithms include:
 
 Check out [this section](@ref problems_algorithms) for an overview of the available algorithms.
 
+This package works well in combination with [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl) (>= 0.15),
+which contains a wide range of functions that can be used to express cost terms.
+
+!!! note
+
+    ProximalOperators needs to be >=0.15 in order to work with ProximalAlgorithms >=0.5.
+    Make sure to update ProximalOperators, in case you have been using versions <0.15.
+
 ## Installation
 
 Install the latest stable release with

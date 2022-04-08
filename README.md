@@ -16,6 +16,9 @@ Implemented algorithms include:
 * Primal-dual splitting algorithms
 * Newton-type methods
 
+This package works well in combination with [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl) (>= 0.15),
+which contains a wide range of functions that can be used to express cost terms.
+
 ## Documentation
 
 [Stable version](https://juliafirstorder.github.io/ProximalAlgorithms.jl/stable) (latest release)
@@ -30,8 +33,3 @@ Please check [this section of the manual](https://juliafirstorder.github.io/Prox
 ## Contributing
 
 Contributions are welcome in the form of [issues notification](https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl/issues) or [pull requests](https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl/pulls). We recommend looking at already implemented algorithms to get inspiration on how to structure new ones.
-
-## Related packages
-
-This package can be used in combination with [ProximalOperators.jl](https://github.com/JuliaFirstOrder/ProximalOperators.jl) (providing first-order primitives, i.e. gradient and proximal mapping, for numerous cost functions) and [AbstractOperators.jl](https://github.com/kul-forbes/AbstractOperators.jl) (providing several linear and nonlinear operators) to formulate and solve a wide spectrum of nonsmooth optimization problems.
-[StructuredOptimization.jl](https://github.com/JuliaFirstOrder/StructuredOptimization.jl) provides a higher-level interface to formulate and solve problems using (some of) the algorithms here included.
