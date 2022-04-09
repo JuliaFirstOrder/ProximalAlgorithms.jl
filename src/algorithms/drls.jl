@@ -186,7 +186,7 @@ end
 default_stopping_criterion(tol, ::DRLSIteration, state::DRLSState) = norm(state.res, Inf) / state.gamma <= tol
 default_solution(::DRLSIteration, state::DRLSState) = state.v
 default_display(it, ::DRLSIteration, state::DRLSState) = @printf(
-    "%5d | %.3e | %.3e | %.3e\n", it, state.gamma / state.gamma, norm(state.res, Inf), state.tau,
+    "%5d | %.3e | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma, state.tau,
 )
 
 """
