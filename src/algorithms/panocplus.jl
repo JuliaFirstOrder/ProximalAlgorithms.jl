@@ -1,6 +1,6 @@
-# De Marchi, Themelis, "Proximal gradient algorithms under local Lipschitz
-# gradient continuity: a convergence and robustness analysis of PANOC",
-# arXiv:2112.13000 (2021).
+# De Marchi, Themelis, "Proximal Gradient Algorithms under Local Lipschitz
+# Gradient Continuity", Journal of Optimization Theory and Applications, 
+# vol. 194, no. 3, pp. 771-794 (2022).
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
@@ -34,7 +34,7 @@ See also: [`PANOCplus`](@ref).
 - `directions=LBFGS(5)`: strategy to use to compute line-search directions.
 
 # References
-1. De Marchi, Themelis, "Proximal gradient algorithms under local Lipschitz gradient continuity: a convergence and robustness analysis of PANOC", arXiv:2112.13000 (2021).
+1. De Marchi, Themelis, "Proximal Gradient Algorithms under Local Lipschitz Gradient Continuity", Journal of Optimization Theory and Applications, vol. 194, no. 3, pp. 771-794 (2022).
 """
 Base.@kwdef struct PANOCplusIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
     f::Tf = Zero()
@@ -225,7 +225,7 @@ See also: [`PANOCplusIteration`](@ref), [`IterativeAlgorithm`](@ref).
 - `kwargs...`: additional keyword arguments to pass on to the `PANOCplusIteration` constructor upon call
 
 # References
-1. De Marchi, Themelis, "Proximal gradient algorithms under local Lipschitz gradient continuity: a convergence and robustness analysis of PANOC", arXiv:2112.13000 (2021).
+1. De Marchi, Themelis, "Proximal Gradient Algorithms under Local Lipschitz Gradient Continuity", Journal of Optimization Theory and Applications, vol. 194, no. 3, pp. 771-794 (2022).
 """
 PANOCplus(;
     maxit=1_000,

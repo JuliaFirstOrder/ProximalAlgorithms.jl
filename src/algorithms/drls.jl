@@ -1,8 +1,6 @@
-# Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM
-# for nonconvex optimization: Accelerated and Newton-type linesearch algorithms",
-# arXiv:2005.10230, 2020.
-#
-# https://arxiv.org/abs/2005.10230
+# Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM for
+# nonconvex optimization: Accelerated and Newton-type linesearch algorithms",
+# Computational Optimization and Applications, vol. 82, no. 2, pp. 395-440 (2022).
 
 using Base.Iterators
 using ProximalAlgorithms.IterationTools
@@ -47,7 +45,7 @@ See also: [`DRLS`](@ref).
 - `directions=LBFGS(5)`: strategy to use to compute line-search directions.
 
 # References
-1. Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM for nonconvex optimization: Accelerated and Newton-type linesearch algorithms", arXiv:2005.10230, 2020.
+1. Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM for nonconvex optimization: Accelerated and Newton-type linesearch algorithms", Computational Optimization and Applications, vol. 82, no. 2, pp. 395-440 (2022).
 """
 Base.@kwdef struct DRLSIteration{R,Tx,Tf,Tg,Tmf,TLf,D}
     f::Tf = Zero()
@@ -216,7 +214,7 @@ See also: [`DRLSIteration`](@ref), [`IterativeAlgorithm`](@ref).
 - `kwargs...`: additional keyword arguments to pass on to the `DRLSIteration` constructor upon call
 
 # References
-1. Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM for nonconvex optimization: Accelerated and Newton-type linesearch algorithms", arXiv:2005.10230, 2020.
+1. Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM for nonconvex optimization: Accelerated and Newton-type linesearch algorithms", Computational Optimization and Applications, vol. 82, no. 2, pp. 395-440 (2022).
 """
 DRLS(;
     maxit=1_000,
