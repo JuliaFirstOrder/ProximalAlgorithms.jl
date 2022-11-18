@@ -29,8 +29,8 @@ Douglas-Rachford | | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{
 Fast proximal gradient | ``f`` convex, smooth, ``g`` convex | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`FastForwardBackward`](@ref) | [Tseng2008](@cite), [Beck2009](@cite)
 PANOC | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOC`](@ref) | [Stella2017](@cite)
 ZeroFPR | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ZeroFPR`](@ref) | [Themelis2018](@cite)
-Douglas-Rachford line-search | ``f`` smooth | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DRLS`](@ref) | [Themelis2020](@cite)
-PANOC+ | ``f`` locally smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOCplus`](@ref) | [DeMarchi2021](@cite)
+Douglas-Rachford line-search | ``f`` smooth | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DRLS`](@ref) | [Themelis2022](@cite)
+PANOC+ | ``f`` locally smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOCplus`](@ref) | [DeMarchi2022](@cite)
 
 ```@docs
 ProximalAlgorithms.ForwardBackward
