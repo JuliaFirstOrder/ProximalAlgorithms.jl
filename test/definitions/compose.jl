@@ -14,7 +14,7 @@ end
 
 function compose_affine_gradient!(y, g::ComposeAffine, x)
     res = g.A * x .+ g.b
-    gradres, v = gradient(g.f, res)
+    gradres, v = ProximalCore.gradient(g.f, res)
     mul!(y, adjoint(g.A), gradres)
     return v
 end
