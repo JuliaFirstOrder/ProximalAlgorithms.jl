@@ -1,5 +1,7 @@
 module ProximalAlgorithms
 
+using Requires
+
 using ProximalCore
 using ProximalCore: prox, prox!, gradient, gradient!
 
@@ -8,7 +10,6 @@ const Maybe{T} = Union{T,Nothing}
 
 # various utilities
 
-include("utilities/ad.jl")
 include("utilities/fb_tools.jl")
 include("utilities/iteration_tools.jl")
 
@@ -97,5 +98,19 @@ include("algorithms/davis_yin.jl")
 include("algorithms/li_lin.jl")
 include("algorithms/sfista.jl")
 include("algorithms/panocplus.jl")
+
+# autodiff backends
+
+include("autodiff/backends.jl")
+function __init__()
+    @require Yota = "cd998857-8626-517d-b929-70ad188a48f0" begin
+        println("Enabling Yota AD backend (YotaFunction)")
+        include("autodiff/yota.jl")
+    end
+    @require Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f" begin
+        println("Enabling Zygote AD backend (ZygoteFunction)")
+        include("autodiff/zygote.jl")
+    end
+end
 
 end # module

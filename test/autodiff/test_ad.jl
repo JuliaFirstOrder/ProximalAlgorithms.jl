@@ -2,8 +2,12 @@ using Test
 using LinearAlgebra
 using ProximalOperators: NormL1
 using ProximalAlgorithms
+using Yota, Zygote
 
-@testset "Autodiff ($T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
+@testset "Autodiff ($T, $AD)" for (T, AD) in Iterators.product(
+    [Float32, Float64, ComplexF32, ComplexF64],
+    [ProximalAlgorithms.ZygoteFunction, ProximalAlgorithms.YotaFunction]
+)
     R = real(T)
     A = T[
         1.0 -2.0 3.0 -4.0 5.0
@@ -12,7 +16,7 @@ using ProximalAlgorithms
         -1.0 -1.0 -1.0 1.0 3.0
     ]
     b = T[1.0, 2.0, 3.0, 4.0]
-    f(x) = R(1/2) * norm(A * x - b, 2)^2
+    f = AD(x -> R(1/2) * norm(A * x - b, 2)^2)
     Lf = opnorm(A)^2
     m, n = size(A)
 

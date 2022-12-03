@@ -3,7 +3,8 @@ using Test
 include("definitions/arraypartition.jl")
 include("definitions/compose.jl")
 
-include("utilities/test_ad.jl")
+include("autodiff/test_ad.jl")
+
 include("utilities/test_iteration_tools.jl")
 include("utilities/test_fb_tools.jl")
 
