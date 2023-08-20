@@ -4,6 +4,7 @@
 [![codecov.io](http://codecov.io/github/JuliaFirstOrder/ProximalAlgorithms.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaFirstOrderProximalAlgorithms.jl?branch=master)
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliafirstorder.github.io/ProximalAlgorithms.jl/stable)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliafirstorder.github.io/ProximalAlgorithms.jl/dev)
+[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 A Julia package for non-smooth optimization algorithms.
 
