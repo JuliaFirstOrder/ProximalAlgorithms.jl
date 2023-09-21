@@ -12,7 +12,9 @@ using ProximalAlgorithms
         -1.0 -1.0 -1.0 1.0 3.0
     ]
     b = T[1.0, 2.0, 3.0, 4.0]
-    f(x) = R(1/2) * norm(A * x - b, 2)^2
+    f = ProximalAlgorithm.ZygoteFunction(
+        x -> R(1/2) * norm(A * x - b, 2)^2
+    )
     Lf = opnorm(A)^2
     m, n = size(A)
 
