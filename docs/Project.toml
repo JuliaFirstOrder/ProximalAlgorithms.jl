@@ -10,4 +10,5 @@ ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"
 
 [compat]
 Documenter = "1"
+DocumenterCitations = "1.2"
 ProximalOperators = "0.15"
