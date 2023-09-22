@@ -22,7 +22,6 @@ for directory in literate_directories
 end
 
 makedocs(
-    bib,
     modules=[ProximalAlgorithms, ProximalCore],
     sitename="ProximalAlgorithms.jl",
     pages=[
@@ -38,6 +37,7 @@ makedocs(
         ],
         "Bibliography" => "bibliography.md",
     ],
+    plugins=[bib],
 )
 
 deploydocs(
