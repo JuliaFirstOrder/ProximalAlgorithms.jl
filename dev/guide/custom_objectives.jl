@@ -31,7 +31,11 @@
 # 
 # Let's try to minimize the celebrated Rosenbrock function, but constrained to the unit norm ball. The cost function is
 
-rosenbrock2D(x) = 100 * (x[2] - x[1]^2)^2 + (1 - x[1])^2
+using ProximalAlgorithms
+
+rosenbrock2D = ProximalAlgorithms.ZygoteFunction(
+    x -> 100 * (x[2] - x[1]^2)^2 + (1 - x[1])^2
+)
 
 # To enforce the constraint, we define the indicator of the unit ball, together with its proximal mapping:
 # this is simply projection onto the unit norm ball, so it is sufficient to normalize any given point that lies
@@ -54,8 +58,6 @@ function ProximalCore.prox!(y, ::IndUnitBall, x, gamma)
 end
 
 # We can now minimize the function, for which we will use [`PANOC`](@ref), which is a Newton-type method:
-
-using ProximalAlgorithms
 
 panoc = ProximalAlgorithms.PANOC()
 solution, iterations = panoc(x0=-ones(2), f=rosenbrock2D, g=IndUnitBall())

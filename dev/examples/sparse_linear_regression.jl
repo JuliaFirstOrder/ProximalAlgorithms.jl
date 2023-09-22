@@ -51,7 +51,11 @@ end
 
 mean_squared_error(label, output) = mean((output .- label) .^ 2) / 2
 
-training_loss(wb) = mean_squared_error(training_label, standardized_linear_model(wb, training_input))
+using ProximalAlgorithms
+
+training_loss = ProximalAlgorithms.ZygoteFunction(
+    wb -> mean_squared_error(training_label, standardized_linear_model(wb, training_input))
+)
 
 # As regularization we will use the L1 norm, implemented in [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl):
 
@@ -63,8 +67,6 @@ reg = ProximalOperators.NormL1(1)
 # which implements the fast proximal gradient method (also known as fast forward-backward splitting, or FISTA).
 # Therefore we construct the algorithm, then apply it to our problem by providing a starting point,
 # and the objective terms `f=training_loss` (smooth) and `g=reg` (non smooth).
-
-using ProximalAlgorithms
 
 ffb = ProximalAlgorithms.FastForwardBackward()
 solution, iterations = ffb(x0=zeros(n_features + 1), f=training_loss, g=reg)
