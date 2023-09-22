@@ -72,7 +72,7 @@ For this reason, specific algorithms by the name of "primal-dual" splitting sche
 Algorithm | Assumptions | Oracle | Implementation | References
 ----------|-------------|--------|----------------|-----------
 Chambolle-Pock | ``f\equiv 0``, ``g, h`` convex, ``L`` linear operator | ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`ChambollePock`](@ref) | [Chambolle2011](@cite)
-Vu-Condat | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`VuCodat`](@ref) | [Vu2013](@cite), [Condat2013](@cite)
+Vu-Condat | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`VuCondat`](@ref) | [Vu2013](@cite), [Condat2013](@cite)
 AFBA      | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`AFBA`](@ref) | [Latafat2017](@cite)
 
 ```@docs
