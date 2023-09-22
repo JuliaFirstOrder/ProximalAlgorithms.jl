@@ -38,6 +38,7 @@ makedocs(
         "Bibliography" => "bibliography.md",
     ],
     plugins=[bib],
+    checkdocs=:exported,
 )
 
 deploydocs(
