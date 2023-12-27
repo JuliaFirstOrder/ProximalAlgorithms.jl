@@ -9,6 +9,8 @@ ProximalCore = "dc4f5ac2-75d1-4f31-931e-60435d74994b"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
+LinearAlgebra = "1.2"
+Printf = "1.2"
 ProximalCore = "0.1"
 Zygote = "0.6"
 julia = "1.2"
