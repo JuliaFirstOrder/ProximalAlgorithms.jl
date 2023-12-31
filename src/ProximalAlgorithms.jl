@@ -1,14 +1,17 @@
 module ProximalAlgorithms
 
 using ProximalCore
-using ProximalCore: prox, prox!, gradient, gradient!
+using ProximalCore: prox, prox!
 
 const RealOrComplex{R} = Union{R,Complex{R}}
 const Maybe{T} = Union{T,Nothing}
 
+# gradient computation
+
+eval_with_pullback(f::F, x::X) where {F, X} = error("undefined `eval_with_pullback` for function type $F on argument of type $X")
+
 # various utilities
 
-include("utilities/ad.jl")
 include("utilities/fb_tools.jl")
 include("utilities/iteration_tools.jl")
 

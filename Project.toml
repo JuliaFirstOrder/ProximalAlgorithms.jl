@@ -6,7 +6,12 @@ version = "0.5.5"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 ProximalCore = "dc4f5ac2-75d1-4f31-931e-60435d74994b"
+
+[weakdeps]
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+
+[extensions]
+ProximalAlgorithmsZygoteExt = "Zygote"
 
 [compat]
 LinearAlgebra = "1.2"

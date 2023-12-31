@@ -2,6 +2,7 @@ using Test
 using LinearAlgebra
 using ProximalOperators: NormL1
 using ProximalAlgorithms
+using Zygote
 
 @testset "Autodiff ($T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
     R = real(T)
