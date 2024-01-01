@@ -55,8 +55,8 @@ end
 function Base.iterate(iter::DavisYinIteration)
     z = copy(iter.x0)
     xg, = prox(iter.g, z, iter.gamma)
-    _, pb = eval_with_pullback(iter.f, xg)
-    grad_f_xg = pb()
+    f_xg, pb = value_and_pullback_function(ad_backend(), iter.f, xg)
+    grad_f_xg = pb(one(f_xg))
     z_half = 2 .* xg .- z .- iter.gamma .* grad_f_xg
     xh, = prox(iter.h, z_half, iter.gamma)
     res = xh - xg
@@ -67,8 +67,8 @@ end
 
 function Base.iterate(iter::DavisYinIteration, state::DavisYinState)
     prox!(state.xg, iter.g, state.z, iter.gamma)
-    _, pb = eval_with_pullback(iter.f, state.xg)
-    state.grad_f_xg .= pb()
+    f_xg, pb = value_and_pullback_function(ad_backend(), iter.f, state.xg)
+    state.grad_f_xg .= pb(one(f_xg))
     state.z_half .= 2 .* state.xg .- state.z .- iter.gamma .* state.grad_f_xg
     prox!(state.xh, iter.h, state.z_half, iter.gamma)
     state.res .= state.xh .- state.xg

@@ -2,7 +2,7 @@ using Test
 using LinearAlgebra
 using ProximalOperators: NormL1
 using ProximalAlgorithms
-using Zygote
+using AbstractDifferentiation: ZygoteBackend
 
 @testset "Autodiff ($T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
     R = real(T)
@@ -13,19 +13,11 @@ using Zygote
         -1.0 -1.0 -1.0 1.0 3.0
     ]
     b = T[1.0, 2.0, 3.0, 4.0]
-    f = ProximalAlgorithms.ZygoteFunction(
-        x -> R(1/2) * norm(A * x - b, 2)^2
-    )
+    f = x -> R(1/2) * norm(A * x - b, 2)^2
     Lf = opnorm(A)^2
     m, n = size(A)
 
-    @testset "Gradient" begin
-        x = randn(T, n)
-        gradfx, fx = ProximalAlgorithms.gradient(f, x)
-        @test eltype(gradfx) == T
-        @test typeof(fx) == R
-        @test gradfx ≈ A' * (A * x - b)
-    end
+    ProximalAlgorithms.ad_backend(ZygoteBackend())
 
     @testset "Algorithms" begin
         lam = R(0.1) * norm(A' * b, Inf)

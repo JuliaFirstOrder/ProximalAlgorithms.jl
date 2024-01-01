@@ -79,8 +79,8 @@ f_model(iter::PANOCplusIteration, state::PANOCplusState) = f_model(state.f_Ax, s
 function Base.iterate(iter::PANOCplusIteration{R}) where {R}
     x = copy(iter.x0)
     Ax = iter.A * x
-    f_Ax, pb = eval_with_pullback(iter.f, Ax)
-    grad_f_Ax = pb()
+    f_Ax, pb = value_and_pullback_function(ad_backend(), iter.f, Ax)
+    grad_f_Ax = pb(one(f_Ax))
     gamma = iter.gamma === nothing ? iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) : iter.gamma
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
@@ -98,8 +98,8 @@ function Base.iterate(iter::PANOCplusIteration{R}) where {R}
         )
     else
         mul!(state.Az, iter.A, state.z)
-        _, pb = eval_with_pullback(iter.f, state.Az)
-        state.grad_f_Az = pb()
+        f_Az, pb = value_and_pullback_function(ad_backend(), iter.f, state.Az)
+        state.grad_f_Az = pb(one(f_Az))
     end
     mul!(state.At_grad_f_Az, adjoint(iter.A), state.grad_f_Az)
     return state, state
@@ -154,8 +154,8 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
         end
 
         mul!(state.Ax, iter.A, state.x)
-        state.f_Ax, pb = eval_with_pullback(iter.f, state.Ax)
-        state.grad_f_Ax .= pb()
+        state.f_Ax, pb = value_and_pullback_function(ad_backend(), iter.f, state.Ax)
+        state.grad_f_Ax .= pb(one(state.f_Ax))
         mul!(state.At_grad_f_Ax, adjoint(iter.A), state.grad_f_Ax)
 
         state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
@@ -165,8 +165,8 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
         f_Az_upp = f_model(iter, state)
 
         mul!(state.Az, iter.A, state.z)
-        f_Az, pb = eval_with_pullback(iter.f, state.Az)
-        state.grad_f_Az .= pb()
+        f_Az, pb = value_and_pullback_function(ad_backend(), iter.f, state.Az)
+        state.grad_f_Az .= pb(one(f_Az))
         if (iter.gamma === nothing || iter.adaptive == true)
             tol = 10 * eps(R) * (1 + abs(f_Az))
             if f_Az > f_Az_upp + tol && state.gamma >= iter.minimum_gamma

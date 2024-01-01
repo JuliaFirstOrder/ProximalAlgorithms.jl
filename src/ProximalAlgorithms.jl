@@ -1,14 +1,21 @@
 module ProximalAlgorithms
 
+using AbstractDifferentiation: value_and_pullback_function
 using ProximalCore
 using ProximalCore: prox, prox!
 
 const RealOrComplex{R} = Union{R,Complex{R}}
 const Maybe{T} = Union{T,Nothing}
 
-# gradient computation
+_ad_backend = nothing
 
-eval_with_pullback(f::F, x::X) where {F, X} = error("undefined `eval_with_pullback` for function type $F on argument of type $X")
+ad_backend() = _ad_backend
+
+function ad_backend(backend)
+    global _ad_backend
+    _ad_backend = backend
+    _ad_backend
+end
 
 # various utilities
 
