@@ -1,6 +1,21 @@
 using Test
 using Aqua
+using AbstractDifferentiation
 using ProximalAlgorithms
+
+struct CustomBackend end
+
+struct Quadratic{M, V}
+    Q::M
+    q::V
+end
+
+(f::Quadratic)(x) = dot(x, f.Q * x) / 2 + dot(f.q, x)
+
+function ProximalAlgorithms.value_and_pullback_function(f::Quadratic, x)
+    grad = f.Q * x + f.q
+    return dot(grad, x) / 2 + dot(f.q, x), v -> (grad,)
+end
 
 @testset "Aqua" begin
     Aqua.test_all(ProximalAlgorithms; ambiguities=false)

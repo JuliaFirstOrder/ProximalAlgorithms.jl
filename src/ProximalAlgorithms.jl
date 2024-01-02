@@ -1,23 +1,22 @@
 module ProximalAlgorithms
 
-using AbstractDifferentiation: value_and_pullback_function
+using AbstractDifferentiation
 using ProximalCore
 using ProximalCore: prox, prox!
 
 const RealOrComplex{R} = Union{R,Complex{R}}
 const Maybe{T} = Union{T,Nothing}
 
-_ad_backend = nothing
-
-function ad_backend()
-    _ad_backend
+struct AutoDifferentiable{F, B}
+    f::F
+    backend::B
 end
 
-function ad_backend(backend)
-    global _ad_backend
-    _ad_backend = backend
-    _ad_backend
-end
+(f::AutoDifferentiable)(x) = f.f(x)
+
+value_and_pullback_function(f::AutoDifferentiable, x) = AbstractDifferentiation.value_and_pullback_function(f.backend, f.f, x)
+
+value_and_pullback_function(f::ProximalCore.Zero, x) = f(x), _ -> (zero(x))
 
 # various utilities
 

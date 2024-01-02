@@ -1,7 +1,8 @@
 using LinearAlgebra
 using Test
-
-using ProximalOperators
+using Zygote
+using AbstractDifferentiation: ZygoteBackend
+using ProximalOperators: LeastSquares, NormL1
 using ProximalAlgorithms:
     DouglasRachfordIteration, DRLSIteration,
     ForwardBackwardIteration, PANOCIteration,
@@ -51,7 +52,7 @@ end
 
     lam = R(0.1) * norm(A' * b, Inf)
 
-    f = LeastSquares(A, b)
+    f = ProximalAlgorithms.AutoDifferentiable(x -> (norm(A*x - b)^2) / 2, ZygoteBackend())
     g = NormL1(lam)
 
     x0 = zeros(R, n)
@@ -79,7 +80,7 @@ end
 
     lam = R(0.1) * norm(A' * b, Inf)
 
-    f = LeastSquares(A, b)
+    f = ProximalAlgorithms.AutoDifferentiable(x -> (norm(A*x - b)^2) / 2, ZygoteBackend())
     g = NormL1(lam)
 
     x0 = zeros(R, n)

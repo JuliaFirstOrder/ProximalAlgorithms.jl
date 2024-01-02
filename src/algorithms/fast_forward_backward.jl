@@ -68,7 +68,7 @@ end
 
 function Base.iterate(iter::FastForwardBackwardIteration)
     x = copy(iter.x0)
-    f_x, pb = value_and_pullback_function(ad_backend(), iter.f, x)
+    f_x, pb = value_and_pullback_function(iter.f, x)
     grad_f_x = pb(one(f_x))[1]
     gamma = iter.gamma === nothing ? 1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x) : iter.gamma
     y = x - gamma .* grad_f_x
@@ -104,7 +104,7 @@ function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardB
     state.x .= state.z .+ beta .* (state.z .- state.z_prev)
     state.z_prev, state.z = state.z, state.z_prev
 
-    state.f_x, pb = value_and_pullback_function(ad_backend(), iter.f, state.x)
+    state.f_x, pb = value_and_pullback_function(iter.f, state.x)
     state.grad_f_x .= pb(one(state.f_x))[1]
     state.y .= state.x .- state.gamma .* state.grad_f_x
     state.g_z = prox!(state.z, iter.g, state.y, state.gamma)

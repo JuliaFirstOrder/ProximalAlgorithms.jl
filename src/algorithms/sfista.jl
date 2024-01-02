@@ -71,7 +71,7 @@ function Base.iterate(
     state.a = (state.τ + sqrt(state.τ ^ 2 + 4 * state.τ * state.APrev)) / 2
     state.A = state.APrev + state.a
     state.xt .= (state.APrev / state.A) .* state.yPrev + (state.a / state.A) .* state.xPrev
-    f_xt, pb = value_and_pullback_function(ad_backend(), iter.f, state.xt)
+    f_xt, pb = value_and_pullback_function(iter.f, state.xt)
     state.gradf_xt .= pb(one(f_xt))[1]
     λ2 = state.λ / (1 + state.λ * iter.mf)
     # FISTA acceleration steps.
@@ -94,7 +94,7 @@ function check_sc(state::SFISTAState, iter::SFISTAIteration, tol, termination_ty
     else
         # Classic (approximate) first-order stationary point [4]. The main inclusion is: r ∈ ∇f(y) + ∂h(y).
         λ2 = state.λ / (1 + state.λ * iter.mf)
-        f_y, pb = value_and_pullback_function(ad_backend(), iter.f, state.y)
+        f_y, pb = value_and_pullback_function(iter.f, state.y)
         gradf_y = pb(one(f_y))[1]
         r = gradf_y - state.gradf_xt + (state.xt - state.y) / λ2
         res = norm(r)

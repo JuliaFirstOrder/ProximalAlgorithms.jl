@@ -24,7 +24,7 @@ using AbstractDifferentiation: ZygoteBackend, ReverseDiffBackend, ForwardDiffBac
         -1.0 -1.0 -1.0 1.0 3.0
     ]
     b = T[1.0, 2.0, 3.0, 4.0]
-    f = x -> R(1/2) * norm(A * x - b, 2)^2
+    f = ProximalAlgorithms.AutoDifferentiable(x -> R(1/2) * norm(A * x - b, 2)^2, B())
     Lf = opnorm(A)^2
     m, n = size(A)
 
@@ -32,8 +32,6 @@ using AbstractDifferentiation: ZygoteBackend, ReverseDiffBackend, ForwardDiffBac
 
     f_x0, pb = value_and_pullback_function(B(), f, x0)
     grad_f_x0 = @inferred pb(one(R))[1]
-
-    ProximalAlgorithms.ad_backend(B())
 
     lam = R(0.1) * norm(A' * b, Inf)
     @test typeof(lam) == R

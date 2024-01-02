@@ -7,7 +7,7 @@ end
 function lower_bound_smoothness_constant(f, A, x, grad_f_Ax)
     R = real(eltype(x))
     xeps = x .+ 1
-    f_Axeps, pb = value_and_pullback_function(ad_backend(), f, A * xeps)
+    f_Axeps, pb = value_and_pullback_function(f, A * xeps)
     grad_f_Axeps = pb(one(R))[1]
     return norm(A' * (grad_f_Axeps - grad_f_Ax)) / R(sqrt(length(x)))
 end
@@ -15,7 +15,7 @@ end
 function lower_bound_smoothness_constant(f, A, x)
     R = real(eltype(x))
     Ax = A * x
-    f_Ax, pb = value_and_pullback_function(ad_backend(), f, Ax)
+    f_Ax, pb = value_and_pullback_function(f, Ax)
     grad_f_Ax = pb(one(R))[1]
     return lower_bound_smoothness_constant(f, A, x, grad_f_Ax)
 end
@@ -29,7 +29,7 @@ function backtrack_stepsize!(
 ) where R
     f_Az_upp = f_model(f_Ax, At_grad_f_Ax, res, alpha / gamma)
     _mul!(Az, A, z)
-    f_Az, pb = value_and_pullback_function(ad_backend(), f, Az)
+    f_Az, pb = value_and_pullback_function(f, Az)
     if grad_f_Az !== nothing
         grad_f_Az .= pb(one(f_Az))[1]
     end
@@ -41,7 +41,7 @@ function backtrack_stepsize!(
         res .= x .- z
         f_Az_upp = f_model(f_Ax, At_grad_f_Ax, res, alpha / gamma)
         _mul!(Az, A, z)
-        f_Az, pb = value_and_pullback_function(ad_backend(), f, Az)
+        f_Az, pb = value_and_pullback_function(f, Az)
         if grad_f_Az !== nothing
             grad_f_Az .= pb(one(f_Az))[1]
         end
@@ -57,7 +57,7 @@ function backtrack_stepsize!(
     gamma, f, A, g, x; alpha = 1, minimum_gamma = 1e-7
 )
     Ax = A * x
-    f_Ax, pb = value_and_pullback_function(ad_backend(), f, Ax)
+    f_Ax, pb = value_and_pullback_function(f, Ax)
     grad_f_Ax = pb(one(f_Ax))[1]
     At_grad_f_Ax = A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
