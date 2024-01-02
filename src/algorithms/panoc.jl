@@ -87,7 +87,7 @@ function Base.iterate(iter::PANOCIteration{R}) where R
     x = copy(iter.x0)
     Ax = iter.A * x
     f_Ax, pb = value_and_pullback_function(ad_backend(), iter.f, Ax)
-    grad_f_Ax = pb(one(f_Ax))
+    grad_f_Ax = pb(one(f_Ax))[1]
     gamma = iter.gamma === nothing ? iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) : iter.gamma
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
@@ -154,7 +154,7 @@ function Base.iterate(iter::PANOCIteration{R, Tx, Tf}, state::PANOCState) where 
     state.x_d .= state.x .+ state.d
     state.Ax_d .= state.Ax .+ state.Ad
     state.f_Ax_d, pb = value_and_pullback_function(ad_backend(), iter.f, state.Ax_d)
-    state.grad_f_Ax_d .= pb(one(state.f_Ax_d))
+    state.grad_f_Ax_d .= pb(one(state.f_Ax_d))[1]
     mul!(state.At_grad_f_Ax_d, adjoint(iter.A), state.grad_f_Ax_d)
 
     copyto!(state.x, state.x_d)
@@ -192,7 +192,7 @@ function Base.iterate(iter::PANOCIteration{R, Tx, Tf}, state::PANOCState) where 
             # this allows saving operations
             if isinf(f_Az)
                 f_Az, pb = value_and_pullback_function(ad_backend(), iter.f, state.Az)
-                state.grad_f_Az .= pb(one(f_Az))
+                state.grad_f_Az .= pb(one(f_Az))[1]
             end
             if isinf(c)
                 mul!(state.At_grad_f_Az, iter.A', state.grad_f_Az)
@@ -207,7 +207,7 @@ function Base.iterate(iter::PANOCIteration{R, Tx, Tf}, state::PANOCState) where 
             # otherwise, in the general case where f is only smooth, we compute
             # one gradient and matvec per backtracking step
             state.f_Ax, pb = value_and_pullback_function(ad_backend(), iter.f, state.Ax)
-            state.grad_f_Ax .= pb(one(state.f_Ax))
+            state.grad_f_Ax .= pb(one(state.f_Ax))[1]
             mul!(state.At_grad_f_Ax, adjoint(iter.A), state.grad_f_Ax)
         end
 

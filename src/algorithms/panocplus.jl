@@ -80,7 +80,7 @@ function Base.iterate(iter::PANOCplusIteration{R}) where {R}
     x = copy(iter.x0)
     Ax = iter.A * x
     f_Ax, pb = value_and_pullback_function(ad_backend(), iter.f, Ax)
-    grad_f_Ax = pb(one(f_Ax))
+    grad_f_Ax = pb(one(f_Ax))[1]
     gamma = iter.gamma === nothing ? iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) : iter.gamma
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
@@ -99,7 +99,7 @@ function Base.iterate(iter::PANOCplusIteration{R}) where {R}
     else
         mul!(state.Az, iter.A, state.z)
         f_Az, pb = value_and_pullback_function(ad_backend(), iter.f, state.Az)
-        state.grad_f_Az = pb(one(f_Az))
+        state.grad_f_Az = pb(one(f_Az))[1]
     end
     mul!(state.At_grad_f_Az, adjoint(iter.A), state.grad_f_Az)
     return state, state
@@ -155,7 +155,7 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
 
         mul!(state.Ax, iter.A, state.x)
         state.f_Ax, pb = value_and_pullback_function(ad_backend(), iter.f, state.Ax)
-        state.grad_f_Ax .= pb(one(state.f_Ax))
+        state.grad_f_Ax .= pb(one(state.f_Ax))[1]
         mul!(state.At_grad_f_Ax, adjoint(iter.A), state.grad_f_Ax)
 
         state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
@@ -166,7 +166,7 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
 
         mul!(state.Az, iter.A, state.z)
         f_Az, pb = value_and_pullback_function(ad_backend(), iter.f, state.Az)
-        state.grad_f_Az .= pb(one(f_Az))
+        state.grad_f_Az .= pb(one(f_Az))[1]
         if (iter.gamma === nothing || iter.adaptive == true)
             tol = 10 * eps(R) * (1 + abs(f_Az))
             if f_Az > f_Az_upp + tol && state.gamma >= iter.minimum_gamma

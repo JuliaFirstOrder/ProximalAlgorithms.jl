@@ -2,9 +2,9 @@ using Test
 using Aqua
 using ProximalAlgorithms
 
-# @testset "Aqua" begin
-#     Aqua.test_all(ProximalAlgorithms; ambiguities=false)
-# end
+@testset "Aqua" begin
+    Aqua.test_all(ProximalAlgorithms; ambiguities=false)
+end
 
 include("definitions/arraypartition.jl")
 include("definitions/compose.jl")

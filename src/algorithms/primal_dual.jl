@@ -168,7 +168,7 @@ end
 function Base.iterate(iter::AFBAIteration, state::AFBAState = AFBAState(x=copy(iter.x0), y=copy(iter.y0)))
     # perform xbar-update step
     f_x, pb = value_and_pullback_function(ad_backend(), iter.f, state.x)
-    state.gradf .= pb(one(f_x))
+    state.gradf .= pb(one(f_x))[1]
     mul!(state.temp_x, iter.L', state.y)
     state.temp_x .+= state.gradf
     state.temp_x .*= -iter.gamma[1]
@@ -177,7 +177,7 @@ function Base.iterate(iter::AFBAIteration, state::AFBAState = AFBAState(x=copy(i
 
     # perform ybar-update step
     lc_y, pb = value_and_pullback_function(ad_backend(), convex_conjugate(iter.l), state.y)
-    state.gradl .= pb(one(lc_y))
+    state.gradl .= pb(one(lc_y))[1]
     state.temp_x .= iter.theta .* state.xbar .+ (1 - iter.theta) .* state.x
     mul!(state.temp_y, iter.L, state.temp_x)
     state.temp_y .-= state.gradl

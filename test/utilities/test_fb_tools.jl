@@ -1,7 +1,7 @@
 using Test
 using LinearAlgebra
+using ProximalCore: Zero
 using ProximalAlgorithms: lower_bound_smoothness_constant, backtrack_stepsize!
-using ProximalOperators: Quadratic, Zero
 
 @testset "Lipschitz constant estimation" for R in [Float32, Float64]
 
@@ -11,7 +11,7 @@ U, _ = qr(randn(n, n))
 Q = U * Diagonal(sv) * U'
 q = randn(n)
 
-f = Quadratic(Q, q)
+f(x) = 0.5 * dot(x, Q * x) + dot(q, x)
 Lf = maximum(sv)
 g = Zero()
 

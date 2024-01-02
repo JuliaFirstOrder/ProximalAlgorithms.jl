@@ -85,7 +85,7 @@ function Base.iterate(iter::ZeroFPRIteration{R}) where R
     x = copy(iter.x0)
     Ax = iter.A * x
     f_Ax, pb = value_and_pullback_function(ad_backend(), iter.f, Ax)
-    grad_f_Ax = pb(one(f_Ax))
+    grad_f_Ax = pb(one(f_Ax))[1]
     gamma = iter.gamma === nothing ? iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) : iter.gamma
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
@@ -132,7 +132,7 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where R
     else
         mul!(state.Axbar, iter.A, state.xbar)
         f_Axbar, pb = value_and_pullback_function(ad_backend(), iter.f, state.Axbar)
-        state.grad_f_Axbar .= pb(one(f_Axbar))
+        state.grad_f_Axbar .= pb(one(f_Axbar))[1]
         f_model(iter, state), f_Axbar
     end
 
@@ -168,7 +168,7 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where R
         state.Ax .= state.Axbar .+ state.tau .* state.Ad
         # TODO: can precompute most of next line in case f is quadratic
         state.f_Ax, pb = value_and_pullback_function(ad_backend(), iter.f, state.Ax)
-        state.grad_f_Ax .= pb(one(state.f_Ax))
+        state.grad_f_Ax .= pb(one(state.f_Ax))[1]
         mul!(state.At_grad_f_Ax, iter.A', state.grad_f_Ax)
         state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
         state.g_xbar = prox!(state.xbar, iter.g, state.y, state.gamma)

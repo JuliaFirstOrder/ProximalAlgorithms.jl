@@ -9,7 +9,9 @@ const Maybe{T} = Union{T,Nothing}
 
 _ad_backend = nothing
 
-ad_backend() = _ad_backend
+function ad_backend()
+    _ad_backend
+end
 
 function ad_backend(backend)
     global _ad_backend
