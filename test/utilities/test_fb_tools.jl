@@ -11,7 +11,7 @@ U, _ = qr(randn(n, n))
 Q = U * Diagonal(sv) * U'
 q = randn(n)
 
-f(x) = 0.5 * dot(x, Q * x) + dot(q, x)
+f(x) = R(0.5) * dot(x, Q * x) + dot(q, x)
 Lf = maximum(sv)
 g = Zero()
 
