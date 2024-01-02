@@ -3,8 +3,6 @@ using Aqua
 using AbstractDifferentiation
 using ProximalAlgorithms
 
-struct CustomBackend end
-
 struct Quadratic{M, V}
     Q::M
     q::V
