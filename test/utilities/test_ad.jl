@@ -5,7 +5,6 @@ using ProximalAlgorithms
 using Zygote
 using ReverseDiff
 using ForwardDiff
-using AbstractDifferentiation: value_and_pullback_function
 using AbstractDifferentiation: ZygoteBackend, ReverseDiffBackend, ForwardDiffBackend
 
 @testset "Autodiff backend ($B on $T)" for (T, B) in Iterators.product(
@@ -30,7 +29,7 @@ using AbstractDifferentiation: ZygoteBackend, ReverseDiffBackend, ForwardDiffBac
 
     x0 = zeros(T, n)
 
-    f_x0, pb = value_and_pullback_function(B(), f, x0)
+    f_x0, pb = ProximalAlgorithms.value_and_pullback_function(f, x0)
     grad_f_x0 = @inferred pb(one(R))[1]
 
     lam = R(0.1) * norm(A' * b, Inf)
