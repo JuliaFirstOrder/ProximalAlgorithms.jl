@@ -22,7 +22,7 @@ using LinearAlgebra
         return sum(log.(u))
     end
 
-    f_autodiff = ProximalAlgorithms.AutoDifferentiable(logistic_loss, ZygoteBackend())
+    f_autodiff = ProximalAlgorithms.AutoDifferentiable(x -> logistic_loss(x - b), ZygoteBackend())
     fA_autodiff = ProximalAlgorithms.AutoDifferentiable(x -> logistic_loss(A * x - b), ZygoteBackend())
     lam = R(0.1)
     g = NormL1(lam)
