@@ -31,10 +31,13 @@
 # 
 # Let's try to minimize the celebrated Rosenbrock function, but constrained to the unit norm ball. The cost function is
 
+using Zygote
+using AbstractDifferentiation: ZygoteBackend
 using ProximalAlgorithms
 
-rosenbrock2D = ProximalAlgorithms.ZygoteFunction(
-    x -> 100 * (x[2] - x[1]^2)^2 + (1 - x[1])^2
+rosenbrock2D = ProximalAlgorithms.AutoDifferentiable(
+    x -> 100 * (x[2] - x[1]^2)^2 + (1 - x[1])^2,
+    ZygoteBackend()
 )
 
 # To enforce the constraint, we define the indicator of the unit ball, together with its proximal mapping:
@@ -82,17 +85,23 @@ scatter!([solution[1]], [solution[2]], color=:red, markershape=:star5, label="co
 
 mutable struct Counting{T}
     f::T
+    eval_count::Int
     gradient_count::Int
     prox_count::Int
 end
 
-Counting(f::T) where T = Counting{T}(f, 0, 0)
+Counting(f::T) where T = Counting{T}(f, 0, 0, 0)
 
 # Now we only need to intercept any call to `gradient!` and `prox!` and increase counters there:
 
-function ProximalCore.gradient!(y, f::Counting, x)
-    f.gradient_count += 1
-    return ProximalCore.gradient!(y, f.f, x)
+function ProximalAlgorithms.value_and_pullback_function(f::Counting, x)
+    f.eval_count += 1
+    fx, pb = ProximalAlgorithms.value_and_pullback_function(f.f, x)
+    function counting_pullback(v)
+        f.gradient_count += 1
+        return pb(v)
+    end
+    return fx, counting_pullback
 end
 
 function ProximalCore.prox!(y, f::Counting, x, gamma)
@@ -109,5 +118,6 @@ solution, iterations = panoc(x0=-ones(2), f=f, g=g)
 
 # and check how many operations where actually performed:
 
-println(f.gradient_count)
-println(g.prox_count)
+println("function evals: $(f.eval_count)")
+println("gradient evals: $(f.gradient_count)")
+println("    prox evals: $(g.prox_count)")

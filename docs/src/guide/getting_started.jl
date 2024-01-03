@@ -51,11 +51,14 @@
 # which we will solve using the fast proximal gradient method (also known as fast forward-backward splitting):
 
 using LinearAlgebra
+using Zygote
+using AbstractDifferentiation: ZygoteBackend
 using ProximalOperators
 using ProximalAlgorithms
 
-quadratic_cost = ProximalAlgorithms.ZygoteFunction(
-    x -> dot([3.4 1.2; 1.2 4.5] * x, x) / 2 + dot([-2.3, 9.9], x)
+quadratic_cost = ProximalAlgorithms.AutoDifferentiable(
+    x -> dot([3.4 1.2; 1.2 4.5] * x, x) / 2 + dot([-2.3, 9.9], x),
+    ZygoteBackend()
 )
 box_indicator = ProximalOperators.IndBox(0, 1)
 
@@ -70,7 +73,8 @@ solution, iterations = ffb(x0=ones(2), f=quadratic_cost, g=box_indicator)
 
 # We can verify the correctness of the solution by checking that the negative gradient is orthogonal to the constraints, pointing outwards:
 
--ProximalAlgorithms.gradient(quadratic_cost, solution)[1]
+v, pullback = ProximalAlgorithms.value_and_pullback_function(quadratic_cost, solution)
+-pullback(one(v))[1]
 
 # Or by plotting the solution against the cost function and constraint:
 
