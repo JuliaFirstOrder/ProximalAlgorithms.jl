@@ -1,4 +1,6 @@
-using ProximalOperators
+using Zygote
+using AbstractDifferentiation: ZygoteBackend
+using ProximalOperators: Linear, IndNonnegative, IndPoint, IndAffine, SlicedSeparableSum
 using ProximalAlgorithms
 using LinearAlgebra
 
@@ -68,7 +70,7 @@ end
 
     @testset "AFBA" begin
 
-        f = Linear(c)
+        f = ProximalAlgorithms.AutoDifferentiable(x -> dot(c, x), ZygoteBackend())
         g = IndNonnegative()
         h = IndPoint(b)
 
@@ -94,7 +96,7 @@ end
 
     @testset "VuCondat" begin
 
-        f = Linear(c)
+        f = ProximalAlgorithms.AutoDifferentiable(x -> dot(c, x), ZygoteBackend())
         g = IndNonnegative()
         h = IndPoint(b)
 
@@ -143,7 +145,7 @@ end
 
     @testset "DavisYin" begin
 
-        f = Linear(c)
+        f = ProximalAlgorithms.AutoDifferentiable(x -> dot(c, x), ZygoteBackend())
         g = IndNonnegative()
         h = IndAffine(A, b)
 

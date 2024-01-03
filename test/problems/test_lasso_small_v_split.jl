@@ -1,9 +1,9 @@
-@testset "Lasso small (v. split, $T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
-    using ProximalOperators
-    using ProximalAlgorithms
-    using LinearAlgebra
-    using AbstractOperators: MatrixOp
+using ProximalOperators: LeastSquares, NormL1, SeparableSum, Sum, Translate
+using ProximalAlgorithms
+using LinearAlgebra
+using AbstractOperators: MatrixOp
 
+@testset "Lasso small (v. split, $T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
     A1 = T[
         1.0 -2.0 3.0 -4.0 5.0
         2.0 -1.0 0.0 -1.0 3.0

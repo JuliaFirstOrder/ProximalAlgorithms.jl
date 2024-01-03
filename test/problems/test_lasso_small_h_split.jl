@@ -1,10 +1,12 @@
-@testset "Lasso small (h. split, $T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
-    using ProximalOperators
-    using ProximalAlgorithms
-    using LinearAlgebra
-    using AbstractOperators: MatrixOp
-    using RecursiveArrayTools: ArrayPartition
+using Zygote
+using AbstractDifferentiation: ZygoteBackend
+using ProximalOperators: NormL1, SeparableSum
+using ProximalAlgorithms
+using LinearAlgebra
+using AbstractOperators: MatrixOp
+using RecursiveArrayTools: ArrayPartition
 
+@testset "Lasso small (h. split, $T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
     A1 = T[
         1.0 -2.0 3.0
         2.0 -1.0 0.0
@@ -29,8 +31,8 @@
     lam = R(0.1) * norm(A' * b, Inf)
     @test typeof(lam) == R
 
-    f = Translate(SqrNormL2(R(1)), -b)
-    f2 = ComposeAffine(SqrNormL2(R(1)), A, -b)
+    f_autodiff = ProximalAlgorithms.AutoDifferentiable(x -> (norm(x - b)^2)/2, ZygoteBackend())
+    fA_autodiff = ProximalAlgorithms.AutoDifferentiable(x -> (norm(A*x - b)^2)/2, ZygoteBackend())
     g = SeparableSum(NormL1(lam), NormL1(lam))
 
     Lf = opnorm([A1 A2])^2
@@ -49,7 +51,7 @@
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.ForwardBackward(tol = TOL)
-        x, it = solver(x0 = x0, f = f2, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 150
@@ -60,7 +62,7 @@
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
-        x, it = solver(x0 = x0, f = f2, g = g)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 300
@@ -71,7 +73,7 @@
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
-        x, it = solver(x0 = x0, f = f2, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100
@@ -83,7 +85,7 @@
         x0_backup = copy(x0)
         solver =
             ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
-        x, it = solver(x0 = x0, f = f2, g = g)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 200
@@ -97,7 +99,7 @@
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.ZeroFPR(tol = TOL)
-        x, it = solver(x0 = x0, f = f, A = A, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -108,7 +110,7 @@
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL)
-        x, it = solver(x0 = x0, f = f, A = A, g = g)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -123,7 +125,7 @@
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.PANOC(tol = TOL)
-        x, it = solver(x0 = x0, f = f, A = A, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -134,7 +136,7 @@
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.PANOC(adaptive = true, tol = TOL)
-        x, it = solver(x0 = x0, f = f, A = A, g = g)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -149,7 +151,7 @@
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.PANOCplus(tol = TOL)
-        x, it = solver(x0 = x0, f = f, A = A, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -160,7 +162,7 @@
         x0 = ArrayPartition(zeros(T, n1), zeros(T, n2))
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL)
-        x, it = solver(x0 = x0, f = f, A = A, g = g)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
