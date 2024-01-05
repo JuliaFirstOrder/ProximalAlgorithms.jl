@@ -14,9 +14,23 @@ end
 
 (f::AutoDifferentiable)(x) = f.f(x)
 
-value_and_pullback_function(f::AutoDifferentiable, x) = AbstractDifferentiation.value_and_pullback_function(f.backend, f.f, x)
+"""
+    value_and_pullback(f, x)
 
-value_and_pullback_function(f::ProximalCore.Zero, x) = f(x), _ -> (zero(x))
+Return a tuple containing the value of `f` at `x`, and the pullback function `pb`.
+
+Function `pb`, once called, yields the gradient of `f` at `x`.
+"""
+value_and_pullback
+
+function value_and_pullback(f::AutoDifferentiable, x)
+    fx, pb = AbstractDifferentiation.value_and_pullback_function(f.backend, f.f, x)
+    return fx, () -> pb(one(fx))[1]
+end
+
+function value_and_pullback(f::ProximalCore.Zero, x)
+    f(x), () -> zero(x)
+end
 
 # various utilities
 

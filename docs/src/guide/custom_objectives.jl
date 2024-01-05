@@ -18,13 +18,12 @@
 # and everything will work out of the box.
 # 
 # If however one would like to provide their own gradient implementation (e.g. for efficiency reasons),
-# they can simply implement a method for [`ProximalCore.gradient!`](@ref).
+# they can simply implement a method for [`ProximalAlgorithms.value_and_pullback`](@ref).
 # 
 # ```@docs
 # ProximalCore.prox
 # ProximalCore.prox!
-# ProximalCore.gradient
-# ProximalCore.gradient!
+# ProximalAlgorithms.value_and_pullback
 # ```
 # 
 # ## Example: constrained Rosenbrock
@@ -94,12 +93,12 @@ Counting(f::T) where T = Counting{T}(f, 0, 0, 0)
 
 # Now we only need to intercept any call to `gradient!` and `prox!` and increase counters there:
 
-function ProximalAlgorithms.value_and_pullback_function(f::Counting, x)
+function ProximalAlgorithms.value_and_pullback(f::Counting, x)
     f.eval_count += 1
-    fx, pb = ProximalAlgorithms.value_and_pullback_function(f.f, x)
-    function counting_pullback(v)
+    fx, pb = ProximalAlgorithms.value_and_pullback(f.f, x)
+    function counting_pullback()
         f.gradient_count += 1
-        return pb(v)
+        return pb()
     end
     return fx, counting_pullback
 end

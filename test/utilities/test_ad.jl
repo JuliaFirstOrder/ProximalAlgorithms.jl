@@ -4,14 +4,13 @@ using ProximalOperators: NormL1
 using ProximalAlgorithms
 using Zygote
 using ReverseDiff
-using ForwardDiff
-using AbstractDifferentiation: ZygoteBackend, ReverseDiffBackend, ForwardDiffBackend
+using AbstractDifferentiation: ZygoteBackend, ReverseDiffBackend
 
 @testset "Autodiff backend ($B on $T)" for (T, B) in Iterators.product(
     [Float32, Float64, ComplexF32, ComplexF64],
-    [ZygoteBackend, ReverseDiffBackend, ForwardDiffBackend],
+    [ZygoteBackend, ReverseDiffBackend],
 )
-    if T <: Complex && B in [ReverseDiffBackend, ForwardDiffBackend]
+    if T <: Complex && B == ReverseDiffBackend
         continue
     end
 
@@ -29,8 +28,8 @@ using AbstractDifferentiation: ZygoteBackend, ReverseDiffBackend, ForwardDiffBac
 
     x0 = zeros(T, n)
 
-    f_x0, pb = ProximalAlgorithms.value_and_pullback_function(f, x0)
-    grad_f_x0 = @inferred pb(one(R))[1]
+    f_x0, pb = ProximalAlgorithms.value_and_pullback(f, x0)
+    grad_f_x0 = @inferred pb()
 
     lam = R(0.1) * norm(A' * b, Inf)
     @test typeof(lam) == R

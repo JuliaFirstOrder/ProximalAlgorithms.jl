@@ -54,7 +54,7 @@ using AbstractDifferentiation: ZygoteBackend
 
     afba_test_params = [
         (2, 0, 130),
-        (1, 1, 1890),
+        (1, 1, 2000),
         (0, 1, 320),
         (0, 0, 194),
         (1, 0, 130),

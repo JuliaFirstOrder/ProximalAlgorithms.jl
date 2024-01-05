@@ -73,8 +73,8 @@ solution, iterations = ffb(x0=ones(2), f=quadratic_cost, g=box_indicator)
 
 # We can verify the correctness of the solution by checking that the negative gradient is orthogonal to the constraints, pointing outwards:
 
-v, pullback = ProximalAlgorithms.value_and_pullback_function(quadratic_cost, solution)
--pullback(one(v))[1]
+v, pb = ProximalAlgorithms.value_and_pullback(quadratic_cost, solution)
+-pb()
 
 # Or by plotting the solution against the cost function and constraint:
 

@@ -86,8 +86,8 @@ f_model(iter::PANOCIteration, state::PANOCState) = f_model(state.f_Ax, state.At_
 function Base.iterate(iter::PANOCIteration{R}) where R
     x = copy(iter.x0)
     Ax = iter.A * x
-    f_Ax, pb = value_and_pullback_function(iter.f, Ax)
-    grad_f_Ax = pb(one(f_Ax))[1]
+    f_Ax, pb = value_and_pullback(iter.f, Ax)
+    grad_f_Ax = pb()
     gamma = iter.gamma === nothing ? iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) : iter.gamma
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
@@ -153,8 +153,8 @@ function Base.iterate(iter::PANOCIteration{R, Tx, Tf}, state::PANOCState) where 
 
     state.x_d .= state.x .+ state.d
     state.Ax_d .= state.Ax .+ state.Ad
-    state.f_Ax_d, pb = value_and_pullback_function(iter.f, state.Ax_d)
-    state.grad_f_Ax_d .= pb(one(state.f_Ax_d))[1]
+    state.f_Ax_d, pb = value_and_pullback(iter.f, state.Ax_d)
+    state.grad_f_Ax_d .= pb()
     mul!(state.At_grad_f_Ax_d, adjoint(iter.A), state.grad_f_Ax_d)
 
     copyto!(state.x, state.x_d)
@@ -191,8 +191,8 @@ function Base.iterate(iter::PANOCIteration{R, Tx, Tf}, state::PANOCState) where 
             # along a line using interpolation and linear combinations
             # this allows saving operations
             if isinf(f_Az)
-                f_Az, pb = value_and_pullback_function(iter.f, state.Az)
-                state.grad_f_Az .= pb(one(f_Az))[1]
+                f_Az, pb = value_and_pullback(iter.f, state.Az)
+                state.grad_f_Az .= pb()
             end
             if isinf(c)
                 mul!(state.At_grad_f_Az, iter.A', state.grad_f_Az)
@@ -206,8 +206,8 @@ function Base.iterate(iter::PANOCIteration{R, Tx, Tf}, state::PANOCState) where 
         else
             # otherwise, in the general case where f is only smooth, we compute
             # one gradient and matvec per backtracking step
-            state.f_Ax, pb = value_and_pullback_function(iter.f, state.Ax)
-            state.grad_f_Ax .= pb(one(state.f_Ax))[1]
+            state.f_Ax, pb = value_and_pullback(iter.f, state.Ax)
+            state.grad_f_Ax .= pb()
             mul!(state.At_grad_f_Ax, adjoint(iter.A), state.grad_f_Ax)
         end
 
