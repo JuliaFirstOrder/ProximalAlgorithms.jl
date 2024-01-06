@@ -24,6 +24,7 @@
 # ProximalCore.prox
 # ProximalCore.prox!
 # ProximalAlgorithms.value_and_pullback
+# ProximalAlgorithms.AutoDifferentiable
 # ```
 # 
 # ## Example: constrained Rosenbrock
