@@ -12,7 +12,7 @@
 # 
 # Defining the proximal mapping for a custom function type requires adding a method for [`ProximalCore.prox!`](@ref).
 # 
-# To compute gradients, algorithms use [`ProximalAlgorithm.value_and_pullback`](@ref):
+# To compute gradients, algorithms use [`ProximalAlgorithms.value_and_pullback`](@ref):
 # this relies on [AbstractDifferentiation](https://github.com/JuliaDiff/AbstractDifferentiation.jl), for automatic differentiation
 # with any of its supported backends, when functions are wrapped in [`ProximalAlgorithms.AutoDifferentiable`](@ref),
 # as the esamples below show.
