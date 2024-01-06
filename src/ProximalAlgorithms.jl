@@ -8,11 +8,11 @@ const RealOrComplex{R} = Union{R,Complex{R}}
 const Maybe{T} = Union{T,Nothing}
 
 """
-    Autodifferentiable(f, backend)
+    AutoDifferentiable(f, backend)
 
-Construct a function from `f` to be auto-differentiated via `backend`.
+Wrap function `f` to be auto-differentiated using `backend`.
 
-The backend can be any from AbstractDifferentiation.jl.
+The backend can be any from [AbstractDifferentiation](https://github.com/JuliaDiff/AbstractDifferentiation.jl).
 """
 struct AutoDifferentiable{F, B}
     f::F
