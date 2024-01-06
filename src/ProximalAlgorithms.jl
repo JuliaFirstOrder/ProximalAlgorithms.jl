@@ -7,6 +7,13 @@ using ProximalCore: prox, prox!
 const RealOrComplex{R} = Union{R,Complex{R}}
 const Maybe{T} = Union{T,Nothing}
 
+"""
+    Autodifferentiable(f, backend)
+
+Construct a function from `f` to be auto-differentiated via `backend`.
+
+The backend can be any from AbstractDifferentiation.jl.
+"""
 struct AutoDifferentiable{F, B}
     f::F
     backend::B
