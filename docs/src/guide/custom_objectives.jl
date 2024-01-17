@@ -15,7 +15,7 @@
 # To compute gradients, algorithms use [`ProximalAlgorithms.value_and_pullback`](@ref):
 # this relies on [AbstractDifferentiation](https://github.com/JuliaDiff/AbstractDifferentiation.jl), for automatic differentiation
 # with any of its supported backends, when functions are wrapped in [`ProximalAlgorithms.AutoDifferentiable`](@ref),
-# as the esamples below show.
+# as the examples below show.
 # 
 # If however you would like to provide your own gradient implementation (e.g. for efficiency reasons),
 # you can simply implement a method for [`ProximalAlgorithms.value_and_pullback`](@ref) on your own function type.
