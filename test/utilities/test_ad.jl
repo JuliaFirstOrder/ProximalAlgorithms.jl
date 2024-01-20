@@ -28,8 +28,8 @@ using AbstractDifferentiation: ZygoteBackend, ReverseDiffBackend
 
     x0 = zeros(T, n)
 
-    f_x0, pb = ProximalAlgorithms.value_and_pullback(f, x0)
-    grad_f_x0 = @inferred pb()
+    f_x0, cl = ProximalAlgorithms.value_and_gradient_closure(f, x0)
+    grad_f_x0 = @inferred cl()
 
     lam = R(0.1) * norm(A' * b, Inf)
     @test typeof(lam) == R

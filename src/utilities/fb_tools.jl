@@ -7,16 +7,16 @@ end
 function lower_bound_smoothness_constant(f, A, x, grad_f_Ax)
     R = real(eltype(x))
     xeps = x .+ 1
-    f_Axeps, pb = value_and_pullback(f, A * xeps)
-    grad_f_Axeps = pb()
+    f_Axeps, cl = value_and_gradient_closure(f, A * xeps)
+    grad_f_Axeps = cl()
     return norm(A' * (grad_f_Axeps - grad_f_Ax)) / R(sqrt(length(x)))
 end
 
 function lower_bound_smoothness_constant(f, A, x)
     R = real(eltype(x))
     Ax = A * x
-    f_Ax, pb = value_and_pullback(f, Ax)
-    grad_f_Ax = pb()
+    f_Ax, cl = value_and_gradient_closure(f, Ax)
+    grad_f_Ax = cl()
     return lower_bound_smoothness_constant(f, A, x, grad_f_Ax)
 end
 
@@ -29,7 +29,7 @@ function backtrack_stepsize!(
 ) where R
     f_Az_upp = f_model(f_Ax, At_grad_f_Ax, res, alpha / gamma)
     _mul!(Az, A, z)
-    f_Az, pb = value_and_pullback(f, Az)
+    f_Az, cl = value_and_gradient_closure(f, Az)
     tol = 10 * eps(R) * (1 + abs(f_Az))
     while f_Az > f_Az_upp + tol && gamma >= minimum_gamma
         gamma /= 2
@@ -38,11 +38,11 @@ function backtrack_stepsize!(
         res .= x .- z
         f_Az_upp = f_model(f_Ax, At_grad_f_Ax, res, alpha / gamma)
         _mul!(Az, A, z)
-        f_Az, pb = value_and_pullback(f, Az)
+        f_Az, cl = value_and_gradient_closure(f, Az)
         tol = 10 * eps(R) * (1 + abs(f_Az))
     end
     if grad_f_Az !== nothing
-        grad_f_Az .= pb()
+        grad_f_Az .= cl()
     end
     if gamma < minimum_gamma
         @warn "stepsize `gamma` became too small ($(gamma))"
@@ -54,8 +54,8 @@ function backtrack_stepsize!(
     gamma, f, A, g, x; alpha = 1, minimum_gamma = 1e-7
 )
     Ax = A * x
-    f_Ax, pb = value_and_pullback(f, Ax)
-    grad_f_Ax = pb()
+    f_Ax, cl = value_and_gradient_closure(f, Ax)
+    grad_f_Ax = cl()
     At_grad_f_Ax = A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
     z, g_z = prox(g, y, gamma)

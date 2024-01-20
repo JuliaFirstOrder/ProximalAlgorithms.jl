@@ -62,8 +62,8 @@ end
 
 function Base.iterate(iter::LiLinIteration{R}) where {R}
     y = copy(iter.x0)
-    f_y, pb = value_and_pullback(iter.f, y)
-    grad_f_y = pb()
+    f_y, cl = value_and_gradient_closure(iter.f, y)
+    grad_f_y = cl()
 
     # TODO: initialize gamma if not provided
     # TODO: authors suggest Barzilai-Borwein rule?
@@ -103,8 +103,8 @@ function Base.iterate(
     else
         # TODO: re-use available space in state?
         # TODO: backtrack gamma at x
-        f_x, pb = value_and_pullback(iter.f, x)
-        grad_f_x = pb()
+        f_x, cl = value_and_gradient_closure(iter.f, x)
+        grad_f_x = cl()
         x_forward = state.x - state.gamma .* grad_f_x
         v, g_v = prox(iter.g, x_forward, state.gamma)
         Fv = iter.f(v) + g_v
@@ -123,8 +123,8 @@ function Base.iterate(
         Fx = Fv
     end
 
-    state.f_y, pb = value_and_pullback(iter.f, state.y)
-    state.grad_f_y .= pb()
+    state.f_y, cl = value_and_gradient_closure(iter.f, state.y)
+    state.grad_f_y .= cl()
     state.y_forward .= state.y .- state.gamma .* state.grad_f_y
     state.g_z = prox!(state.z, iter.g, state.y_forward, state.gamma)
 

@@ -84,8 +84,8 @@ f_model(iter::ZeroFPRIteration, state::ZeroFPRState) = f_model(state.f_Ax, state
 function Base.iterate(iter::ZeroFPRIteration{R}) where R
     x = copy(iter.x0)
     Ax = iter.A * x
-    f_Ax, pb = value_and_pullback(iter.f, Ax)
-    grad_f_Ax = pb()
+    f_Ax, cl = value_and_gradient_closure(iter.f, Ax)
+    grad_f_Ax = cl()
     gamma = iter.gamma === nothing ? iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) : iter.gamma
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
@@ -131,8 +131,8 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where R
         f_Axbar_upp, f_Axbar
     else
         mul!(state.Axbar, iter.A, state.xbar)
-        f_Axbar, pb = value_and_pullback(iter.f, state.Axbar)
-        state.grad_f_Axbar .= pb()
+        f_Axbar, cl = value_and_gradient_closure(iter.f, state.Axbar)
+        state.grad_f_Axbar .= cl()
         f_model(iter, state), f_Axbar
     end
 
@@ -167,8 +167,8 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where R
         state.x .= state.xbar_prev .+ state.tau .* state.d
         state.Ax .= state.Axbar .+ state.tau .* state.Ad
         # TODO: can precompute most of next line in case f is quadratic
-        state.f_Ax, pb = value_and_pullback(iter.f, state.Ax)
-        state.grad_f_Ax .= pb()
+        state.f_Ax, cl = value_and_gradient_closure(iter.f, state.Ax)
+        state.grad_f_Ax .= cl()
         mul!(state.At_grad_f_Ax, iter.A', state.grad_f_Ax)
         state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
         state.g_xbar = prox!(state.xbar, iter.g, state.y, state.gamma)

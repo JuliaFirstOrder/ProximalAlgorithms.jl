@@ -72,9 +72,10 @@ ffb = ProximalAlgorithms.FastForwardBackward(maxit=1000, tol=1e-5, verbose=true)
 solution, iterations = ffb(x0=ones(2), f=quadratic_cost, g=box_indicator)
 
 # We can verify the correctness of the solution by checking that the negative gradient is orthogonal to the constraints, pointing outwards:
+# for this, we just evaluate the closure `cl` returned as second output of [`value_and_gradient_closure`](@ref).
 
-v, pb = ProximalAlgorithms.value_and_pullback(quadratic_cost, solution)
--pb()
+v, cl = ProximalAlgorithms.value_and_gradient_closure(quadratic_cost, solution)
+-cl()
 
 # Or by plotting the solution against the cost function and constraint:
 

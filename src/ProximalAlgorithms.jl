@@ -10,8 +10,10 @@ const Maybe{T} = Union{T,Nothing}
 """
     AutoDifferentiable(f, backend)
 
-Wrap function `f` to be auto-differentiated using `backend`.
+Callable struct wrapping function `f` to be auto-differentiated using `backend`.
 
+When called, it evaluates the same as `f`, while [`ProximalAlgorithms.value_and_gradient_closure`](@ref)
+is implemented using `backend` for automatic differentiation.
 The backend can be any from [AbstractDifferentiation](https://github.com/JuliaDiff/AbstractDifferentiation.jl).
 """
 struct AutoDifferentiable{F, B}
@@ -22,20 +24,20 @@ end
 (f::AutoDifferentiable)(x) = f.f(x)
 
 """
-    value_and_pullback(f, x)
+    value_and_gradient_closure(f, x)
 
-Return a tuple containing the value of `f` at `x`, and the pullback function `pb`.
+Return a tuple containing the value of `f` at `x`, and a closure `cl`.
 
-Function `pb`, once called, yields the gradient of `f` at `x`.
+Function `cl`, once called, yields the gradient of `f` at `x`.
 """
-value_and_pullback
+value_and_gradient_closure
 
-function value_and_pullback(f::AutoDifferentiable, x)
+function value_and_gradient_closure(f::AutoDifferentiable, x)
     fx, pb = AbstractDifferentiation.value_and_pullback_function(f.backend, f.f, x)
     return fx, () -> pb(one(fx))[1]
 end
 
-function value_and_pullback(f::ProximalCore.Zero, x)
+function value_and_gradient_closure(f::ProximalCore.Zero, x)
     f(x), () -> zero(x)
 end
 

@@ -10,7 +10,7 @@ end
 
 (f::Quadratic)(x) = dot(x, f.Q * x) / 2 + dot(f.q, x)
 
-function ProximalAlgorithms.value_and_pullback(f::Quadratic, x)
+function ProximalAlgorithms.value_and_gradient_closure(f::Quadratic, x)
     grad = f.Q * x + f.q
     return dot(grad, x) / 2 + dot(f.q, x), () -> grad
 end

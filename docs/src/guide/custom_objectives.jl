@@ -12,18 +12,18 @@
 # 
 # Defining the proximal mapping for a custom function type requires adding a method for [`ProximalCore.prox!`](@ref).
 # 
-# To compute gradients, algorithms use [`ProximalAlgorithms.value_and_pullback`](@ref):
+# To compute gradients, algorithms use [`ProximalAlgorithms.value_and_gradient_closure`](@ref):
 # this relies on [AbstractDifferentiation](https://github.com/JuliaDiff/AbstractDifferentiation.jl), for automatic differentiation
 # with any of its supported backends, when functions are wrapped in [`ProximalAlgorithms.AutoDifferentiable`](@ref),
 # as the examples below show.
 # 
 # If however you would like to provide your own gradient implementation (e.g. for efficiency reasons),
-# you can simply implement a method for [`ProximalAlgorithms.value_and_pullback`](@ref) on your own function type.
+# you can simply implement a method for [`ProximalAlgorithms.value_and_gradient_closure`](@ref) on your own function type.
 # 
 # ```@docs
 # ProximalCore.prox
 # ProximalCore.prox!
-# ProximalAlgorithms.value_and_pullback
+# ProximalAlgorithms.value_and_gradient_closure
 # ProximalAlgorithms.AutoDifferentiable
 # ```
 # 
@@ -92,11 +92,11 @@ end
 
 Counting(f::T) where T = Counting{T}(f, 0, 0, 0)
 
-# Now we only need to intercept any call to `value_and_pullback` and `prox!` and increase counters there:
+# Now we only need to intercept any call to `value_and_gradient_closure` and `prox!` and increase counters there:
 
-function ProximalAlgorithms.value_and_pullback(f::Counting, x)
+function ProximalAlgorithms.value_and_gradient_closure(f::Counting, x)
     f.eval_count += 1
-    fx, pb = ProximalAlgorithms.value_and_pullback(f.f, x)
+    fx, pb = ProximalAlgorithms.value_and_gradient_closure(f.f, x)
     function counting_pullback()
         f.gradient_count += 1
         return pb()
