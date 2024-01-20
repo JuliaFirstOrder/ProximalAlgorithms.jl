@@ -8,6 +8,22 @@ using FileIO
 
 const SUITE = BenchmarkGroup()
 
+function ProximalAlgorithms.value_and_gradient_closure(f::ProximalOperators.LeastSquaresDirect, x)
+    res = f.A*x - f.b
+    norm(res)^2, () -> f.A'*res
+end
+
+struct SquaredDistance{Tb}
+    b::Tb
+end
+
+(f::SquaredDistance)(x) = norm(x - f.b)^2
+
+function ProximalAlgorithms.value_and_gradient_closure(f::SquaredDistance, x)
+    diff = x - f.b
+    norm(diff)^2, () -> diff
+end
+
 for (benchmark_name, file_name) in [
     ("Lasso tiny", joinpath(@__DIR__, "data", "lasso_tiny.jld2")),
     ("Lasso small", joinpath(@__DIR__, "data", "lasso_small.jld2")),
@@ -42,21 +58,21 @@ for (benchmark_name, file_name) in [
         SUITE[k]["ZeroFPR"] = @benchmarkable solver(x0=x0, f=f, A=$A, g=g) setup=begin
             solver = ProximalAlgorithms.ZeroFPR(tol=1e-6)
             x0 = zeros($T, size($A, 2))
-            f = Translate(SqrNormL2(), -$b)
+            f = SquaredDistance($b)
             g = NormL1($lam)
         end
 
         SUITE[k]["PANOC"] = @benchmarkable solver(x0=x0, f=f, A=$A, g=g) setup=begin
             solver = ProximalAlgorithms.PANOC(tol=1e-6)
             x0 = zeros($T, size($A, 2))
-            f = Translate(SqrNormL2(), -$b)
+            f = SquaredDistance($b)
             g = NormL1($lam)
         end
 
         SUITE[k]["PANOCplus"] = @benchmarkable solver(x0=x0, f=f, A=$A, g=g) setup=begin
             solver = ProximalAlgorithms.PANOCplus(tol=1e-6)
             x0 = zeros($T, size($A, 2))
-            f = Translate(SqrNormL2(), -$b)
+            f = SquaredDistance($b)
             g = NormL1($lam)
         end
 
