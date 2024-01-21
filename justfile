@@ -12,3 +12,8 @@ format:
 
 docs:
     julia --project=./docs docs/make.jl
+
+benchmark:
+    julia --project=benchmark -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+    julia --project=benchmark benchmark/runbenchmarks.jl
+
