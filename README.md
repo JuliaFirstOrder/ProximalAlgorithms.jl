@@ -11,14 +11,19 @@ A Julia package for non-smooth optimization algorithms.
 This package provides algorithms for the minimization of objective functions
 that include non-smooth terms, such as constraints or non-differentiable penalties.
 Implemented algorithms include:
-* (Fast) Proximal gradient methods
-* Douglas-Rachford splitting
-* Three-term splitting
-* Primal-dual splitting algorithms
-* Newton-type methods
+- (Fast) Proximal gradient methods
+- Douglas-Rachford splitting
+- Three-term splitting
+- Primal-dual splitting algorithms
+- Newton-type methods
 
-This package works well in combination with [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl) (>= 0.15),
-which contains a wide range of functions that can be used to express cost terms.
+Algorithms rely on:
+- [AbstractDifferentiation.jl](https://github.com/JuliaDiff/AbstractDifferentiation.jl) for automatic differentiation
+(but you can easily bring your own gradients)
+- the [ProximalCore API](https://github.com/JuliaFirstOrder/ProximalCore.jl) for proximal mappings, projections, etc,
+to handle non-differentiable terms
+(see for example [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl)
+for an extensive collection of functions).
 
 ## Documentation
 
