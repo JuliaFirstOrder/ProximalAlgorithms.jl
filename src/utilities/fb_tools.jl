@@ -24,9 +24,22 @@ _mul!(y, L, x) = mul!(y, L, x)
 _mul!(y, ::Nothing, x) = return
 
 function backtrack_stepsize!(
-    gamma::R, f, A, g, x, f_Ax::R, At_grad_f_Ax, y, z, g_z::R, res, Az, grad_f_Az=nothing;
-    alpha = 1, minimum_gamma = 1e-7
-) where R
+    gamma::R,
+    f,
+    A,
+    g,
+    x,
+    f_Ax::R,
+    At_grad_f_Ax,
+    y,
+    z,
+    g_z::R,
+    res,
+    Az,
+    grad_f_Az = nothing;
+    alpha = 1,
+    minimum_gamma = 1e-7,
+) where {R}
     f_Az_upp = f_model(f_Ax, At_grad_f_Ax, res, alpha / gamma)
     _mul!(Az, A, z)
     f_Az, cl = value_and_gradient_closure(f, Az)
@@ -50,9 +63,7 @@ function backtrack_stepsize!(
     return gamma, g_z, f_Az, f_Az_upp
 end
 
-function backtrack_stepsize!(
-    gamma, f, A, g, x; alpha = 1, minimum_gamma = 1e-7
-)
+function backtrack_stepsize!(gamma, f, A, g, x; alpha = 1, minimum_gamma = 1e-7)
     Ax = A * x
     f_Ax, cl = value_and_gradient_closure(f, Ax)
     grad_f_Ax = cl()
@@ -60,7 +71,20 @@ function backtrack_stepsize!(
     y = x - gamma .* At_grad_f_Ax
     z, g_z = prox(g, y, gamma)
     return backtrack_stepsize!(
-        gamma, f, A, g, x, f_Ax, At_grad_f_Ax, y, z, g_z, x - z, Ax, grad_f_Ax;
-        alpha = alpha, minimum_gamma = minimum_gamma
+        gamma,
+        f,
+        A,
+        g,
+        x,
+        f_Ax,
+        At_grad_f_Ax,
+        y,
+        z,
+        g_z,
+        x - z,
+        Ax,
+        grad_f_Ax;
+        alpha = alpha,
+        minimum_gamma = minimum_gamma,
     )
 end

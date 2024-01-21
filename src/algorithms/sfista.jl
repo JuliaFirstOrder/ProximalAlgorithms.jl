@@ -48,12 +48,12 @@ end
 
 Base.IteratorSize(::Type{<:SFISTAIteration}) = Base.IsInfinite()
 
-Base.@kwdef mutable struct SFISTAState{R, Tx}
+Base.@kwdef mutable struct SFISTAState{R,Tx}
     λ::R                                # stepsize.
     yPrev::Tx                           # previous main iterate.
-    y:: Tx = zero(yPrev)                # main iterate.
+    y::Tx = zero(yPrev)                # main iterate.
     xPrev::Tx = copy(yPrev)             # previous auxiliary iterate.
-    x::Tx  = zero(yPrev)                # auxiliary iterate (see [3]).
+    x::Tx = zero(yPrev)                # auxiliary iterate (see [3]).
     xt::Tx = zero(yPrev)                # prox center used to generate main iterate y.
     τ::R = real(eltype(yPrev))(1.0)     # helper variable (see [3]).
     a::R = real(eltype(yPrev))(0.0)     # helper variable (see [3]).
@@ -64,11 +64,11 @@ end
 
 function Base.iterate(
     iter::SFISTAIteration,
-    state::SFISTAState = SFISTAState(λ=1/iter.Lf, yPrev=copy(iter.x0))
+    state::SFISTAState = SFISTAState(λ = 1 / iter.Lf, yPrev = copy(iter.x0)),
 )
     # Set up helper variables.
     state.τ = state.λ * (1 + iter.mf * state.APrev)
-    state.a = (state.τ + sqrt(state.τ ^ 2 + 4 * state.τ * state.APrev)) / 2
+    state.a = (state.τ + sqrt(state.τ^2 + 4 * state.τ * state.APrev)) / 2
     state.A = state.APrev + state.a
     state.xt .= (state.APrev / state.A) .* state.yPrev + (state.a / state.A) .* state.xPrev
     f_xt, cl = value_and_gradient_closure(iter.f, state.xt)
@@ -76,7 +76,10 @@ function Base.iterate(
     λ2 = state.λ / (1 + state.λ * iter.mf)
     # FISTA acceleration steps.
     prox!(state.y, iter.g, state.xt - λ2 * state.gradf_xt, λ2)
-    state.x .= state.xPrev .+ (state.a / (1 + state.A * iter.mf)) .* ((state.y .- state.xt) ./ state.λ .+ iter.mf .* (state.y .- state.xPrev))
+    state.x .=
+        state.xPrev .+
+        (state.a / (1 + state.A * iter.mf)) .*
+        ((state.y .- state.xt) ./ state.λ .+ iter.mf .* (state.y .- state.xPrev))
     # Update state variables.
     state.yPrev .= state.y
     state.xPrev .= state.x
@@ -89,8 +92,8 @@ function check_sc(state::SFISTAState, iter::SFISTAIteration, tol, termination_ty
     if termination_type == "AIPP"
         # AIPP-style termination [4]. The main inclusion is: r ∈ ∂_η(f + h)(y).
         r = (iter.y0 - state.x) / state.A
-        η = (norm(iter.y0 - state.y) ^ 2 - norm(state.x - state.y) ^ 2) / (2 * state.A)
-        res = (norm(r) ^ 2 + max(η, 0.0)) / max(norm(iter.y0 - state.y + r) ^ 2, 1e-16)
+        η = (norm(iter.y0 - state.y)^2 - norm(state.x - state.y)^2) / (2 * state.A)
+        res = (norm(r)^2 + max(η, 0.0)) / max(norm(iter.y0 - state.y + r)^2, 1e-16)
     else
         # Classic (approximate) first-order stationary point [4]. The main inclusion is: r ∈ ∇f(y) + ∂h(y).
         λ2 = state.λ / (1 + state.λ * iter.mf)
@@ -143,13 +146,23 @@ See also: [`SFISTAIteration`](@ref), [`IterativeAlgorithm`](@ref).
 5. Florea, M. I. (2018). Constructing Accelerated Algorithms for Large-scale Optimization-Framework, Algorithms, and Applications.
 """
 SFISTA(;
-    maxit=10_000,
-    tol=1e-6,
-    termination_type="",
-    stop=(iter, state) -> check_sc(state, iter, tol, termination_type)[2],
-    solution=default_solution,
-    verbose=false,
-    freq=100,
-    display=(it, iter, state) -> @printf("%5d | %.3e\n", it, check_sc(state, iter, tol, termination_type)[1]),
-    kwargs...
-) = IterativeAlgorithm(SFISTAIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
+    maxit = 10_000,
+    tol = 1e-6,
+    termination_type = "",
+    stop = (iter, state) -> check_sc(state, iter, tol, termination_type)[2],
+    solution = default_solution,
+    verbose = false,
+    freq = 100,
+    display = (it, iter, state) ->
+        @printf("%5d | %.3e\n", it, check_sc(state, iter, tol, termination_type)[1]),
+    kwargs...,
+) = IterativeAlgorithm(
+    SFISTAIteration;
+    maxit,
+    stop,
+    solution,
+    verbose,
+    freq,
+    display,
+    kwargs...,
+)

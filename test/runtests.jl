@@ -3,7 +3,7 @@ using Aqua
 using AbstractDifferentiation
 using ProximalAlgorithms
 
-struct Quadratic{M, V}
+struct Quadratic{M,V}
     Q::M
     q::V
 end
@@ -16,7 +16,7 @@ function ProximalAlgorithms.value_and_gradient_closure(f::Quadratic, x)
 end
 
 @testset "Aqua" begin
-    Aqua.test_all(ProximalAlgorithms; ambiguities=false)
+    Aqua.test_all(ProximalAlgorithms; ambiguities = false)
 end
 
 include("utilities/test_ad.jl")

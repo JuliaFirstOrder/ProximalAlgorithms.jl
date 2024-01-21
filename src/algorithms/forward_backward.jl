@@ -53,29 +53,51 @@ Base.@kwdef mutable struct ForwardBackwardState{R,Tx}
     z::Tx             # forward-backward point
     g_z::R            # value of g at z
     res::Tx           # fixed-point residual at iterate (= z - x)
-    Az::Tx=similar(x) # TODO not needed
-    grad_f_z::Tx=similar(x)
+    Az::Tx = similar(x) # TODO not needed
+    grad_f_z::Tx = similar(x)
 end
 
 function Base.iterate(iter::ForwardBackwardIteration)
     x = copy(iter.x0)
     f_x, cl = value_and_gradient_closure(iter.f, x)
     grad_f_x = cl()
-    gamma = iter.gamma === nothing ? 1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x) : iter.gamma
+    gamma =
+        iter.gamma === nothing ?
+        1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x) : iter.gamma
     y = x - gamma .* grad_f_x
     z, g_z = prox(iter.g, y, gamma)
     state = ForwardBackwardState(
-        x=x, f_x=f_x, grad_f_x=grad_f_x,
-        gamma=gamma, y=y, z=z, g_z=g_z, res=x - z,
+        x = x,
+        f_x = f_x,
+        grad_f_x = grad_f_x,
+        gamma = gamma,
+        y = y,
+        z = z,
+        g_z = g_z,
+        res = x - z,
     )
     return state, state
 end
 
-function Base.iterate(iter::ForwardBackwardIteration{R}, state::ForwardBackwardState{R,Tx}) where {R,Tx}
+function Base.iterate(
+    iter::ForwardBackwardIteration{R},
+    state::ForwardBackwardState{R,Tx},
+) where {R,Tx}
     if iter.adaptive == true
         state.gamma, state.g_z, state.f_x = backtrack_stepsize!(
-            state.gamma, iter.f, nothing, iter.g,
-            state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res, state.z, state.grad_f_z,
+            state.gamma,
+            iter.f,
+            nothing,
+            iter.g,
+            state.x,
+            state.f_x,
+            state.grad_f_x,
+            state.y,
+            state.z,
+            state.g_z,
+            state.res,
+            state.z,
+            state.grad_f_z,
             minimum_gamma = iter.minimum_gamma,
         )
         state.x, state.z = state.z, state.x
@@ -94,9 +116,11 @@ function Base.iterate(iter::ForwardBackwardIteration{R}, state::ForwardBackwardS
     return state, state
 end
 
-default_stopping_criterion(tol, ::ForwardBackwardIteration, state::ForwardBackwardState) = norm(state.res, Inf) / state.gamma <= tol
+default_stopping_criterion(tol, ::ForwardBackwardIteration, state::ForwardBackwardState) =
+    norm(state.res, Inf) / state.gamma <= tol
 default_solution(::ForwardBackwardIteration, state::ForwardBackwardState) = state.z
-default_display(it, ::ForwardBackwardIteration, state::ForwardBackwardState) = @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
+default_display(it, ::ForwardBackwardIteration, state::ForwardBackwardState) =
+    @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
 
 """
     ForwardBackward(; <keyword-arguments>)
@@ -128,15 +152,24 @@ See also: [`ForwardBackwardIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. Lions, Mercier, “Splitting algorithms for the sum of two nonlinear operators,” SIAM Journal on Numerical Analysis, vol. 16, pp. 964–979 (1979).
 """
 ForwardBackward(;
-    maxit=10_000,
-    tol=1e-8,
-    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
-    solution=default_solution,
-    verbose=false,
-    freq=100,
-    display=default_display,
-    kwargs...
-) = IterativeAlgorithm(ForwardBackwardIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
+    maxit = 10_000,
+    tol = 1e-8,
+    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution = default_solution,
+    verbose = false,
+    freq = 100,
+    display = default_display,
+    kwargs...,
+) = IterativeAlgorithm(
+    ForwardBackwardIteration;
+    maxit,
+    stop,
+    solution,
+    verbose,
+    freq,
+    display,
+    kwargs...,
+)
 
 # Aliases
 

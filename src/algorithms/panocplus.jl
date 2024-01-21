@@ -74,27 +74,51 @@ Base.@kwdef mutable struct PANOCplusState{R,Tx,TAx,TH}
     At_grad_f_Az::Tx = similar(x)
 end
 
-f_model(iter::PANOCplusIteration, state::PANOCplusState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
+f_model(iter::PANOCplusIteration, state::PANOCplusState) =
+    f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
 
 function Base.iterate(iter::PANOCplusIteration{R}) where {R}
     x = copy(iter.x0)
     Ax = iter.A * x
     f_Ax, cl = value_and_gradient_closure(iter.f, Ax)
     grad_f_Ax = cl()
-    gamma = iter.gamma === nothing ? iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) : iter.gamma
+    gamma =
+        iter.gamma === nothing ?
+        iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) :
+        iter.gamma
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
     z, g_z = prox(iter.g, y, gamma)
     state = PANOCplusState(
-        x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
-        gamma=gamma, y=y, z=z, g_z=g_z, res=x-z, H=initialize(iter.directions, x),
+        x = x,
+        Ax = Ax,
+        f_Ax = f_Ax,
+        grad_f_Ax = grad_f_Ax,
+        At_grad_f_Ax = At_grad_f_Ax,
+        gamma = gamma,
+        y = y,
+        z = z,
+        g_z = g_z,
+        res = x - z,
+        H = initialize(iter.directions, x),
     )
     if (iter.gamma === nothing || iter.adaptive == true)
         state.gamma, state.g_z, _, _ = backtrack_stepsize!(
-            state.gamma, iter.f, iter.A, iter.g,
-            state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.z, state.g_z, state.res,
-            state.Az, state.grad_f_Az,
-            alpha = iter.alpha, minimum_gamma = iter.minimum_gamma,
+            state.gamma,
+            iter.f,
+            iter.A,
+            iter.g,
+            state.x,
+            state.f_Ax,
+            state.At_grad_f_Ax,
+            state.y,
+            state.z,
+            state.g_z,
+            state.res,
+            state.Az,
+            state.grad_f_Az,
+            alpha = iter.alpha,
+            minimum_gamma = iter.minimum_gamma,
         )
     else
         mul!(state.Az, iter.A, state.z)
@@ -105,26 +129,44 @@ function Base.iterate(iter::PANOCplusIteration{R}) where {R}
     return state, state
 end
 
-function set_next_direction!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState)
+function set_next_direction!(
+    ::QuasiNewtonStyle,
+    ::PANOCplusIteration,
+    state::PANOCplusState,
+)
     mul!(state.d, state.H, state.res_prev)
     state.d .*= -1
 end
-set_next_direction!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOCplusState) = state.d .= .-state.res_prev
-set_next_direction!(iter::PANOCplusIteration, state::PANOCplusState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
+set_next_direction!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOCplusState) =
+    state.d .= .-state.res_prev
+set_next_direction!(iter::PANOCplusIteration, state::PANOCplusState) =
+    set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
 
-function update_direction_state!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState)
+function update_direction_state!(
+    ::QuasiNewtonStyle,
+    ::PANOCplusIteration,
+    state::PANOCplusState,
+)
     state.x_prev .= state.x .- state.x_prev
     state.res_prev .= state.res .- state.res_prev
     update!(state.H, state.x_prev, state.res_prev)
 end
-update_direction_state!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOCplusState) = return
-update_direction_state!(iter::PANOCplusIteration, state::PANOCplusState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
+update_direction_state!(
+    ::NoAccelerationStyle,
+    ::PANOCplusIteration,
+    state::PANOCplusState,
+) = return
+update_direction_state!(iter::PANOCplusIteration, state::PANOCplusState) =
+    update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-reset_direction_state!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState) = reset!(state.H)
-reset_direction_state!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOCplusState) = return
-reset_direction_state!(iter::PANOCplusIteration, state::PANOCplusState) = reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
+reset_direction_state!(::QuasiNewtonStyle, ::PANOCplusIteration, state::PANOCplusState) =
+    reset!(state.H)
+reset_direction_state!(::NoAccelerationStyle, ::PANOCplusIteration, state::PANOCplusState) =
+    return
+reset_direction_state!(iter::PANOCplusIteration, state::PANOCplusState) =
+    reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where R
+function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where {R}
     # store iterate and residual for metric update later on
     state.x_prev .= state.x
     state.res_prev .= state.res
@@ -149,7 +191,9 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
             state.x .= state.x_prev .+ state.d
             tau_backtracks = 0
         else
-            state.x .= (1 - state.tau) .* (state.x_prev .- state.res_prev) .+ state.tau .* (state.x_prev .+ state.d)
+            state.x .=
+                (1 - state.tau) .* (state.x_prev .- state.res_prev) .+
+                state.tau .* (state.x_prev .+ state.d)
             tau_backtracks += 1
         end
 
@@ -196,10 +240,15 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
 
 end
 
-default_stopping_criterion(tol, ::PANOCplusIteration, state::PANOCplusState) = norm((state.res / state.gamma) - state.At_grad_f_Ax + state.At_grad_f_Az, Inf) <= tol
+default_stopping_criterion(tol, ::PANOCplusIteration, state::PANOCplusState) =
+    norm((state.res / state.gamma) - state.At_grad_f_Ax + state.At_grad_f_Az, Inf) <= tol
 default_solution(::PANOCplusIteration, state::PANOCplusState) = state.z
 default_display(it, ::PANOCplusIteration, state::PANOCplusState) = @printf(
-    "%5d | %.3e | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma, state.tau,
+    "%5d | %.3e | %.3e | %.3e\n",
+    it,
+    state.gamma,
+    norm(state.res, Inf) / state.gamma,
+    state.tau,
 )
 
 """
@@ -232,12 +281,21 @@ See also: [`PANOCplusIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. De Marchi, Themelis, "Proximal Gradient Algorithms under Local Lipschitz Gradient Continuity", Journal of Optimization Theory and Applications, vol. 194, no. 3, pp. 771-794 (2022).
 """
 PANOCplus(;
-    maxit=1_000,
-    tol=1e-8,
-    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
-    solution=default_solution,
-    verbose=false,
-    freq=10,
-    display=default_display,
-    kwargs...
-) = IterativeAlgorithm(PANOCplusIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
+    maxit = 1_000,
+    tol = 1e-8,
+    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution = default_solution,
+    verbose = false,
+    freq = 10,
+    display = default_display,
+    kwargs...,
+) = IterativeAlgorithm(
+    PANOCplusIteration;
+    maxit,
+    stop,
+    solution,
+    verbose,
+    freq,
+    display,
+    kwargs...,
+)

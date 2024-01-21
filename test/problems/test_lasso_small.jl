@@ -6,8 +6,12 @@ using AbstractDifferentiation: ZygoteBackend
 using ProximalOperators: NormL1, LeastSquares
 using ProximalAlgorithms
 using ProximalAlgorithms:
-    LBFGS, Broyden, AndersonAcceleration,
-    NesterovExtrapolation, FixedNesterovSequence, SimpleNesterovSequence
+    LBFGS,
+    Broyden,
+    AndersonAcceleration,
+    NesterovExtrapolation,
+    FixedNesterovSequence,
+    SimpleNesterovSequence
 
 @testset "Lasso small ($T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
     A = T[
@@ -25,8 +29,10 @@ using ProximalAlgorithms:
     lam = R(0.1) * norm(A' * b, Inf)
     @test typeof(lam) == R
 
-    f_autodiff = ProximalAlgorithms.AutoDifferentiable(x -> (norm(x - b)^2)/2, ZygoteBackend())
-    fA_autodiff = ProximalAlgorithms.AutoDifferentiable(x -> (norm(A*x - b)^2)/2, ZygoteBackend())
+    f_autodiff =
+        ProximalAlgorithms.AutoDifferentiable(x -> (norm(x - b)^2) / 2, ZygoteBackend())
+    fA_autodiff =
+        ProximalAlgorithms.AutoDifferentiable(x -> (norm(A * x - b)^2) / 2, ZygoteBackend())
     f_prox = Translate(SqrNormL2(R(1)), -b)
     fA_prox = LeastSquares(A, b)
     g = NormL1(lam)
@@ -73,8 +79,7 @@ using ProximalAlgorithms:
     @testset "FastForwardBackward (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
-        solver =
-            ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
         x, it = @inferred solver(x0 = x0, f = fA_autodiff, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
@@ -86,7 +91,13 @@ using ProximalAlgorithms:
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
-        x, it = @inferred solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf, extrapolation_sequence=FixedNesterovSequence(real(T)))
+        x, it = @inferred solver(
+            x0 = x0,
+            f = fA_autodiff,
+            g = g,
+            Lf = Lf,
+            extrapolation_sequence = FixedNesterovSequence(real(T)),
+        )
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100
@@ -125,7 +136,7 @@ using ProximalAlgorithms:
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
         @test x0 == x0_backup
-    
+
     end
 
     @testset "PANOC (adaptive step)" begin
@@ -181,7 +192,7 @@ using ProximalAlgorithms:
     ]
         x0 = zeros(T, n)
         x0_backup = copy(x0)
-        solver = ProximalAlgorithms.DRLS(tol = 10 * TOL, directions=acc)
+        solver = ProximalAlgorithms.DRLS(tol = 10 * TOL, directions = acc)
         z, it = @inferred solver(x0 = x0, f = fA_prox, g = g, Lf = Lf)
         @test eltype(z) == T
         @test norm(z - x_star, Inf) <= 10 * TOL
@@ -193,7 +204,13 @@ using ProximalAlgorithms:
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.AFBA(theta = 1, mu = 1, tol = R(1e-6))
-        (x_afba, y_afba), it_afba = @inferred solver(x0 = x0, y0 = zeros(T, n), f = fA_autodiff, g = g, beta_f = opnorm(A)^2)
+        (x_afba, y_afba), it_afba = @inferred solver(
+            x0 = x0,
+            y0 = zeros(T, n),
+            f = fA_autodiff,
+            g = g,
+            beta_f = opnorm(A)^2,
+        )
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
@@ -201,7 +218,13 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
 
         solver = ProximalAlgorithms.AFBA(theta = 1, mu = 1, tol = R(1e-6))
-        (x_afba, y_afba), it_afba = @inferred solver(x0 = x0, y0 = zeros(T, n), f = fA_autodiff, h = g, beta_f = opnorm(A)^2)
+        (x_afba, y_afba), it_afba = @inferred solver(
+            x0 = x0,
+            y0 = zeros(T, n),
+            f = fA_autodiff,
+            h = g,
+            beta_f = opnorm(A)^2,
+        )
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
@@ -209,7 +232,8 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
 
         solver = ProximalAlgorithms.AFBA(theta = 1, mu = 1, tol = R(1e-6))
-        (x_afba, y_afba), it_afba = @inferred solver(x0 = x0, y0 = zeros(T, m), h = f_prox, L = A, g = g)
+        (x_afba, y_afba), it_afba =
+            @inferred solver(x0 = x0, y0 = zeros(T, m), h = f_prox, L = A, g = g)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4

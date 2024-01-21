@@ -79,20 +79,33 @@ Base.@kwdef mutable struct ZeroFPRState{R,Tx,TAx,TH}
     Ad::TAx = similar(Ax)
 end
 
-f_model(iter::ZeroFPRIteration, state::ZeroFPRState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
+f_model(iter::ZeroFPRIteration, state::ZeroFPRState) =
+    f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
 
-function Base.iterate(iter::ZeroFPRIteration{R}) where R
+function Base.iterate(iter::ZeroFPRIteration{R}) where {R}
     x = copy(iter.x0)
     Ax = iter.A * x
     f_Ax, cl = value_and_gradient_closure(iter.f, Ax)
     grad_f_Ax = cl()
-    gamma = iter.gamma === nothing ? iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) : iter.gamma
+    gamma =
+        iter.gamma === nothing ?
+        iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) :
+        iter.gamma
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
     xbar, g_xbar = prox(iter.g, y, gamma)
     state = ZeroFPRState(
-        x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
-        gamma=gamma, y=y, xbar=xbar, g_xbar=g_xbar, res=x - xbar, H=initialize(iter.directions, x),
+        x = x,
+        Ax = Ax,
+        f_Ax = f_Ax,
+        grad_f_Ax = grad_f_Ax,
+        At_grad_f_Ax = At_grad_f_Ax,
+        gamma = gamma,
+        y = y,
+        xbar = xbar,
+        g_xbar = g_xbar,
+        res = x - xbar,
+        H = initialize(iter.directions, x),
     )
     return state, state
 end
@@ -101,29 +114,51 @@ function set_next_direction!(::QuasiNewtonStyle, ::ZeroFPRIteration, state::Zero
     mul!(state.d, state.H, state.res_xbar)
     state.d .*= -1
 end
-set_next_direction!(::NoAccelerationStyle, ::ZeroFPRIteration, state::ZeroFPRState) = state.d .= .-state.res
-set_next_direction!(iter::ZeroFPRIteration, state::ZeroFPRState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
+set_next_direction!(::NoAccelerationStyle, ::ZeroFPRIteration, state::ZeroFPRState) =
+    state.d .= .-state.res
+set_next_direction!(iter::ZeroFPRIteration, state::ZeroFPRState) =
+    set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
 
-function update_direction_state!(::QuasiNewtonStyle, ::ZeroFPRIteration, state::ZeroFPRState)
+function update_direction_state!(
+    ::QuasiNewtonStyle,
+    ::ZeroFPRIteration,
+    state::ZeroFPRState,
+)
     state.xbar_prev .= state.xbar .- state.xbar_prev
     state.res_xbar_prev .= state.res_xbar .- state.res_xbar_prev
     update!(state.H, state.xbar_prev, state.res_xbar_prev)
 end
-update_direction_state!(::NoAccelerationStyle, ::ZeroFPRIteration, state::ZeroFPRState) = return
-update_direction_state!(iter::ZeroFPRIteration, state::ZeroFPRState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
+update_direction_state!(::NoAccelerationStyle, ::ZeroFPRIteration, state::ZeroFPRState) =
+    return
+update_direction_state!(iter::ZeroFPRIteration, state::ZeroFPRState) =
+    update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-reset_direction_state!(::QuasiNewtonStyle, ::ZeroFPRIteration, state::ZeroFPRState) = reset!(state.H)
-reset_direction_state!(::NoAccelerationStyle, ::ZeroFPRIteration, state::ZeroFPRState) = return
-reset_direction_state!(iter::ZeroFPRIteration, state::ZeroFPRState) = reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
+reset_direction_state!(::QuasiNewtonStyle, ::ZeroFPRIteration, state::ZeroFPRState) =
+    reset!(state.H)
+reset_direction_state!(::NoAccelerationStyle, ::ZeroFPRIteration, state::ZeroFPRState) =
+    return
+reset_direction_state!(iter::ZeroFPRIteration, state::ZeroFPRState) =
+    reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where R
+function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where {R}
     f_Axbar_upp, f_Axbar = if iter.adaptive == true
         gamma_prev = state.gamma
         state.gamma, state.g_xbar, f_Axbar, f_Axbar_upp = backtrack_stepsize!(
-            state.gamma, iter.f, iter.A, iter.g,
-            state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.xbar, state.g_xbar, state.res,
-            state.Axbar, state.grad_f_Axbar,
-            alpha = iter.alpha, minimum_gamma = iter.minimum_gamma,
+            state.gamma,
+            iter.f,
+            iter.A,
+            iter.g,
+            state.x,
+            state.f_Ax,
+            state.At_grad_f_Ax,
+            state.y,
+            state.xbar,
+            state.g_xbar,
+            state.res,
+            state.Axbar,
+            state.grad_f_Axbar,
+            alpha = iter.alpha,
+            minimum_gamma = iter.minimum_gamma,
         )
         if state.gamma != gamma_prev
             reset_direction_state!(iter, state)
@@ -163,7 +198,7 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where R
     tol = 10 * eps(R) * (1 + abs(FBE_x))
     threshold = FBE_x - sigma * norm(state.res)^2 + tol
 
-    for k in 1:iter.max_backtracks
+    for k = 1:iter.max_backtracks
         state.x .= state.xbar_prev .+ state.tau .* state.d
         state.Ax .= state.Axbar .+ state.tau .* state.Ad
         # TODO: can precompute most of next line in case f is quadratic
@@ -185,10 +220,15 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where R
     return state, state
 end
 
-default_stopping_criterion(tol, ::ZeroFPRIteration, state::ZeroFPRState) = norm(state.res, Inf) / state.gamma <= tol
+default_stopping_criterion(tol, ::ZeroFPRIteration, state::ZeroFPRState) =
+    norm(state.res, Inf) / state.gamma <= tol
 default_solution(::ZeroFPRIteration, state::ZeroFPRState) = state.xbar
 default_display(it, ::ZeroFPRIteration, state::ZeroFPRState) = @printf(
-    "%5d | %.3e | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma, state.tau,
+    "%5d | %.3e | %.3e | %.3e\n",
+    it,
+    state.gamma,
+    norm(state.res, Inf) / state.gamma,
+    state.tau,
 )
 
 """
@@ -221,12 +261,21 @@ See also: [`ZeroFPRIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms", SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274-2303 (2018).
 """
 ZeroFPR(;
-    maxit=1_000,
-    tol=1e-8,
-    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
-    solution=default_solution,
-    verbose=false,
-    freq=10,
-    display=default_display,
-    kwargs...
-) = IterativeAlgorithm(ZeroFPRIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
+    maxit = 1_000,
+    tol = 1e-8,
+    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution = default_solution,
+    verbose = false,
+    freq = 10,
+    display = default_display,
+    kwargs...,
+) = IterativeAlgorithm(
+    ZeroFPRIteration;
+    maxit,
+    stop,
+    solution,
+    verbose,
+    freq,
+    display,
+    kwargs...,
+)

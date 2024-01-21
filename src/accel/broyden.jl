@@ -7,12 +7,12 @@ struct BroydenOperator{R,TH}
     theta_bar::R
 end
 
-function BroydenOperator(::Type{T}, n::Integer, theta_bar=T(0.2)) where T
+function BroydenOperator(::Type{T}, n::Integer, theta_bar = T(0.2)) where {T}
     H = Matrix{T}(I, n, n)
     BroydenOperator(H, theta_bar)
 end
 
-function BroydenOperator(x::AbstractVector{T}, theta_bar=T(0.2)) where T
+function BroydenOperator(x::AbstractVector{T}, theta_bar = T(0.2)) where {T}
     BroydenOperator(T, length(x), theta_bar)
 end
 
@@ -51,6 +51,6 @@ end
 
 acceleration_style(::Type{<:Broyden}) = QuasiNewtonStyle()
 
-function initialize(broyden::Broyden, x::AbstractVector{R}) where R
+function initialize(broyden::Broyden, x::AbstractVector{R}) where {R}
     return BroydenOperator(x, broyden.theta_bar)
 end

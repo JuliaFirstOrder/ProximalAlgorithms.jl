@@ -15,9 +15,9 @@ function printnewsection(name)
     println()
     println()
     println()
-    printstyled("▃" ^ displaysize(stdout)[2]; color=:blue)
+    printstyled("▃"^displaysize(stdout)[2]; color = :blue)
     println()
-    printstyled(name; bold=true)
+    printstyled(name; bold = true)
     println()
     println()
 end
@@ -27,14 +27,14 @@ function parse_commandline()
 
     @add_arg_table! s begin
         "--target"
-            help = "the branch/commit/tag to use as target"
-            default = "HEAD"
+        help = "the branch/commit/tag to use as target"
+        default = "HEAD"
         "--baseline"
-            help = "the branch/commit/tag to use as baseline"
-            default = "master"
+        help = "the branch/commit/tag to use as baseline"
+        default = "master"
         "--retune"
-            help = "force re-tuning (ignore existing tuning data)"
-            action = :store_true
+        help = "force re-tuning (ignore existing tuning data)"
+        action = :store_true
     end
 
     return parse_args(s)
@@ -42,15 +42,10 @@ end
 
 function main()
     parsed_args = parse_commandline()
-    
+
     mkconfig(; kwargs...) =
-        BenchmarkConfig(
-            env = Dict(
-                "JULIA_NUM_THREADS" => "1",
-            );
-            kwargs...
-        )
-        
+        BenchmarkConfig(env = Dict("JULIA_NUM_THREADS" => "1"); kwargs...)
+
     target = parsed_args["target"]
     group_target = benchmarkpkg(
         dirname(@__DIR__),
@@ -71,9 +66,9 @@ function main()
 
     printnewsection("Baseline result")
     displayresult(group_baseline)
-    
+
     judgement = judge(group_target, group_baseline)
-    
+
     printnewsection("Judgement result")
     displayresult(judgement)
 end

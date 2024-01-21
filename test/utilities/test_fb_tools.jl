@@ -16,7 +16,7 @@ using AbstractDifferentiation
     Lf = maximum(sv)
     g = Zero()
 
-    for _ in 1:100
+    for _ = 1:100
         x = randn(R, n)
         Lest = @inferred ProximalAlgorithms.lower_bound_smoothness_constant(f, I, x)
         @test typeof(Lest) == R
@@ -29,9 +29,16 @@ using AbstractDifferentiation
     gamma_init = 10 / Lest
     gamma = gamma_init
 
-    for _ in 1:100
+    for _ = 1:100
         x = randn(n)
-        new_gamma, = @inferred ProximalAlgorithms.backtrack_stepsize!(gamma, f, I, g, x, alpha=alpha)
+        new_gamma, = @inferred ProximalAlgorithms.backtrack_stepsize!(
+            gamma,
+            f,
+            I,
+            g,
+            x,
+            alpha = alpha,
+        )
         @test new_gamma <= gamma
         gamma = new_gamma
     end

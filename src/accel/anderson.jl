@@ -2,7 +2,7 @@ using LinearAlgebra
 import Base: *
 import LinearAlgebra: mul!
 
-mutable struct AndersonAccelerationOperator{M, I, T}
+mutable struct AndersonAccelerationOperator{M,I,T}
     currmem::I
     curridx::I
     s::T
@@ -11,17 +11,17 @@ mutable struct AndersonAccelerationOperator{M, I, T}
     y_M::Vector{T}
 end
 
-function AndersonAccelerationOperator{M}(x::T) where {M, T}
+function AndersonAccelerationOperator{M}(x::T) where {M,T}
     s_M = [zero(x) for i = 1:M]
     y_M = [zero(x) for i = 1:M]
     s = zero(x)
     y = zero(x)
-    AndersonAccelerationOperator{M, typeof(0), T}(0, 0, s, y, s_M, y_M)
+    AndersonAccelerationOperator{M,typeof(0),T}(0, 0, s, y, s_M, y_M)
 end
 
 AndersonAccelerationOperator(M, x) = AndersonAccelerationOperator{M}(x)
 
-function update!(L::AndersonAccelerationOperator{M, I, T}, s, y) where {M, I, T}
+function update!(L::AndersonAccelerationOperator{M,I,T}, s, y) where {M,I,T}
     L.s .= s
     L.y .= y
     L.curridx += 1
@@ -37,7 +37,7 @@ function update!(L::AndersonAccelerationOperator{M, I, T}, s, y) where {M, I, T}
     return L
 end
 
-function reset!(L::AndersonAccelerationOperator{M, I, T}) where {M, I, T}
+function reset!(L::AndersonAccelerationOperator{M,I,T}) where {M,I,T}
     L.currmem, L.curridx = zero(I), zero(I)
 end
 
@@ -46,7 +46,7 @@ function (*)(L::AndersonAccelerationOperator, v)
     return mul!(w, L, v)
 end
 
-function mul!(d::T, L::AndersonAccelerationOperator{M, I, T}, v::T) where {M, I, T}
+function mul!(d::T, L::AndersonAccelerationOperator{M,I,T}, v::T) where {M,I,T}
     if L.currmem == 0
         d .= v
     else
@@ -65,6 +65,6 @@ AndersonAcceleration(M) = AndersonAcceleration{M}()
 
 acceleration_style(::Type{<:AndersonAcceleration}) = QuasiNewtonStyle()
 
-function initialize(::AndersonAcceleration{M}, x) where M
+function initialize(::AndersonAcceleration{M}, x) where {M}
     return AndersonAccelerationOperator{M}(x)
 end

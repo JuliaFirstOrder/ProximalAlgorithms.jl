@@ -21,7 +21,8 @@ using AbstractDifferentiation: ZygoteBackend
     reg1 = NormL1(R(1))
     reg2 = SqrNormL2(R(1))
     loss = Translate(SqrNormL2(R(1)), -b)
-    cost = ProximalAlgorithms.AutoDifferentiable(x -> (norm(A*x - b)^2) / 2, ZygoteBackend())
+    cost =
+        ProximalAlgorithms.AutoDifferentiable(x -> (norm(A * x - b)^2) / 2, ZygoteBackend())
 
     L = opnorm(A)^2
 
@@ -52,13 +53,7 @@ using AbstractDifferentiation: ZygoteBackend
 
     end
 
-    afba_test_params = [
-        (2, 0, 130),
-        (1, 1, 2000),
-        (0, 1, 320),
-        (0, 0, 194),
-        (1, 0, 130),
-    ]
+    afba_test_params = [(2, 0, 130), (1, 1, 2000), (0, 1, 320), (0, 0, 194), (1, 0, 130)]
 
     @testset "AFBA" for (theta, mu, maxit) in afba_test_params
 
@@ -70,8 +65,15 @@ using AbstractDifferentiation: ZygoteBackend
         y0_backup = copy(y0)
 
         solver = ProximalAlgorithms.AFBA(theta = theta, mu = mu, tol = R(1e-6))
-        (x_afba, y_afba), it_afba =
-            solver(x0 = x0, y0 = y0, f = ProximalAlgorithms.AutoDifferentiable(reg2, ZygoteBackend()), g = reg1, h = loss, L = A, beta_f = 1)
+        (x_afba, y_afba), it_afba = solver(
+            x0 = x0,
+            y0 = y0,
+            f = ProximalAlgorithms.AutoDifferentiable(reg2, ZygoteBackend()),
+            g = reg1,
+            h = loss,
+            L = A,
+            beta_f = 1,
+        )
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
@@ -87,8 +89,15 @@ using AbstractDifferentiation: ZygoteBackend
         y0_backup = copy(y0)
 
         solver = ProximalAlgorithms.AFBA(theta = theta, mu = mu, tol = R(1e-6))
-        (x_afba, y_afba), it_afba =
-            solver(x0 = x0, y0 = y0, f = ProximalAlgorithms.AutoDifferentiable(reg2, ZygoteBackend()), g = reg1, h = loss, L = A, beta_f = 1)
+        (x_afba, y_afba), it_afba = solver(
+            x0 = x0,
+            y0 = y0,
+            f = ProximalAlgorithms.AutoDifferentiable(reg2, ZygoteBackend()),
+            g = reg1,
+            h = loss,
+            L = A,
+            beta_f = 1,
+        )
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4

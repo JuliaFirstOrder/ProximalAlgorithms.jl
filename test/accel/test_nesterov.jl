@@ -2,17 +2,22 @@ using Test
 
 using LinearAlgebra
 using ProximalAlgorithms
-using ProximalAlgorithms: NesterovExtrapolation, initialize, SimpleNesterovSequence, FixedNesterovSequence, AdaptiveNesterovSequence
+using ProximalAlgorithms:
+    NesterovExtrapolation,
+    initialize,
+    SimpleNesterovSequence,
+    FixedNesterovSequence,
+    AdaptiveNesterovSequence
 
 for sequence_type in [SimpleNesterovSequence, FixedNesterovSequence]
     for R in [Float32, Float64]
         @testset "Nesterov accel. ($sequence_type, $R)" begin
             H = R[
-                0.63287    0.330934   -0.156908   -0.294776    0.10761;
-                0.330934   0.673201    0.0459778   0.231011   -0.235265;
-               -0.156908   0.0459778   0.635812   -0.232261   -0.388775;
-               -0.294776   0.231011   -0.232261    0.726854   -0.0691783;
-                0.10761   -0.235265   -0.388775   -0.0691783   0.336262;
+                0.63287 0.330934 -0.156908 -0.294776 0.10761
+                0.330934 0.673201 0.0459778 0.231011 -0.235265
+                -0.156908 0.0459778 0.635812 -0.232261 -0.388775
+                -0.294776 0.231011 -0.232261 0.726854 -0.0691783
+                0.10761 -0.235265 -0.388775 -0.0691783 0.336262
             ]
             l = R[1.0, 2.0, 3.0, 4.0, 5.0]
 
@@ -67,10 +72,10 @@ end
 
     m = R(1)
     adaptive_seq = AdaptiveNesterovSequence(m)
-    for _ in 1:20
+    for _ = 1:20
         @test isapprox(
             (1 - sqrt(m * fixed_gamma)) / (1 + sqrt(m * fixed_gamma)),
-            ProximalAlgorithms.next!(adaptive_seq, fixed_gamma)
+            ProximalAlgorithms.next!(adaptive_seq, fixed_gamma),
         )
     end
 end

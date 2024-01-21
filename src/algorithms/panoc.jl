@@ -81,20 +81,33 @@ Base.@kwdef mutable struct PANOCState{R,Tx,TAx,TH}
     At_grad_f_Az::Tx = similar(x)
 end
 
-f_model(iter::PANOCIteration, state::PANOCState) = f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
+f_model(iter::PANOCIteration, state::PANOCState) =
+    f_model(state.f_Ax, state.At_grad_f_Ax, state.res, iter.alpha / state.gamma)
 
-function Base.iterate(iter::PANOCIteration{R}) where R
+function Base.iterate(iter::PANOCIteration{R}) where {R}
     x = copy(iter.x0)
     Ax = iter.A * x
     f_Ax, cl = value_and_gradient_closure(iter.f, Ax)
     grad_f_Ax = cl()
-    gamma = iter.gamma === nothing ? iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) : iter.gamma
+    gamma =
+        iter.gamma === nothing ?
+        iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) :
+        iter.gamma
     At_grad_f_Ax = iter.A' * grad_f_Ax
     y = x - gamma .* At_grad_f_Ax
     z, g_z = prox(iter.g, y, gamma)
     state = PANOCState(
-        x=x, Ax=Ax, f_Ax=f_Ax, grad_f_Ax=grad_f_Ax, At_grad_f_Ax=At_grad_f_Ax,
-        gamma=gamma, y=y, z=z, g_z=g_z, res=x - z, H=initialize(iter.directions, x),
+        x = x,
+        Ax = Ax,
+        f_Ax = f_Ax,
+        grad_f_Ax = grad_f_Ax,
+        At_grad_f_Ax = At_grad_f_Ax,
+        gamma = gamma,
+        y = y,
+        z = z,
+        g_z = g_z,
+        res = x - z,
+        H = initialize(iter.directions, x),
     )
     return state, state
 end
@@ -103,8 +116,10 @@ function set_next_direction!(::QuasiNewtonStyle, ::PANOCIteration, state::PANOCS
     mul!(state.d, state.H, state.res)
     state.d .*= -1
 end
-set_next_direction!(::NoAccelerationStyle, ::PANOCIteration, state::PANOCState) = state.d .= .-state.res
-set_next_direction!(iter::PANOCIteration, state::PANOCState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
+set_next_direction!(::NoAccelerationStyle, ::PANOCIteration, state::PANOCState) =
+    state.d .= .-state.res
+set_next_direction!(iter::PANOCIteration, state::PANOCState) =
+    set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
 
 function update_direction_state!(::QuasiNewtonStyle, ::PANOCIteration, state::PANOCState)
     state.x_prev .= state.x .- state.x_prev
@@ -112,22 +127,36 @@ function update_direction_state!(::QuasiNewtonStyle, ::PANOCIteration, state::PA
     update!(state.H, state.x_prev, state.res_prev)
 end
 update_direction_state!(::NoAccelerationStyle, ::PANOCIteration, state::PANOCState) = return
-update_direction_state!(iter::PANOCIteration, state::PANOCState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
+update_direction_state!(iter::PANOCIteration, state::PANOCState) =
+    update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-reset_direction_state!(::QuasiNewtonStyle, ::PANOCIteration, state::PANOCState) = reset!(state.H)
+reset_direction_state!(::QuasiNewtonStyle, ::PANOCIteration, state::PANOCState) =
+    reset!(state.H)
 reset_direction_state!(::NoAccelerationStyle, ::PANOCIteration, state::PANOCState) = return
-reset_direction_state!(iter::PANOCIteration, state::PANOCState) = reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
+reset_direction_state!(iter::PANOCIteration, state::PANOCState) =
+    reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-function Base.iterate(iter::PANOCIteration{R, Tx, Tf}, state::PANOCState) where {R, Tx, Tf}
+function Base.iterate(iter::PANOCIteration{R,Tx,Tf}, state::PANOCState) where {R,Tx,Tf}
     f_Az, a, b, c = R(Inf), R(Inf), R(Inf), R(Inf)
 
     f_Az_upp = if iter.adaptive == true
         gamma_prev = state.gamma
         state.gamma, state.g_z, f_Az, f_Az_upp = backtrack_stepsize!(
-            state.gamma, iter.f, iter.A, iter.g,
-            state.x, state.f_Ax, state.At_grad_f_Ax, state.y, state.z, state.g_z, state.res,
-            state.Az, state.grad_f_Az,
-            alpha = iter.alpha, minimum_gamma = iter.minimum_gamma,
+            state.gamma,
+            iter.f,
+            iter.A,
+            iter.g,
+            state.x,
+            state.f_Ax,
+            state.At_grad_f_Ax,
+            state.y,
+            state.z,
+            state.g_z,
+            state.res,
+            state.Az,
+            state.grad_f_Az,
+            alpha = iter.alpha,
+            minimum_gamma = iter.minimum_gamma,
         )
         if state.gamma != gamma_prev
             reset_direction_state!(iter, state)
@@ -173,7 +202,7 @@ function Base.iterate(iter::PANOCIteration{R, Tx, Tf}, state::PANOCState) where 
     state.res .= state.x .- state.z
     FBE_x_new = f_model(iter, state) + state.g_z
 
-    for k in 1:iter.max_backtracks
+    for k = 1:iter.max_backtracks
         if FBE_x_new <= threshold
             break
         end
@@ -197,12 +226,16 @@ function Base.iterate(iter::PANOCIteration{R, Tx, Tf}, state::PANOCState) where 
             if isinf(c)
                 mul!(state.At_grad_f_Az, iter.A', state.grad_f_Az)
                 c = f_Az
-                b = real(dot(state.Ax_d, state.grad_f_Az)) - real(dot(state.Az, state.grad_f_Az))
+                b =
+                    real(dot(state.Ax_d, state.grad_f_Az)) -
+                    real(dot(state.Az, state.grad_f_Az))
                 a = state.f_Ax_d - b - c
             end
             state.f_Ax = a * state.tau^2 + b * state.tau + c
-            state.grad_f_Ax .= state.tau .* state.grad_f_Ax_d .+ (1 - state.tau) .* state.grad_f_Az
-            state.At_grad_f_Ax .= state.tau .* state.At_grad_f_Ax_d .+ (1 - state.tau) .* state.At_grad_f_Az
+            state.grad_f_Ax .=
+                state.tau .* state.grad_f_Ax_d .+ (1 - state.tau) .* state.grad_f_Az
+            state.At_grad_f_Ax .=
+                state.tau .* state.At_grad_f_Ax_d .+ (1 - state.tau) .* state.At_grad_f_Az
         else
             # otherwise, in the general case where f is only smooth, we compute
             # one gradient and matvec per backtracking step
@@ -222,10 +255,15 @@ function Base.iterate(iter::PANOCIteration{R, Tx, Tf}, state::PANOCState) where 
     return state, state
 end
 
-default_stopping_criterion(tol, ::PANOCIteration, state::PANOCState) = norm(state.res, Inf) / state.gamma <= tol
+default_stopping_criterion(tol, ::PANOCIteration, state::PANOCState) =
+    norm(state.res, Inf) / state.gamma <= tol
 default_solution(::PANOCIteration, state::PANOCState) = state.z
 default_display(it, ::PANOCIteration, state::PANOCState) = @printf(
-    "%5d | %.3e | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma, state.tau,
+    "%5d | %.3e | %.3e | %.3e\n",
+    it,
+    state.gamma,
+    norm(state.res, Inf) / state.gamma,
+    state.tau,
 )
 
 """
@@ -258,12 +296,21 @@ See also: [`PANOCIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. Stella, Themelis, Sopasakis, Patrinos, "A simple and efficient algorithm for nonlinear model predictive control", 56th IEEE Conference on Decision and Control (2017).
 """
 PANOC(;
-    maxit=1_000,
-    tol=1e-8,
-    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
-    solution=default_solution,
-    verbose=false,
-    freq=10,
-    display=default_display,
-    kwargs...
-) = IterativeAlgorithm(PANOCIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
+    maxit = 1_000,
+    tol = 1e-8,
+    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution = default_solution,
+    verbose = false,
+    freq = 10,
+    display = default_display,
+    kwargs...,
+) = IterativeAlgorithm(
+    PANOCIteration;
+    maxit,
+    stop,
+    solution,
+    verbose,
+    freq,
+    display,
+    kwargs...,
+)

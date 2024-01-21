@@ -27,7 +27,7 @@ end
 
 LBFGSOperator(M, x) = LBFGSOperator{M}(x)
 
-function update!(L::LBFGSOperator{M}, s, y) where M
+function update!(L::LBFGSOperator{M}, s, y) where {M}
     L.s .= s
     L.y .= y
     ys = real(dot(L.s, L.y))
@@ -69,7 +69,7 @@ function mul!(d, L::LBFGSOperator, v)
     return d
 end
 
-function loop1!(d, L::LBFGSOperator{M}) where M
+function loop1!(d, L::LBFGSOperator{M}) where {M}
     idx = L.curridx
     for i = 1:L.currmem
         L.alphas[idx] = real(dot(L.s_M[idx], d)) / L.ys_M[idx]
@@ -82,7 +82,7 @@ function loop1!(d, L::LBFGSOperator{M}) where M
     return idx
 end
 
-function loop2!(d, idx, L::LBFGSOperator{M}) where M
+function loop2!(d, idx, L::LBFGSOperator{M}) where {M}
     for i = 1:L.currmem
         idx += 1
         if idx > M
@@ -100,6 +100,6 @@ LBFGS(M) = LBFGS{M}()
 
 acceleration_style(::Type{<:LBFGS}) = QuasiNewtonStyle()
 
-function initialize(::LBFGS{M}, x) where M
+function initialize(::LBFGS{M}, x) where {M}
     return LBFGSOperator{M}(x)
 end

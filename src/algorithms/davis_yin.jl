@@ -38,7 +38,8 @@ Base.@kwdef struct DavisYinIteration{R,C<:Union{R,Complex{R}},T<:AbstractArray{C
     x0::T
     lambda::R = real(eltype(x0))(1)
     Lf::Maybe{R} = nothing
-    gamma::Maybe{R} = Lf !== nothing ? (1 / Lf) : error("You must specify either Lf or gamma")
+    gamma::Maybe{R} =
+        Lf !== nothing ? (1 / Lf) : error("You must specify either Lf or gamma")
 end
 
 Base.IteratorSize(::Type{<:DavisYinIteration}) = Base.IsInfinite()
@@ -76,9 +77,11 @@ function Base.iterate(iter::DavisYinIteration, state::DavisYinState)
     return state, state
 end
 
-default_stopping_criterion(tol, ::DavisYinIteration, state::DavisYinState) = norm(state.res, Inf) <= tol
+default_stopping_criterion(tol, ::DavisYinIteration, state::DavisYinState) =
+    norm(state.res, Inf) <= tol
 default_solution(::DavisYinIteration, state::DavisYinState) = state.xh
-default_display(it, ::DavisYinIteration, state::DavisYinState) = @printf("%5d | %.3e\n", it, norm(state.res, Inf))
+default_display(it, ::DavisYinIteration, state::DavisYinState) =
+    @printf("%5d | %.3e\n", it, norm(state.res, Inf))
 
 """
     DavisYin(; <keyword-arguments>)
@@ -110,12 +113,21 @@ See also: [`DavisYinIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. Davis, Yin. "A Three-Operator Splitting Scheme and its Optimization Applications", Set-Valued and Variational Analysis, vol. 25, no. 4, pp. 829–858 (2017).
 """
 DavisYin(;
-    maxit=10_000,
-    tol=1e-8,
-    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
-    solution=default_solution,
-    verbose=false,
-    freq=100,
-    display=default_display,
-    kwargs...
-) = IterativeAlgorithm(DavisYinIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
+    maxit = 10_000,
+    tol = 1e-8,
+    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution = default_solution,
+    verbose = false,
+    freq = 100,
+    display = default_display,
+    kwargs...,
+) = IterativeAlgorithm(
+    DavisYinIteration;
+    maxit,
+    stop,
+    solution,
+    verbose,
+    freq,
+    display,
+    kwargs...,
+)

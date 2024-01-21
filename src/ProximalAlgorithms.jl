@@ -16,7 +16,7 @@ When called, it evaluates the same as `f`, while [`ProximalAlgorithms.value_and_
 is implemented using `backend` for automatic differentiation.
 The backend can be any from [AbstractDifferentiation](https://github.com/JuliaDiff/AbstractDifferentiation.jl).
 """
-struct AutoDifferentiable{F, B}
+struct AutoDifferentiable{F,B}
     f::F
     backend::B
 end
@@ -57,7 +57,7 @@ include("accel/noaccel.jl")
 
 # algorithm interface
 
-struct IterativeAlgorithm{IteratorType, H, S, D, K}
+struct IterativeAlgorithm{IteratorType,H,S,D,K}
     maxit::Int
     stop::H
     solution::S
@@ -103,11 +103,17 @@ for `stop`, `solution`, `display`.
 * `kwargs...`: keyword arguments to pass on to `T` when constructing the iterator
 """
 IterativeAlgorithm(T; maxit, stop, solution, verbose, freq, display, kwargs...) =
-    IterativeAlgorithm{T, typeof(stop), typeof(solution), typeof(display), typeof(kwargs)}(
-        maxit, stop, solution, verbose, freq, display, kwargs
+    IterativeAlgorithm{T,typeof(stop),typeof(solution),typeof(display),typeof(kwargs)}(
+        maxit,
+        stop,
+        solution,
+        verbose,
+        freq,
+        display,
+        kwargs,
     )
 
-function (alg::IterativeAlgorithm{IteratorType})(; kwargs...) where IteratorType
+function (alg::IterativeAlgorithm{IteratorType})(; kwargs...) where {IteratorType}
     iter = IteratorType(; alg.kwargs..., kwargs...)
     for (k, state) in enumerate(iter)
         if k >= alg.maxit || alg.stop(iter, state)

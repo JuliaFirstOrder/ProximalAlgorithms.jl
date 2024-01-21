@@ -20,8 +20,10 @@ using LinearAlgebra
     lam = R(0.1) * norm(A' * b, Inf)
     @test typeof(lam) == R
 
-    f_autodiff = ProximalAlgorithms.AutoDifferentiable(x -> (norm(x - b)^2)/2, ZygoteBackend())
-    fA_autodiff = ProximalAlgorithms.AutoDifferentiable(x -> (norm(A*x - b)^2)/2, ZygoteBackend())
+    f_autodiff =
+        ProximalAlgorithms.AutoDifferentiable(x -> (norm(x - b)^2) / 2, ZygoteBackend())
+    fA_autodiff =
+        ProximalAlgorithms.AutoDifferentiable(x -> (norm(A * x - b)^2) / 2, ZygoteBackend())
     fA_prox = LeastSquares(A, b)
     g = NormL1(lam)
 
@@ -45,11 +47,8 @@ using LinearAlgebra
         # Nonfast/Adaptive
 
         x0 = zeros(T, n)
-        solver = ProximalAlgorithms.ForwardBackward(
-            tol = TOL,
-            adaptive = true,
-            verbose = true,
-        )
+        solver =
+            ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, verbose = true)
         x, it = solver(x0 = x0, f = fA_autodiff, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
@@ -58,8 +57,7 @@ using LinearAlgebra
         # Fast/Nonadaptive
 
         x0 = zeros(T, n)
-        solver =
-            ProximalAlgorithms.FastForwardBackward(tol = TOL, verbose = true)
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL, verbose = true)
         x, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL

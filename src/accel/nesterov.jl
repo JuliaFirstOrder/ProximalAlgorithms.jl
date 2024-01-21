@@ -11,13 +11,13 @@ See also: [`SimpleNesterovSequence`](@ref), [`ConstantNesterovSequence`](@ref).
 """
 FixedNesterovSequence(R) = FixedNesterovSequence{R}()
 
-function Base.iterate(::FixedNesterovSequence{R}, t=R(1)) where R
+function Base.iterate(::FixedNesterovSequence{R}, t = R(1)) where {R}
     t_next = (1 + sqrt(1 + 4 * t^2)) / 2
     return (t - 1) / t_next, t_next
 end
 
 Base.IteratorSize(::Type{<:FixedNesterovSequence}) = Base.IsInfinite()
-Base.eltype(::Type{FixedNesterovSequence{R}}) where R = R
+Base.eltype(::Type{FixedNesterovSequence{R}}) where {R} = R
 
 struct SimpleNesterovSequence{R} end
 
@@ -33,10 +33,10 @@ See also: [`FixedNesterovSequence`](@ref), [`ConstantNesterovSequence`](@ref).
 """
 SimpleNesterovSequence(R) = SimpleNesterovSequence{R}()
 
-Base.iterate(::SimpleNesterovSequence{R}, k=1) where {R} = R(k - 1) / (k + 2), k + 1
+Base.iterate(::SimpleNesterovSequence{R}, k = 1) where {R} = R(k - 1) / (k + 2), k + 1
 
 Base.IteratorSize(::Type{<:SimpleNesterovSequence}) = Base.IsInfinite()
-Base.eltype(::Type{SimpleNesterovSequence{R}}) where R = R
+Base.eltype(::Type{SimpleNesterovSequence{R}}) where {R} = R
 
 """
     ConstantNesterovSequence(m::R, stepsize::R)
@@ -48,7 +48,7 @@ when applied to strongly convex functions.
 
 See also: [`FixedNesterovSequence`](@ref), [`SimpleNesterovSequence`](@ref).
 """
-function ConstantNesterovSequence(m::R, stepsize::R) where R
+function ConstantNesterovSequence(m::R, stepsize::R) where {R}
     k_inverse = m * stepsize
     return repeated((1 - sqrt(k_inverse)) / (1 + sqrt(k_inverse)))
 end
@@ -77,7 +77,7 @@ Special cases: if `next!` is invoked with a constant stepsize `gamma`, then
 
 See also: [`next!`](@ref).
 """
-AdaptiveNesterovSequence(m::R) where R = AdaptiveNesterovSequence{R}(m, -R(1), -R(1))
+AdaptiveNesterovSequence(m::R) where {R} = AdaptiveNesterovSequence{R}(m, -R(1), -R(1))
 
 """
     next!(seq::AdaptiveNesterovSequence{R}, stepsize::R)
@@ -86,7 +86,7 @@ Push a new stepsize value into the sequence, and return the next extrapolation c
 
 See also: [`AdaptiveNesterovSequence`](@ref).
 """
-function next!(seq::AdaptiveNesterovSequence{R}, stepsize::R) where R
+function next!(seq::AdaptiveNesterovSequence{R}, stepsize::R) where {R}
     if seq.stepsize < 0
         seq.stepsize = stepsize
         seq.theta = seq.m > 0 ? sqrt(seq.m * stepsize) : R(1)
@@ -94,7 +94,9 @@ function next!(seq::AdaptiveNesterovSequence{R}, stepsize::R) where R
     b = seq.theta^2 / seq.stepsize - seq.m
     delta = b^2 + 4 * (seq.theta^2) / (seq.stepsize * stepsize)
     theta = stepsize * (-b + sqrt(delta)) / 2
-    beta = stepsize * (seq.theta) * (1 - seq.theta) / (seq.stepsize * theta + stepsize * seq.theta ^ 2)
+    beta =
+        stepsize * (seq.theta) * (1 - seq.theta) /
+        (seq.stepsize * theta + stepsize * seq.theta^2)
     seq.stepsize = stepsize
     seq.theta = theta
     return beta
@@ -107,4 +109,5 @@ NesterovExtrapolation() = NesterovExtrapolation{SimpleNesterovSequence}()
 
 acceleration_style(::Type{<:NesterovExtrapolation}) = NesterovStyle()
 
-initialize(::NesterovExtrapolation{S}, x) where S = Iterators.Stateful(S{real(eltype(x))}())
+initialize(::NesterovExtrapolation{S}, x) where {S} =
+    Iterators.Stateful(S{real(eltype(x))}())

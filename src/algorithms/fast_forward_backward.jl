@@ -70,13 +70,21 @@ function Base.iterate(iter::FastForwardBackwardIteration)
     x = copy(iter.x0)
     f_x, cl = value_and_gradient_closure(iter.f, x)
     grad_f_x = cl()
-    gamma = iter.gamma === nothing ? 1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x) : iter.gamma
+    gamma =
+        iter.gamma === nothing ?
+        1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x) : iter.gamma
     y = x - gamma .* grad_f_x
     z, g_z = prox(iter.g, y, gamma)
     state = FastForwardBackwardState(
-        x=x, f_x=f_x, grad_f_x=grad_f_x, gamma=gamma,
-        y=y, z=z, g_z=g_z, res=x - z,
-        extrapolation_sequence=if iter.extrapolation_sequence !== nothing
+        x = x,
+        f_x = f_x,
+        grad_f_x = grad_f_x,
+        gamma = gamma,
+        y = y,
+        z = z,
+        g_z = g_z,
+        res = x - z,
+        extrapolation_sequence = if iter.extrapolation_sequence !== nothing
             Iterators.Stateful(iter.extrapolation_sequence)
         else
             AdaptiveNesterovSequence(iter.mf)
@@ -85,14 +93,32 @@ function Base.iterate(iter::FastForwardBackwardIteration)
     return state, state
 end
 
-get_next_extrapolation_coefficient!(state::FastForwardBackwardState{R,Tx,<:Iterators.Stateful}) where {R, Tx} = first(state.extrapolation_sequence)
-get_next_extrapolation_coefficient!(state::FastForwardBackwardState{R,Tx,<:AdaptiveNesterovSequence}) where {R, Tx} = next!(state.extrapolation_sequence, state.gamma)
+get_next_extrapolation_coefficient!(
+    state::FastForwardBackwardState{R,Tx,<:Iterators.Stateful},
+) where {R,Tx} = first(state.extrapolation_sequence)
+get_next_extrapolation_coefficient!(
+    state::FastForwardBackwardState{R,Tx,<:AdaptiveNesterovSequence},
+) where {R,Tx} = next!(state.extrapolation_sequence, state.gamma)
 
-function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardBackwardState{R,Tx}) where {R,Tx}
+function Base.iterate(
+    iter::FastForwardBackwardIteration{R},
+    state::FastForwardBackwardState{R,Tx},
+) where {R,Tx}
     state.gamma = if iter.adaptive == true
         gamma, state.g_z = backtrack_stepsize!(
-            state.gamma, iter.f, nothing, iter.g,
-            state.x, state.f_x, state.grad_f_x, state.y, state.z, state.g_z, state.res, state.z, nothing,
+            state.gamma,
+            iter.f,
+            nothing,
+            iter.g,
+            state.x,
+            state.f_x,
+            state.grad_f_x,
+            state.y,
+            state.z,
+            state.g_z,
+            state.res,
+            state.z,
+            nothing,
             minimum_gamma = iter.minimum_gamma,
         )
         gamma
@@ -113,9 +139,14 @@ function Base.iterate(iter::FastForwardBackwardIteration{R}, state::FastForwardB
     return state, state
 end
 
-default_stopping_criterion(tol, ::FastForwardBackwardIteration, state::FastForwardBackwardState) = norm(state.res, Inf) / state.gamma <= tol
+default_stopping_criterion(
+    tol,
+    ::FastForwardBackwardIteration,
+    state::FastForwardBackwardState,
+) = norm(state.res, Inf) / state.gamma <= tol
 default_solution(::FastForwardBackwardIteration, state::FastForwardBackwardState) = state.z
-default_display(it, ::FastForwardBackwardIteration, state::FastForwardBackwardState) = @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
+default_display(it, ::FastForwardBackwardIteration, state::FastForwardBackwardState) =
+    @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
 
 """
     FastForwardBackward(; <keyword-arguments>)
@@ -148,15 +179,24 @@ See also: [`FastForwardBackwardIteration`](@ref), [`IterativeAlgorithm`](@ref).
 2. Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183-202 (2009).
 """
 FastForwardBackward(;
-    maxit=10_000,
-    tol=1e-8,
-    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
-    solution=default_solution,
-    verbose=false,
-    freq=100,
-    display=default_display,
-    kwargs...
-) = IterativeAlgorithm(FastForwardBackwardIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
+    maxit = 10_000,
+    tol = 1e-8,
+    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution = default_solution,
+    verbose = false,
+    freq = 100,
+    display = default_display,
+    kwargs...,
+) = IterativeAlgorithm(
+    FastForwardBackwardIteration;
+    maxit,
+    stop,
+    solution,
+    verbose,
+    freq,
+    display,
+    kwargs...,
+)
 
 # Aliases
 

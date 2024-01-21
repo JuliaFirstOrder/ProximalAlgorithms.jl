@@ -37,7 +37,7 @@ using ProximalAlgorithms
 
 rosenbrock2D = ProximalAlgorithms.AutoDifferentiable(
     x -> 100 * (x[2] - x[1]^2)^2 + (1 - x[1])^2,
-    ZygoteBackend()
+    ZygoteBackend(),
 )
 
 # To enforce the constraint, we define the indicator of the unit ball, together with its proximal mapping:
@@ -63,15 +63,28 @@ end
 # We can now minimize the function, for which we will use [`PANOC`](@ref), which is a Newton-type method:
 
 panoc = ProximalAlgorithms.PANOC()
-solution, iterations = panoc(x0=-ones(2), f=rosenbrock2D, g=IndUnitBall())
+solution, iterations = panoc(x0 = -ones(2), f = rosenbrock2D, g = IndUnitBall())
 
 # Plotting the solution against the cost function contour and constraint, gives an idea of its correctness.
 
 using Plots
 
-contour(-2:0.1:2, -2:0.1:2, (x,y) -> rosenbrock2D([x, y]), fill=true, framestyle=:none, background=nothing)
-plot!(Shape(cos.(0:0.01:2*pi), sin.(0:0.01:2*pi)), opacity=.5, label="feasible set")
-scatter!([solution[1]], [solution[2]], color=:red, markershape=:star5, label="computed solution")
+contour(
+    -2:0.1:2,
+    -2:0.1:2,
+    (x, y) -> rosenbrock2D([x, y]),
+    fill = true,
+    framestyle = :none,
+    background = nothing,
+)
+plot!(Shape(cos.(0:0.01:2*pi), sin.(0:0.01:2*pi)), opacity = 0.5, label = "feasible set")
+scatter!(
+    [solution[1]],
+    [solution[2]],
+    color = :red,
+    markershape = :star5,
+    label = "computed solution",
+)
 
 # ## Example: counting operations
 # 
@@ -90,7 +103,7 @@ mutable struct Counting{T}
     prox_count::Int
 end
 
-Counting(f::T) where T = Counting{T}(f, 0, 0, 0)
+Counting(f::T) where {T} = Counting{T}(f, 0, 0, 0)
 
 # Now we only need to intercept any call to `value_and_gradient_closure` and `prox!` and increase counters there:
 
@@ -114,7 +127,7 @@ end
 f = Counting(rosenbrock2D)
 g = Counting(IndUnitBall())
 
-solution, iterations = panoc(x0=-ones(2), f=f, g=g)
+solution, iterations = panoc(x0 = -ones(2), f = f, g = g)
 
 # and check how many operations where actually performed:
 

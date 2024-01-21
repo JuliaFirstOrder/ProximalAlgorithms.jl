@@ -82,7 +82,11 @@ Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL,Tbetaf,Tbetal,Ttheta,Tmu
     g::Tg = Zero()
     h::Th = Zero()
     l::Tl = IndZero()
-    L::TL = if isa(h, Zero) L = 0 * I else I end
+    L::TL = if isa(h, Zero)
+        L = 0 * I
+    else
+        I
+    end
     x0::Tx
     y0::Ty
     beta_f::Tbetaf = if isa(f, Zero)
@@ -98,7 +102,7 @@ Base.@kwdef struct AFBAIteration{R,Tx,Ty,Tf,Tg,Th,Tl,TL,Tbetaf,Tbetal,Ttheta,Tmu
     theta::Ttheta = real(eltype(x0))(1)
     mu::Tmu = real(eltype(x0))(1)
     lambda::Tlambda = real(eltype(x0))(1)
-    gamma::Tuple{R, R} = if lambda != 1
+    gamma::Tuple{R,R} = if lambda != 1
         error("if lambda != 1, then you need to provide stepsizes manually")
     else
         T = real(eltype(x0))
@@ -129,7 +133,7 @@ See also: [`AFBAIteration`](@ref), [`VuCondat`](@ref).
 1. Condat, "A primal-dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms", Journal of Optimization Theory and Applications, vol. 158, no. 2, pp 460-479 (2013).
 2. Vũ, "A splitting algorithm for dual monotone inclusions involving cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3, pp. 667-681 (2013).
 """
-VuCondatIteration(; kwargs...) = AFBAIteration(kwargs..., theta=2)
+VuCondatIteration(; kwargs...) = AFBAIteration(kwargs..., theta = 2)
 
 """
     ChambollePockIteration(; <keyword-arguments>)
@@ -150,7 +154,8 @@ for all other arguments see [`AFBAIteration`](@ref).
 # References
 1. Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems with Applications to Imaging", Journal of Mathematical Imaging and Vision, vol. 40, no. 1, pp. 120-145 (2011).
 """
-ChambollePockIteration(; kwargs...) = AFBAIteration(kwargs..., theta=2, f=Zero(), l=IndZero())
+ChambollePockIteration(; kwargs...) =
+    AFBAIteration(kwargs..., theta = 2, f = Zero(), l = IndZero())
 
 Base.@kwdef struct AFBAState{Tx,Ty}
     x::Tx
@@ -165,7 +170,10 @@ Base.@kwdef struct AFBAState{Tx,Ty}
     temp_y::Ty = similar(y)
 end
 
-function Base.iterate(iter::AFBAIteration, state::AFBAState = AFBAState(x=copy(iter.x0), y=copy(iter.y0)))
+function Base.iterate(
+    iter::AFBAIteration,
+    state::AFBAState = AFBAState(x = copy(iter.x0), y = copy(iter.y0)),
+)
     # perform xbar-update step
     f_x, cl = value_and_gradient_closure(iter.f, state.x)
     state.gradf .= cl()
@@ -202,9 +210,11 @@ function Base.iterate(iter::AFBAIteration, state::AFBAState = AFBAState(x=copy(i
     return state, state
 end
 
-default_stopping_criterion(tol, ::AFBAIteration, state::AFBAState) = norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= tol
+default_stopping_criterion(tol, ::AFBAIteration, state::AFBAState) =
+    norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= tol
 default_solution(::AFBAIteration, state::AFBAState) = (state.xbar, state.ybar)
-default_display(it, ::AFBAIteration, state::AFBAState) = @printf("%6d | %7.4e\n", it, norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf))
+default_display(it, ::AFBAIteration, state::AFBAState) =
+    @printf("%6d | %7.4e\n", it, norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf))
 
 """
     AFBA(; <keyword-arguments>)
@@ -238,15 +248,24 @@ See also: [`AFBAIteration`](@ref), [`IterativeAlgorithm`](@ref).
 2. Latafat, Patrinos, "Primal-dual proximal algorithms for structured convex optimization: a unifying framework", In Large-Scale and Distributed Optimization, Giselsson and Rantzer, Eds. Springer International Publishing, pp. 97-120 (2018).
 """
 AFBA(;
-    maxit=10_000,
-    tol=1e-5,
-    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
-    solution=default_solution,
-    verbose=false,
-    freq=100,
-    display=default_display,
-    kwargs...
-) = IterativeAlgorithm(AFBAIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
+    maxit = 10_000,
+    tol = 1e-5,
+    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution = default_solution,
+    verbose = false,
+    freq = 100,
+    display = default_display,
+    kwargs...,
+) = IterativeAlgorithm(
+    AFBAIteration;
+    maxit,
+    stop,
+    solution,
+    verbose,
+    freq,
+    display,
+    kwargs...,
+)
 
 """
     VuCondat(; <keyword-arguments>)
@@ -279,7 +298,7 @@ See also: [`VuCondatIteration`](@ref), [`AFBAIteration`](@ref), [`IterativeAlgor
 1. Condat, "A primal-dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms", Journal of Optimization Theory and Applications, vol. 158, no. 2, pp 460-479 (2013).
 2. Vũ, "A splitting algorithm for dual monotone inclusions involving cocoercive operators", Advances in Computational Mathematics, vol. 38, no. 3, pp. 667-681 (2013).
 """
-VuCondat(; kwargs...) = AFBA(; kwargs..., theta=2)
+VuCondat(; kwargs...) = AFBA(; kwargs..., theta = 2)
 
 """
     ChambollePock(; <keyword-arguments>)
@@ -310,13 +329,13 @@ See also: [`ChambollePockIteration`](@ref), [`AFBAIteration`](@ref), [`Iterative
 # References
 1. Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems with Applications to Imaging", Journal of Mathematical Imaging and Vision, vol. 40, no. 1, pp. 120-145 (2011).
 """
-ChambollePock(; kwargs...) = AFBA(; kwargs..., f=Zero(), l=IndZero(), theta=2)
+ChambollePock(; kwargs...) = AFBA(; kwargs..., f = Zero(), l = IndZero(), theta = 2)
 
-function AFBA_default_stepsizes(L, h::Zero, theta::R, mu::R, beta_f::R, beta_l::R) where R
+function AFBA_default_stepsizes(L, h::Zero, theta::R, mu::R, beta_f::R, beta_l::R) where {R}
     return R(1.99) / beta_f, R(1)
 end
 
-function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) where R
+function AFBA_default_stepsizes(L, h, theta::R, mu::R, beta_f::R, beta_l::R) where {R}
     par = R(5) # scaling parameter for comparing Lipschitz constants and \|L\|
     par2 = R(100)   # scaling parameter for α
     alpha = R(1)

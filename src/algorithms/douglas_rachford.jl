@@ -27,7 +27,13 @@ See also: [`DouglasRachford`](@ref).
 # References
 1. Eckstein, Bertsekas, "On the Douglas-Rachford Splitting Method and the Proximal Point Algorithm for Maximal Monotone Operators", Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 """
-Base.@kwdef struct DouglasRachfordIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C},Tf,Tg}
+Base.@kwdef struct DouglasRachfordIteration{
+    R,
+    C<:Union{R,Complex{R}},
+    Tx<:AbstractArray{C},
+    Tf,
+    Tg,
+}
     f::Tf = Zero()
     g::Tg = Zero()
     x0::Tx
@@ -44,7 +50,10 @@ Base.@kwdef struct DouglasRachfordState{Tx}
     res::Tx = similar(x)
 end
 
-function Base.iterate(iter::DouglasRachfordIteration, state::DouglasRachfordState = DouglasRachfordState(x=copy(iter.x0)))
+function Base.iterate(
+    iter::DouglasRachfordIteration,
+    state::DouglasRachfordState = DouglasRachfordState(x = copy(iter.x0)),
+)
     prox!(state.y, iter.f, state.x, iter.gamma)
     state.r .= 2 .* state.y .- state.x
     prox!(state.z, iter.g, state.r, iter.gamma)
@@ -53,9 +62,14 @@ function Base.iterate(iter::DouglasRachfordIteration, state::DouglasRachfordStat
     return state, state
 end
 
-default_stopping_criterion(tol, iter::DouglasRachfordIteration, state::DouglasRachfordState) = norm(state.res, Inf) / iter.gamma <= tol
+default_stopping_criterion(
+    tol,
+    iter::DouglasRachfordIteration,
+    state::DouglasRachfordState,
+) = norm(state.res, Inf) / iter.gamma <= tol
 default_solution(::DouglasRachfordIteration, state::DouglasRachfordState) = state.y
-default_display(it, iter::DouglasRachfordIteration, state::DouglasRachfordState) = @printf("%5d | %.3e\n", it, norm(state.res, Inf) / iter.gamma)
+default_display(it, iter::DouglasRachfordIteration, state::DouglasRachfordState) =
+    @printf("%5d | %.3e\n", it, norm(state.res, Inf) / iter.gamma)
 
 """
     DouglasRachford(; <keyword-arguments>)
@@ -85,12 +99,21 @@ See also: [`DouglasRachfordIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. Eckstein, Bertsekas, "On the Douglas-Rachford Splitting Method and the Proximal Point Algorithm for Maximal Monotone Operators", Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 """
 DouglasRachford(;
-    maxit=1_000,
-    tol=1e-8,
-    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
-    solution=default_solution,
-    verbose=false,
-    freq=100,
-    display=default_display,
-    kwargs...
-) = IterativeAlgorithm(DouglasRachfordIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
+    maxit = 1_000,
+    tol = 1e-8,
+    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution = default_solution,
+    verbose = false,
+    freq = 100,
+    display = default_display,
+    kwargs...,
+) = IterativeAlgorithm(
+    DouglasRachfordIteration;
+    maxit,
+    stop,
+    solution,
+    verbose,
+    freq,
+    display,
+    kwargs...,
+)

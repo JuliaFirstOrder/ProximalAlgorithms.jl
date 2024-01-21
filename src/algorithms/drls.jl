@@ -8,14 +8,14 @@ using ProximalCore: Zero
 using LinearAlgebra
 using Printf
 
-function drls_default_gamma(f::Tf, mf, Lf, alpha, lambda) where Tf
+function drls_default_gamma(f::Tf, mf, Lf, alpha, lambda) where {Tf}
     if mf !== nothing && mf > 0
         return 1 / (alpha * mf)
     end
     return ProximalCore.is_convex(Tf) ? alpha / Lf : alpha * (2 - lambda) / (2 * Lf)
 end
 
-function drls_C(f::Tf, mf, Lf, gamma, lambda) where Tf
+function drls_C(f::Tf, mf, Lf, gamma, lambda) where {Tf}
     a = mf === nothing || mf <= 0 ? gamma * Lf : 1 / (gamma * mf)
     m = ProximalCore.is_convex(Tf) ? max(a - lambda / 2, 0) : 1
     return (lambda / ((1 + a)^2) * ((2 - lambda) / 2 - a * m))
@@ -87,7 +87,7 @@ Base.@kwdef mutable struct DRLSState{R,Tx,TH}
     temp_x2::Tx = similar(x)
 end
 
-function DRE(f_u::R, g_v, x, u, res, gamma) where R
+function DRE(f_u::R, g_v, x, u, res, gamma) where {R}
     dot_product = R(0)
     for (x_i, u_i, res_i) in zip(x, u, res)
         dot_product += (x_i - u_i) * res_i
@@ -105,8 +105,16 @@ function Base.iterate(iter::DRLSIteration)
     res = u - v
     xbar = x - iter.lambda * res
     state = DRLSState(
-        x=x, u=u, v=v, w=w, res=res, xbar=xbar, gamma=iter.gamma, f_u=f_u,
-        g_v=g_v, H=initialize(iter.directions, x),
+        x = x,
+        u = u,
+        v = v,
+        w = w,
+        res = res,
+        xbar = xbar,
+        gamma = iter.gamma,
+        f_u = f_u,
+        g_v = g_v,
+        H = initialize(iter.directions, x),
     )
     return state, state
 end
@@ -115,9 +123,13 @@ function set_next_direction!(::QuasiNewtonStyle, ::DRLSIteration, state::DRLSSta
     mul!(state.d, state.H, state.res)
     state.d .*= -1
 end
-set_next_direction!(::NesterovStyle, ::DRLSIteration, state::DRLSState) = state.d .= iterate(state.H)[1] .* (state.xbar .- state.xbar_prev) .+ (state.xbar .- state.x)
-set_next_direction!(::NoAccelerationStyle, ::DRLSIteration, state::DRLSState) = state.d .= state.xbar .- state.x
-set_next_direction!(iter::DRLSIteration, state::DRLSState) = set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
+set_next_direction!(::NesterovStyle, ::DRLSIteration, state::DRLSState) =
+    state.d .=
+        iterate(state.H)[1] .* (state.xbar .- state.xbar_prev) .+ (state.xbar .- state.x)
+set_next_direction!(::NoAccelerationStyle, ::DRLSIteration, state::DRLSState) =
+    state.d .= state.xbar .- state.x
+set_next_direction!(iter::DRLSIteration, state::DRLSState) =
+    set_next_direction!(acceleration_style(typeof(iter.directions)), iter, state)
 
 function update_direction_state!(::QuasiNewtonStyle, ::DRLSIteration, state::DRLSState)
     state.res_prev .= state.res .- state.res_prev
@@ -125,9 +137,10 @@ function update_direction_state!(::QuasiNewtonStyle, ::DRLSIteration, state::DRL
 end
 update_direction_state!(::NesterovStyle, ::DRLSIteration, state::DRLSState) = return
 update_direction_state!(::NoAccelerationStyle, ::DRLSIteration, state::DRLSState) = return
-update_direction_state!(iter::DRLSIteration, state::DRLSState) = update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
+update_direction_state!(iter::DRLSIteration, state::DRLSState) =
+    update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
-function Base.iterate(iter::DRLSIteration{R, Tx, Tf}, state::DRLSState) where {R, Tx, Tf}
+function Base.iterate(iter::DRLSIteration{R,Tx,Tf}, state::DRLSState) where {R,Tx,Tf}
     DRE_curr = DRE(state)
     threshold = iter.dre_sign * DRE_curr - iter.c / iter.gamma * norm(state.res)^2
 
@@ -149,7 +162,7 @@ function Base.iterate(iter::DRLSIteration{R, Tx, Tf}, state::DRLSState) where {R
 
     a, b, c = R(0), R(0), R(0)
 
-    for k in 1:iter.max_backtracks
+    for k = 1:iter.max_backtracks
         if iter.dre_sign * DRE(state) <= threshold
             break
         end
@@ -167,7 +180,7 @@ function Base.iterate(iter::DRLSIteration{R, Tx, Tf}, state::DRLSState) where {R
                 a = state.f_u - b - c
             end
             state.u .= state.tau .* state.u1 .+ (1 - state.tau) .* state.u0
-            state.f_u = a * state.tau ^ 2 + b * state.tau + c
+            state.f_u = a * state.tau^2 + b * state.tau + c
         else
             state.f_u = prox!(state.u, iter.f, state.x, iter.gamma)
         end
@@ -181,10 +194,15 @@ function Base.iterate(iter::DRLSIteration{R, Tx, Tf}, state::DRLSState) where {R
     return state, state
 end
 
-default_stopping_criterion(tol, ::DRLSIteration, state::DRLSState) = norm(state.res, Inf) / state.gamma <= tol
+default_stopping_criterion(tol, ::DRLSIteration, state::DRLSState) =
+    norm(state.res, Inf) / state.gamma <= tol
 default_solution(::DRLSIteration, state::DRLSState) = state.v
 default_display(it, ::DRLSIteration, state::DRLSState) = @printf(
-    "%5d | %.3e | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma, state.tau,
+    "%5d | %.3e | %.3e | %.3e\n",
+    it,
+    state.gamma,
+    norm(state.res, Inf) / state.gamma,
+    state.tau,
 )
 
 """
@@ -217,12 +235,21 @@ See also: [`DRLSIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM for nonconvex optimization: Accelerated and Newton-type linesearch algorithms", Computational Optimization and Applications, vol. 82, no. 2, pp. 395-440 (2022).
 """
 DRLS(;
-    maxit=1_000,
-    tol=1e-8,
-    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
-    solution=default_solution,
-    verbose=false,
-    freq=10,
-    display=default_display,
-    kwargs...
-) = IterativeAlgorithm(DRLSIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
+    maxit = 1_000,
+    tol = 1e-8,
+    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution = default_solution,
+    verbose = false,
+    freq = 10,
+    display = default_display,
+    kwargs...,
+) = IterativeAlgorithm(
+    DRLSIteration;
+    maxit,
+    stop,
+    solution,
+    verbose,
+    freq,
+    display,
+    kwargs...,
+)

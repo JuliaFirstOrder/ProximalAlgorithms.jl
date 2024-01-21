@@ -22,7 +22,7 @@ using AbstractDifferentiation: ZygoteBackend, ReverseDiffBackend
         -1.0 -1.0 -1.0 1.0 3.0
     ]
     b = T[1.0, 2.0, 3.0, 4.0]
-    f = ProximalAlgorithms.AutoDifferentiable(x -> R(1/2) * norm(A * x - b, 2)^2, B())
+    f = ProximalAlgorithms.AutoDifferentiable(x -> R(1 / 2) * norm(A * x - b, 2)^2, B())
     Lf = opnorm(A)^2
     m, n = size(A)
 

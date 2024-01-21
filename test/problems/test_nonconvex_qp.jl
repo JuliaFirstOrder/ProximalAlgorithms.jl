@@ -12,7 +12,10 @@ using Test
     low = T(-1.0)
     upp = T(+1.0)
 
-    f = ProximalAlgorithms.AutoDifferentiable(x -> dot(Q * x, x) / 2 + dot(q, x), ZygoteBackend())
+    f = ProximalAlgorithms.AutoDifferentiable(
+        x -> dot(Q * x, x) / 2 + dot(q, x),
+        ZygoteBackend(),
+    )
     g = IndBox(low, upp)
 
     n = 2
@@ -78,7 +81,10 @@ end
         low = T(-1.0)
         upp = T(+1.0)
 
-        f = ProximalAlgorithms.AutoDifferentiable(x -> dot(Q * x, x) / 2 + dot(q, x), ZygoteBackend())
+        f = ProximalAlgorithms.AutoDifferentiable(
+            x -> dot(Q * x, x) / 2 + dot(q, x),
+            ZygoteBackend(),
+        )
         g = IndBox(low, upp)
 
         Lip = maximum(abs.(eigenvalues))

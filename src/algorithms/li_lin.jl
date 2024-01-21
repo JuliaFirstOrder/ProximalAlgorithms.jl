@@ -81,17 +81,24 @@ function Base.iterate(iter::LiLinIteration{R}) where {R}
     res = y - z
 
     state = LiLinState(
-        copy(iter.x0), y, f_y, grad_f_y, iter.gamma,
-        y_forward, z, g_z, res, R(1), Fy, R(1),
+        copy(iter.x0),
+        y,
+        f_y,
+        grad_f_y,
+        iter.gamma,
+        y_forward,
+        z,
+        g_z,
+        res,
+        R(1),
+        Fy,
+        R(1),
     )
 
     return state, state
 end
 
-function Base.iterate(
-    iter::LiLinIteration{R},
-    state::LiLinState{R,Tx},
-) where {R,Tx}
+function Base.iterate(iter::LiLinIteration{R}, state::LiLinState{R,Tx}) where {R,Tx}
     # TODO: backtrack gamma at y
 
     Fz = iter.f(state.z) + state.g_z
@@ -140,9 +147,11 @@ function Base.iterate(
     return state, state
 end
 
-default_stopping_criterion(tol, ::LiLinIteration, state::LiLinState) = norm(state.res, Inf) / state.gamma <= tol
+default_stopping_criterion(tol, ::LiLinIteration, state::LiLinState) =
+    norm(state.res, Inf) / state.gamma <= tol
 default_solution(::LiLinIteration, state::LiLinState) = state.z
-default_display(it, ::LiLinIteration, state::LiLinState) = @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
+default_display(it, ::LiLinIteration, state::LiLinState) =
+    @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
 
 """
     LiLin(; <keyword-arguments>)
@@ -175,12 +184,21 @@ See also: [`LiLinIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. Li, Lin, "Accelerated Proximal Gradient Methods for Nonconvex Programming", Proceedings of NIPS 2015 (2015).
 """
 LiLin(;
-    maxit=10_000,
-    tol=1e-8,
-    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
-    solution=default_solution,
-    verbose=false,
-    freq=100,
-    display=default_display,
-    kwargs...
-) = IterativeAlgorithm(LiLinIteration; maxit, stop, solution, verbose, freq, display, kwargs...)
+    maxit = 10_000,
+    tol = 1e-8,
+    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution = default_solution,
+    verbose = false,
+    freq = 100,
+    display = default_display,
+    kwargs...,
+) = IterativeAlgorithm(
+    LiLinIteration;
+    maxit,
+    stop,
+    solution,
+    verbose,
+    freq,
+    display,
+    kwargs...,
+)

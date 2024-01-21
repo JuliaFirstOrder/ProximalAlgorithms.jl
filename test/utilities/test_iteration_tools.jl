@@ -11,7 +11,8 @@ end
 
     Random.seed!(0)
 
-    Base.iterate(iter::FibonacciIterable, state=(iter.s0, iter.s1)) = state[1], (state[2], sum(state))
+    Base.iterate(iter::FibonacciIterable, state = (iter.s0, iter.s1)) =
+        state[1], (state[2], sum(state))
 
     @testset "Looping" begin
         iter = rand(Float64, 10)
