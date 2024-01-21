@@ -1,8 +1,10 @@
-@testset "Verbose" for T in [Float64]
-    using ProximalOperators
-    using ProximalAlgorithms
-    using LinearAlgebra
+using Zygote
+using AbstractDifferentiation: ZygoteBackend
+using ProximalOperators: LeastSquares, NormL1
+using ProximalAlgorithms
+using LinearAlgebra
 
+@testset "Verbose" for T in [Float64]
     A = T[
         1.0 -2.0 3.0 -4.0 5.0
         2.0 -1.0 0.0 -1.0 3.0
@@ -18,8 +20,9 @@
     lam = R(0.1) * norm(A' * b, Inf)
     @test typeof(lam) == R
 
-    f = Translate(SqrNormL2(R(1)), -b)
-    f2 = LeastSquares(A, b)
+    f_autodiff = ProximalAlgorithms.AutoDifferentiable(x -> (norm(x - b)^2)/2, ZygoteBackend())
+    fA_autodiff = ProximalAlgorithms.AutoDifferentiable(x -> (norm(A*x - b)^2)/2, ZygoteBackend())
+    fA_prox = LeastSquares(A, b)
     g = NormL1(lam)
 
     Lf = opnorm(A)^2
@@ -34,7 +37,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.ForwardBackward(tol = TOL, verbose = true)
-        x, it = solver(x0 = x0, f = f2, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 150
@@ -47,7 +50,7 @@
             adaptive = true,
             verbose = true,
         )
-        x, it = solver(x0 = x0, f = f2, g = g)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 300
@@ -57,7 +60,7 @@
         x0 = zeros(T, n)
         solver =
             ProximalAlgorithms.FastForwardBackward(tol = TOL, verbose = true)
-        x, it = solver(x0 = x0, f = f2, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 100
@@ -70,7 +73,7 @@
             adaptive = true,
             verbose = true,
         )
-        x, it = solver(x0 = x0, f = f2, g = g)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 200
@@ -82,7 +85,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.ZeroFPR(tol = TOL, verbose = true)
-        x, it = solver(x0 = x0, f = f, A = A, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -91,7 +94,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL, verbose = true)
-        x, it = solver(x0 = x0, f = f, A = A, g = g)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -104,7 +107,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.PANOC(tol = TOL, verbose = true)
-        x, it = solver(x0 = x0, f = f, A = A, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -113,7 +116,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.PANOC(adaptive = true, tol = TOL, verbose = true)
-        x, it = solver(x0 = x0, f = f, A = A, g = g)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -126,7 +129,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.PANOCplus(tol = TOL, verbose = true)
-        x, it = solver(x0 = x0, f = f, A = A, g = g, Lf = Lf)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g, Lf = Lf)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -135,7 +138,7 @@
 
         x0 = zeros(T, n)
         solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL, verbose = true)
-        x, it = solver(x0 = x0, f = f, A = A, g = g)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
@@ -152,7 +155,7 @@
             tol = TOL,
             verbose = true,
         )
-        y, it = solver(x0 = x0, f = f2, g = g)
+        y, it = solver(x0 = x0, f = fA_prox, g = g)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 30

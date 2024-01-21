@@ -1,8 +1,10 @@
-@testset "Sparse logistic small ($T)" for T in [Float32, Float64]
-    using ProximalOperators
-    using ProximalAlgorithms
-    using LinearAlgebra
+using Zygote
+using AbstractDifferentiation: ZygoteBackend
+using ProximalOperators: NormL1
+using ProximalAlgorithms
+using LinearAlgebra
 
+@testset "Sparse logistic small ($T)" for T in [Float32, Float64]
     A = T[
         1.0 -2.0 3.0 -4.0 5.0
         2.0 -1.0 0.0 -1.0 3.0
@@ -15,8 +17,13 @@
 
     R = real(T)
 
-    f = Translate(LogisticLoss(ones(R, m), R(1)), -b)
-    f2 = ComposeAffine(LogisticLoss(ones(R, m), R(1)), A, -b)
+    function logistic_loss(logits)
+        u = 1 .+ exp.(-logits)  # labels are assumed all one
+        return sum(log.(u))
+    end
+
+    f_autodiff = ProximalAlgorithms.AutoDifferentiable(x -> logistic_loss(x - b), ZygoteBackend())
+    fA_autodiff = ProximalAlgorithms.AutoDifferentiable(x -> logistic_loss(A * x - b), ZygoteBackend())
     lam = R(0.1)
     g = NormL1(lam)
 
@@ -29,7 +36,7 @@
     x0 = zeros(T, n)
     x0_backup = copy(x0)
     solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
-    x, it = solver(x0 = x0, f = f2, g = g)
+    x, it = solver(x0 = x0, f = fA_autodiff, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 1100
@@ -40,7 +47,7 @@
     x0 = zeros(T, n)
     x0_backup = copy(x0)
     solver = ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
-    x, it = solver(x0 = x0, f = f2, g = g)
+    x, it = solver(x0 = x0, f = fA_autodiff, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 500
@@ -51,7 +58,7 @@
     x0 = zeros(T, n)
     x0_backup = copy(x0)
     solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL)
-    x, it = solver(x0 = x0, f = f, A = A, g = g)
+    x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 25
@@ -62,7 +69,7 @@
     x0 = zeros(T, n)
     x0_backup = copy(x0)
     solver = ProximalAlgorithms.PANOC(adaptive = true, tol = TOL)
-    x, it = solver(x0 = x0, f = f, A = A, g = g)
+    x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 50
@@ -73,7 +80,7 @@
     x0 = zeros(T, n)
     x0_backup = copy(x0)
     solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL)
-    x, it = solver(x0 = x0, f = f, A = A, g = g)
+    x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
     @test eltype(x) == T
     @test norm(x - x_star, Inf) <= 1e-4
     @test it < 50

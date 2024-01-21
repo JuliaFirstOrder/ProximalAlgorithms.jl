@@ -51,10 +51,13 @@ end
 
 mean_squared_error(label, output) = mean((output .- label) .^ 2) / 2
 
+using Zygote
+using AbstractDifferentiation: ZygoteBackend
 using ProximalAlgorithms
 
-training_loss = ProximalAlgorithms.ZygoteFunction(
-    wb -> mean_squared_error(training_label, standardized_linear_model(wb, training_input))
+training_loss = ProximalAlgorithms.AutoDifferentiable(
+    wb -> mean_squared_error(training_label, standardized_linear_model(wb, training_input)),
+    ZygoteBackend()
 )
 
 # As regularization we will use the L1 norm, implemented in [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl):

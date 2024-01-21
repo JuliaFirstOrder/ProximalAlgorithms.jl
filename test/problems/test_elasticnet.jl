@@ -1,8 +1,10 @@
-@testset "Elastic net ($T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
-    using ProximalOperators
-    using ProximalAlgorithms
-    using LinearAlgebra
+using LinearAlgebra
+using ProximalOperators: NormL1, SqrNormL2, ElasticNet, Translate
+using ProximalAlgorithms
+using Zygote
+using AbstractDifferentiation: ZygoteBackend
 
+@testset "Elastic net ($T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
     A = T[
         1.0 -2.0 3.0 -4.0 5.0
         2.0 -1.0 0.0 -1.0 3.0
@@ -19,7 +21,7 @@
     reg1 = NormL1(R(1))
     reg2 = SqrNormL2(R(1))
     loss = Translate(SqrNormL2(R(1)), -b)
-    cost = LeastSquares(A, b)
+    cost = ProximalAlgorithms.AutoDifferentiable(x -> (norm(A*x - b)^2) / 2, ZygoteBackend())
 
     L = opnorm(A)^2
 
@@ -52,7 +54,7 @@
 
     afba_test_params = [
         (2, 0, 130),
-        (1, 1, 1890),
+        (1, 1, 2000),
         (0, 1, 320),
         (0, 0, 194),
         (1, 0, 130),
@@ -69,7 +71,7 @@
 
         solver = ProximalAlgorithms.AFBA(theta = theta, mu = mu, tol = R(1e-6))
         (x_afba, y_afba), it_afba =
-            solver(x0 = x0, y0 = y0, f = reg2, g = reg1, h = loss, L = A, beta_f = 1)
+            solver(x0 = x0, y0 = y0, f = ProximalAlgorithms.AutoDifferentiable(reg2, ZygoteBackend()), g = reg1, h = loss, L = A, beta_f = 1)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
@@ -86,7 +88,7 @@
 
         solver = ProximalAlgorithms.AFBA(theta = theta, mu = mu, tol = R(1e-6))
         (x_afba, y_afba), it_afba =
-            solver(x0 = x0, y0 = y0, f = reg2, g = reg1, h = loss, L = A, beta_f = 1)
+            solver(x0 = x0, y0 = y0, f = ProximalAlgorithms.AutoDifferentiable(reg2, ZygoteBackend()), g = reg1, h = loss, L = A, beta_f = 1)
         @test eltype(x_afba) == T
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4

@@ -1,7 +1,9 @@
 using LinearAlgebra
 using Test
 
-using ProximalOperators
+using Zygote
+using AbstractDifferentiation: ZygoteBackend
+using ProximalOperators: NormL1, LeastSquares
 using ProximalAlgorithms
 
 @testset "Lasso small (strongly convex, $T)" for T in [Float32, Float64]
@@ -29,7 +31,8 @@ using ProximalAlgorithms
     A = Q * D * Q'
     b = A * x_star + lam * inv(A') * sign.(x_star)
 
-    f = LeastSquares(A, b)
+    fA_prox = LeastSquares(A, b)
+    fA_autodiff = ProximalAlgorithms.AutoDifferentiable(x -> (norm(A*x - b)^2)/2, ZygoteBackend())
     g = NormL1(lam)
 
     TOL = T(1e-4)
@@ -39,7 +42,7 @@ using ProximalAlgorithms
 
     @testset "SFISTA" begin
         solver = ProximalAlgorithms.SFISTA(tol = TOL)
-        y, it = solver(x0=x0, f=f, g=g, Lf=Lf, mf=mf)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf, mf=mf)
         @test eltype(y) == T
         @test norm(y - x_star) <= TOL
         @test it < 40
@@ -48,7 +51,7 @@ using ProximalAlgorithms
 
     @testset "ForwardBackward" begin
         solver = ProximalAlgorithms.ForwardBackward(tol = TOL)
-        y, it = solver(x0=x0, f=f, g=g, Lf=Lf)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 110
@@ -57,7 +60,7 @@ using ProximalAlgorithms
 
     @testset "FastForwardBackward" begin
         solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
-        y, it = solver(x0=x0, f=f, g=g, Lf=Lf, mf=mf)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf, mf=mf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 35
@@ -66,7 +69,7 @@ using ProximalAlgorithms
 
     @testset "FastForwardBackward (custom extrapolation)" begin
         solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
-        y, it = solver(x0=x0, f=f, g=g, gamma = 1/Lf, mf=mf, extrapolation_sequence=ProximalAlgorithms.ConstantNesterovSequence(mf, 1/Lf))
+        y, it = solver(x0=x0, f=fA_autodiff, g=g, gamma = 1/Lf, mf=mf, extrapolation_sequence=ProximalAlgorithms.ConstantNesterovSequence(mf, 1/Lf))
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 35
@@ -75,7 +78,7 @@ using ProximalAlgorithms
 
     @testset "DRLS" begin
         solver = ProximalAlgorithms.DRLS(tol = TOL)
-        v, it = solver(x0=x0, f=f, g=g, mf=mf)
+        v, it = solver(x0=x0, f=fA_prox, g=g, mf=mf)
         @test eltype(v) == T
         @test norm(v - x_star, Inf) <= TOL
         @test it < 14
@@ -84,7 +87,7 @@ using ProximalAlgorithms
 
     @testset "PANOC" begin
         solver = ProximalAlgorithms.PANOC(tol = TOL)
-        y, it = solver(x0=x0, f=f, g=g, Lf=Lf)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 45
@@ -93,7 +96,7 @@ using ProximalAlgorithms
 
     @testset "PANOCplus" begin
         solver = ProximalAlgorithms.PANOCplus(tol = TOL)
-        y, it = solver(x0=x0, f=f, g=g, Lf=Lf)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 45
