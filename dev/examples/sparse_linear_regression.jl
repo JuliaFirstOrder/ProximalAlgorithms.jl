@@ -10,7 +10,8 @@ splitfields(s) = split(s, "\t")
 parsefloat64(s) = parse(Float64, s)
 
 function load_diabetes_dataset()
-    res = HTTP.request("GET", "https://www4.stat.ncsu.edu/~boos/var.select/diabetes.tab.txt") 
+    res =
+        HTTP.request("GET", "https://www4.stat.ncsu.edu/~boos/var.select/diabetes.tab.txt")
     lines = res.body |> String |> strip |> splitlines
     return hcat((line |> splitfields .|> parsefloat64 for line in lines[2:end])...)'
 end
@@ -34,8 +35,8 @@ n_training, n_features = size(training_input)
 using LinearAlgebra
 using Statistics
 
-input_loc = mean(training_input, dims=1) |> vec
-input_scale = std(training_input, dims=1) |> vec
+input_loc = mean(training_input, dims = 1) |> vec
+input_scale = std(training_input, dims = 1) |> vec
 
 linear_model(wb, input) = input * wb[1:end-1] .+ wb[end]
 
@@ -57,7 +58,7 @@ using ProximalAlgorithms
 
 training_loss = ProximalAlgorithms.AutoDifferentiable(
     wb -> mean_squared_error(training_label, standardized_linear_model(wb, training_input)),
-    ZygoteBackend()
+    ZygoteBackend(),
 )
 
 # As regularization we will use the L1 norm, implemented in [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl):
@@ -72,7 +73,7 @@ reg = ProximalOperators.NormL1(1)
 # and the objective terms `f=training_loss` (smooth) and `g=reg` (non smooth).
 
 ffb = ProximalAlgorithms.FastForwardBackward()
-solution, iterations = ffb(x0=zeros(n_features + 1), f=training_loss, g=reg)
+solution, iterations = ffb(x0 = zeros(n_features + 1), f = training_loss, g = reg)
 
 # We can now check how well the trained model performs on the test portion of our data.
 

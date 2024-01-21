@@ -58,18 +58,18 @@ using ProximalAlgorithms
 
 quadratic_cost = ProximalAlgorithms.AutoDifferentiable(
     x -> dot([3.4 1.2; 1.2 4.5] * x, x) / 2 + dot([-2.3, 9.9], x),
-    ZygoteBackend()
+    ZygoteBackend(),
 )
 box_indicator = ProximalOperators.IndBox(0, 1)
 
-ffb = ProximalAlgorithms.FastForwardBackward(maxit=1000, tol=1e-5, verbose=true)
+ffb = ProximalAlgorithms.FastForwardBackward(maxit = 1000, tol = 1e-5, verbose = true)
 
 # Here, we defined the cost function `quadratic_cost`, and the constraint indicator `box_indicator`.
 # Then we set up the optimization algorithm of choice, [`FastForwardBackward`](@ref),
 # with options for the maximum number of iterations, termination tolerance, verbosity.
 # Finally, we run the algorithm by providing an initial point and the objective terms defining the problem:
 
-solution, iterations = ffb(x0=ones(2), f=quadratic_cost, g=box_indicator)
+solution, iterations = ffb(x0 = ones(2), f = quadratic_cost, g = box_indicator)
 
 # We can verify the correctness of the solution by checking that the negative gradient is orthogonal to the constraints, pointing outwards:
 # for this, we just evaluate the closure `cl` returned as second output of [`value_and_gradient_closure`](@ref).
@@ -81,9 +81,22 @@ v, cl = ProximalAlgorithms.value_and_gradient_closure(quadratic_cost, solution)
 
 using Plots
 
-contour(-1:0.1:2, -1:0.1:2, (x,y) -> quadratic_cost([x, y]), fill=true, framestyle=:none, background=nothing)
-plot!(Shape([0, 1, 1, 0], [0, 0, 1, 1]), opacity=.5, label="feasible set")
-scatter!([solution[1]], [solution[2]], color=:red, markershape=:star5, label="computed solution")
+contour(
+    -1:0.1:2,
+    -1:0.1:2,
+    (x, y) -> quadratic_cost([x, y]),
+    fill = true,
+    framestyle = :none,
+    background = nothing,
+)
+plot!(Shape([0, 1, 1, 0], [0, 0, 1, 1]), opacity = 0.5, label = "feasible set")
+scatter!(
+    [solution[1]],
+    [solution[2]],
+    color = :red,
+    markershape = :star5,
+    label = "computed solution",
+)
 
 # ## [Iterator interface](@id iterator_interface)
 # 
@@ -121,7 +134,11 @@ scatter!([solution[1]], [solution[2]], color=:red, markershape=:star5, label="co
 # Let's solve the problem from the [previous example](@ref box_qp) by directly interacting with the underlying iterator: 
 # the `FastForwardBackward` algorithm internally uses a [`FastForwardBackwardIteration`](@ref) object.
 
-ffbiter = ProximalAlgorithms.FastForwardBackwardIteration(x0=ones(2), f=quadratic_cost, g=box_indicator)
+ffbiter = ProximalAlgorithms.FastForwardBackwardIteration(
+    x0 = ones(2),
+    f = quadratic_cost,
+    g = box_indicator,
+)
 
 # We can now perform anything we want throughout the iteration, by just looping over the iterator:
 # for example, we can store the sequence of iterates from the algorithm, to later plot them,
@@ -130,15 +147,33 @@ ffbiter = ProximalAlgorithms.FastForwardBackwardIteration(x0=ones(2), f=quadrati
 xs = []
 for state in ffbiter
     push!(xs, copy(state.x))
-    if length(xs) > 1 && norm(xs[end] - xs[end - 1]) / (1 + norm(xs[end])) <= 1e-5
+    if length(xs) > 1 && norm(xs[end] - xs[end-1]) / (1 + norm(xs[end])) <= 1e-5
         break
     end
 end
 
-contour(-1:0.1:2, -1:0.1:2, (x,y) -> quadratic_cost([x, y]), fill=true, framestyle=:none, background=nothing)
-plot!(Shape([0, 1, 1, 0], [0, 0, 1, 1]), opacity=.5, label="feasible set")
-plot!([x[1] for x in xs], [x[2] for x in xs], markershape=:circle, label="algorithm trajectory")
-scatter!([solution[1]], [solution[2]], color=:red, markershape=:star5, label="computed solution")
+contour(
+    -1:0.1:2,
+    -1:0.1:2,
+    (x, y) -> quadratic_cost([x, y]),
+    fill = true,
+    framestyle = :none,
+    background = nothing,
+)
+plot!(Shape([0, 1, 1, 0], [0, 0, 1, 1]), opacity = 0.5, label = "feasible set")
+plot!(
+    [x[1] for x in xs],
+    [x[2] for x in xs],
+    markershape = :circle,
+    label = "algorithm trajectory",
+)
+scatter!(
+    [solution[1]],
+    [solution[2]],
+    color = :red,
+    markershape = :star5,
+    label = "computed solution",
+)
 
 #md # !!! note
 #md #
