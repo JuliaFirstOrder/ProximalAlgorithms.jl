@@ -12,7 +12,7 @@ const Maybe{T} = Union{T,Nothing}
 
 Callable struct wrapping function `f` to be auto-differentiated using `backend`.
 
-When called, it evaluates the same as `f`, while [`ProximalAlgorithms.value_and_gradient_closure`](@ref)
+When called, it evaluates the same as `f`, while [`value_and_gradient_closure`](@ref)
 is implemented using `backend` for automatic differentiation.
 The backend can be any from [AbstractDifferentiation](https://github.com/JuliaDiff/AbstractDifferentiation.jl).
 """
