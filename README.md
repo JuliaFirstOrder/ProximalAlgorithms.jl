@@ -17,6 +17,8 @@ Implemented algorithms include:
 - Primal-dual splitting algorithms
 - Newton-type methods
 
+Check out [this section](https://juliafirstorder.github.io/ProximalAlgorithms.jl/stable/guide/implemented_algorithms/) for an overview of the available algorithms.
+
 Algorithms rely on:
 - [AbstractDifferentiation.jl](https://github.com/JuliaDiff/AbstractDifferentiation.jl) for automatic differentiation
 (but you can easily bring your own gradients)
