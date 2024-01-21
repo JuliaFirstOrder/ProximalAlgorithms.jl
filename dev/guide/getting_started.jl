@@ -20,7 +20,7 @@
 # The literature on proximal operators and algorithms is vast: for an overview, one can refer to [Parikh2014](@cite), [Beck2017](@cite).
 # 
 # To evaluate these first-order primitives, in ProximalAlgorithms:
-# * ``\nabla f_i`` falls back to using automatic differentiation (as provided by [Zygote](https://github.com/FluxML/Zygote.jl)).
+# * ``\nabla f_i`` falls back to using automatic differentiation (as provided by [AbstractDifferentiation](https://github.com/JuliaDiff/AbstractDifferentiation.jl) and all of its backends).
 # * ``\operatorname{prox}_{f_i}`` relies on the intereface of [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl) (>= 0.15).
 # Both of the above can be implemented for custom function types, as [documented here](@ref custom_terms).
 # 
@@ -51,11 +51,14 @@
 # which we will solve using the fast proximal gradient method (also known as fast forward-backward splitting):
 
 using LinearAlgebra
+using Zygote
+using AbstractDifferentiation: ZygoteBackend
 using ProximalOperators
 using ProximalAlgorithms
 
-quadratic_cost = ProximalAlgorithms.ZygoteFunction(
-    x -> dot([3.4 1.2; 1.2 4.5] * x, x) / 2 + dot([-2.3, 9.9], x)
+quadratic_cost = ProximalAlgorithms.AutoDifferentiable(
+    x -> dot([3.4 1.2; 1.2 4.5] * x, x) / 2 + dot([-2.3, 9.9], x),
+    ZygoteBackend()
 )
 box_indicator = ProximalOperators.IndBox(0, 1)
 
@@ -69,8 +72,10 @@ ffb = ProximalAlgorithms.FastForwardBackward(maxit=1000, tol=1e-5, verbose=true)
 solution, iterations = ffb(x0=ones(2), f=quadratic_cost, g=box_indicator)
 
 # We can verify the correctness of the solution by checking that the negative gradient is orthogonal to the constraints, pointing outwards:
+# for this, we just evaluate the closure `cl` returned as second output of [`value_and_gradient_closure`](@ref).
 
--ProximalAlgorithms.gradient(quadratic_cost, solution)[1]
+v, cl = ProximalAlgorithms.value_and_gradient_closure(quadratic_cost, solution)
+-cl()
 
 # Or by plotting the solution against the cost function and constraint:
 
