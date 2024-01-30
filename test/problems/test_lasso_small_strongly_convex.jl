@@ -70,6 +70,24 @@ using ProximalAlgorithms
         @test it < 110
         @test x0 == x0_backup
     end
+    
+    @testset "ForwardBackward (adaptive step)" begin
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
+        y, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 300
+        @test x0 == x0_backup
+    end
+
+    @testset "ForwardBackward (adaptive step, regret)" begin
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, regret_gamma=T(1.01))
+        y, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 80
+        @test x0 == x0_backup
+    end
 
     @testset "FastForwardBackward" begin
         solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
