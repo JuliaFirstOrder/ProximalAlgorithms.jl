@@ -68,6 +68,17 @@ using LinearAlgebra
         @test x0 == x0_backup
     end
 
+    @testset "FastForwardBackward (adaptive step, regret)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true, regret_gamma=R(1.01))
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it < 200
+        @test x0 == x0_backup
+    end
+
     @testset "ZeroFPR (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)

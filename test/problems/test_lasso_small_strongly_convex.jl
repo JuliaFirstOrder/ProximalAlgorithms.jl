@@ -98,6 +98,24 @@ using ProximalAlgorithms
         @test x0 == x0_backup
     end
 
+    @testset "ForwardBackward (adaptive step)" begin
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
+        y, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 100
+        @test x0 == x0_backup
+    end
+
+    @testset "ForwardBackward (adaptive step, regret)" begin
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true, regret_gamma=T(1.01))
+        y, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 100
+        @test x0 == x0_backup
+    end
+
     @testset "FastForwardBackward (custom extrapolation)" begin
         solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
         y, it = solver(
