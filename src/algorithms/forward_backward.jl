@@ -28,9 +28,11 @@ See also: [`ForwardBackward`](@ref).
 - `gamma=nothing`: stepsize to use, defaults to `1/Lf` if not set (but `Lf` is).
 - `adaptive=false`: forces the method stepsize to be adaptively adjusted.
 - `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
+- `regret_gamma=1.0`: factor to enlarge `gamma` in case `adaptive == true`, before backtracking.
 
 # References
 1. Lions, Mercier, “Splitting algorithms for the sum of two nonlinear operators,” SIAM Journal on Numerical Analysis, vol. 16, pp. 964–979 (1979).
+2. De Marchi, Themelis, "An interior proximal gradient method for nonconvex optimization," arXiv:2208.00799v2 (2024).
 """
 Base.@kwdef struct ForwardBackwardIteration{R,Tx,Tf,Tg,TLf,Tgamma}
     f::Tf = Zero()
@@ -40,6 +42,7 @@ Base.@kwdef struct ForwardBackwardIteration{R,Tx,Tf,Tg,TLf,Tgamma}
     gamma::Tgamma = Lf === nothing ? nothing : (1 / Lf)
     adaptive::Bool = gamma === nothing
     minimum_gamma::R = real(eltype(x0))(1e-7)
+    regret_gamma::R = real(eltype(x0))(1.0)
 end
 
 Base.IteratorSize(::Type{<:ForwardBackwardIteration}) = Base.IsInfinite()
@@ -84,6 +87,7 @@ function Base.iterate(
     state::ForwardBackwardState{R,Tx},
 ) where {R,Tx}
     if iter.adaptive == true
+        state.gamma *= iter.regret_gamma
         state.gamma, state.g_z, state.f_x = backtrack_stepsize!(
             state.gamma,
             iter.f,
@@ -150,6 +154,7 @@ See also: [`ForwardBackwardIteration`](@ref), [`IterativeAlgorithm`](@ref).
 
 # References
 1. Lions, Mercier, “Splitting algorithms for the sum of two nonlinear operators,” SIAM Journal on Numerical Analysis, vol. 16, pp. 964–979 (1979).
+2. De Marchi, Themelis, "An interior proximal gradient method for nonconvex optimization," arXiv:2208.00799v2 (2024).
 """
 ForwardBackward(;
     maxit = 10_000,

@@ -35,59 +35,81 @@ using LinearAlgebra
 
     TOL = R(1e-6)
 
-    # Nonfast/Adaptive
+    @testset "ForwardBackward (adaptive step)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it < 1100
+        @test x0 == x0_backup
+    end
 
-    x0 = zeros(T, n)
-    x0_backup = copy(x0)
-    solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
-    x, it = solver(x0 = x0, f = fA_autodiff, g = g)
-    @test eltype(x) == T
-    @test norm(x - x_star, Inf) <= 1e-4
-    @test it < 1100
-    @test x0 == x0_backup
+    @testset "ForwardBackward (adaptive step, regret)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, regret_gamma=R(1.01))
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it < 500
+        @test x0 == x0_backup
+    end
 
-    # Fast/Adaptive
+    @testset "FastForwardBackward (adaptive step)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it < 500
+        @test x0 == x0_backup
+    end
 
-    x0 = zeros(T, n)
-    x0_backup = copy(x0)
-    solver = ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
-    x, it = solver(x0 = x0, f = fA_autodiff, g = g)
-    @test eltype(x) == T
-    @test norm(x - x_star, Inf) <= 1e-4
-    @test it < 500
-    @test x0 == x0_backup
+    @testset "FastForwardBackward (adaptive step, regret)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true, regret_gamma=R(1.01))
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it < 200
+        @test x0 == x0_backup
+    end
 
-    # ZeroFPR/Adaptive
+    @testset "ZeroFPR (adaptive step)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it < 25
+        @test x0 == x0_backup
+    end
 
-    x0 = zeros(T, n)
-    x0_backup = copy(x0)
-    solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL)
-    x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
-    @test eltype(x) == T
-    @test norm(x - x_star, Inf) <= 1e-4
-    @test it < 25
-    @test x0 == x0_backup
+    @testset "PANOC (adaptive step)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOC(adaptive = true, tol = TOL)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it < 50
+        @test x0 == x0_backup
+    end
 
-    # PANOC/Adaptive
-
-    x0 = zeros(T, n)
-    x0_backup = copy(x0)
-    solver = ProximalAlgorithms.PANOC(adaptive = true, tol = TOL)
-    x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
-    @test eltype(x) == T
-    @test norm(x - x_star, Inf) <= 1e-4
-    @test it < 50
-    @test x0 == x0_backup
-
-    # PANOCplus/Adaptive
-
-    x0 = zeros(T, n)
-    x0_backup = copy(x0)
-    solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL)
-    x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
-    @test eltype(x) == T
-    @test norm(x - x_star, Inf) <= 1e-4
-    @test it < 50
-    @test x0 == x0_backup
+    @testset "PANOCplus (adaptive step)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL)
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it < 50
+        @test x0 == x0_backup
+    end
 
 end

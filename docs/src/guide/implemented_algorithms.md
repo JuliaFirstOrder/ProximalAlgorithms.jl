@@ -24,7 +24,7 @@ This is the most popular model, by far the most thoroughly studied, and an abund
 
 Algorithm | Assumptions | Oracle | Implementation | References
 ----------|-------------|--------|----------------|-----------
-Proximal gradient | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ForwardBackward`](@ref) | [Lions1979](@cite)
+Proximal gradient | ``f`` locally smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ForwardBackward`](@ref) | [Lions1979](@cite), [DeMarchi2024](@cite)
 Douglas-Rachford | | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DouglasRachford`](@ref) | [Eckstein1992](@cite)
 Fast proximal gradient | ``f`` convex, smooth, ``g`` convex | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`FastForwardBackward`](@ref) | [Tseng2008](@cite), [Beck2009](@cite)
 PANOC | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOC`](@ref) | [Stella2017](@cite)
