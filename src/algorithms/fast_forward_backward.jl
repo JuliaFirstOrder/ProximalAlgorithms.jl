@@ -33,7 +33,8 @@ See also: [`FastForwardBackward`](@ref).
 - `gamma=nothing`: stepsize, defaults to `1/Lf` if `Lf` is set, and `nothing` otherwise.
 - `adaptive=true`: makes `gamma` adaptively adjust during the iterations; this is by default `gamma === nothing`.
 - `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
-- `regret_gamma=1.0`: factor to enlarge `gamma` in case `adaptive == true`, before backtracking.
+- `reduce_gamma=0.5`: factor by which to reduce `gamma` in case `adaptive == true`, during backtracking.
+- `increase_gamma=1.0`: factor by which to increase `gamma` in case `adaptive == true`, before backtracking.
 - `extrapolation_sequence=nothing`: sequence (iterator) of extrapolation coefficients to use for acceleration.
 
 # References
@@ -49,7 +50,8 @@ Base.@kwdef struct FastForwardBackwardIteration{R,Tx,Tf,Tg,TLf,Tgamma,Textr}
     gamma::Tgamma = Lf === nothing ? nothing : (1 / Lf)
     adaptive::Bool = gamma === nothing
     minimum_gamma::R = real(eltype(x0))(1e-7)
-    regret_gamma::R = real(eltype(x0))(1.0)
+    reduce_gamma::R = real(eltype(x0))(0.5)
+    increase_gamma::R = real(eltype(x0))(1.0)
     extrapolation_sequence::Textr = nothing
 end
 
@@ -107,7 +109,7 @@ function Base.iterate(
     state::FastForwardBackwardState{R,Tx},
 ) where {R,Tx}
     state.gamma = if iter.adaptive == true
-        state.gamma *= iter.regret_gamma
+        state.gamma *= iter.increase_gamma
         gamma, state.g_z = backtrack_stepsize!(
             state.gamma,
             iter.f,
@@ -123,6 +125,7 @@ function Base.iterate(
             state.z,
             nothing,
             minimum_gamma = iter.minimum_gamma,
+            reduce_gamma = iter.reduce_gamma,
         )
         gamma
     else

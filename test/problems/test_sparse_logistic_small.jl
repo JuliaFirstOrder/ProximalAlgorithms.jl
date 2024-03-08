@@ -49,7 +49,11 @@ using LinearAlgebra
     @testset "ForwardBackward (adaptive step, regret)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
-        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true, regret_gamma=R(1.01))
+        solver = ProximalAlgorithms.ForwardBackward(
+            tol = TOL,
+            adaptive = true,
+            increase_gamma = R(1.01),
+        )
         x, it = solver(x0 = x0, f = fA_autodiff, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= 1e-4
@@ -71,7 +75,11 @@ using LinearAlgebra
     @testset "FastForwardBackward (adaptive step, regret)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
-        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true, regret_gamma=R(1.01))
+        solver = ProximalAlgorithms.FastForwardBackward(
+            tol = TOL,
+            adaptive = true,
+            increase_gamma = R(1.01),
+        )
         x, it = solver(x0 = x0, f = fA_autodiff, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= 1e-4
