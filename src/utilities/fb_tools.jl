@@ -37,15 +37,16 @@ function backtrack_stepsize!(
     res,
     Az,
     grad_f_Az = nothing;
-    alpha = 1,
-    minimum_gamma = 1e-7,
+    alpha = R(1),
+    minimum_gamma = R(1e-7),
+    reduce_gamma = R(0.5),
 ) where {R}
     f_Az_upp = f_model(f_Ax, At_grad_f_Ax, res, alpha / gamma)
     _mul!(Az, A, z)
     f_Az, cl = value_and_gradient_closure(f, Az)
     tol = 10 * eps(R) * (1 + abs(f_Az))
     while f_Az > f_Az_upp + tol && gamma >= minimum_gamma
-        gamma /= 2
+        gamma *= reduce_gamma
         y .= x .- gamma .* At_grad_f_Ax
         g_z = prox!(z, g, y, gamma)
         res .= x .- z
@@ -63,7 +64,16 @@ function backtrack_stepsize!(
     return gamma, g_z, f_Az, f_Az_upp
 end
 
-function backtrack_stepsize!(gamma, f, A, g, x; alpha = 1, minimum_gamma = 1e-7)
+function backtrack_stepsize!(
+    gamma::R,
+    f,
+    A,
+    g,
+    x;
+    alpha = R(1),
+    minimum_gamma = R(1e-7),
+    reduce_gamma = R(0.5),
+) where {R}
     Ax = A * x
     f_Ax, cl = value_and_gradient_closure(f, Ax)
     grad_f_Ax = cl()
@@ -86,5 +96,6 @@ function backtrack_stepsize!(gamma, f, A, g, x; alpha = 1, minimum_gamma = 1e-7)
         grad_f_Ax;
         alpha = alpha,
         minimum_gamma = minimum_gamma,
+        reduce_gamma = reduce_gamma,
     )
 end
