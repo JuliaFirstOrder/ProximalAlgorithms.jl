@@ -41,7 +41,7 @@ function backtrack_stepsize!(
 ) where {R}
     f_Az_upp = f_model(f_Ax, At_grad_f_Ax, res, alpha / gamma)
     _mul!(Az, A, z)
-    f_Az, grad_f_Az = value_and_gradient(f, Az)
+    f_Az, grad_f_Az_tmp = value_and_gradient(f, Az)
     tol = 10 * eps(R) * (1 + abs(f_Az))
     while f_Az > f_Az_upp + tol && gamma >= minimum_gamma
         gamma *= reduce_gamma
@@ -50,8 +50,11 @@ function backtrack_stepsize!(
         res .= x .- z
         f_Az_upp = f_model(f_Ax, At_grad_f_Ax, res, alpha / gamma)
         _mul!(Az, A, z)
-        f_Az, grad_f_Az = value_and_gradient(f, Az)
+        f_Az, grad_f_Az_tmp = value_and_gradient(f, Az)
         tol = 10 * eps(R) * (1 + abs(f_Az))
+    end
+    if grad_f_Az !== nothing
+        grad_f_Az .= grad_f_Az_tmp
     end
     if gamma < minimum_gamma
         @warn "stepsize `gamma` became too small ($(gamma))"
