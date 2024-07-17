@@ -72,8 +72,7 @@ end
 
 function Base.iterate(iter::FastForwardBackwardIteration)
     x = copy(iter.x0)
-    f_x, cl = value_and_gradient_closure(iter.f, x)
-    grad_f_x = cl()
+    f_x, grad_f_x = value_and_gradient(iter.f, x)
     gamma =
         iter.gamma === nothing ?
         1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x) : iter.gamma
@@ -136,8 +135,8 @@ function Base.iterate(
     state.x .= state.z .+ beta .* (state.z .- state.z_prev)
     state.z_prev, state.z = state.z, state.z_prev
 
-    state.f_x, cl = value_and_gradient_closure(iter.f, state.x)
-    state.grad_f_x .= cl()
+    state.f_x, grad_f_x = value_and_gradient(iter.f, state.x)
+    state.grad_f_x .= grad_f_x
     state.y .= state.x .- state.gamma .* state.grad_f_x
     state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
     state.res .= state.x .- state.z

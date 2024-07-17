@@ -2,7 +2,7 @@ using Test
 using LinearAlgebra
 using ProximalCore: Zero
 using ProximalAlgorithms
-using AbstractDifferentiation
+using DifferentiationInterface
 
 @testset "Lipschitz constant estimation" for R in [Float32, Float64]
 

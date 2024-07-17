@@ -12,18 +12,18 @@
 # 
 # Defining the proximal mapping for a custom function type requires adding a method for [`ProximalCore.prox!`](@ref).
 # 
-# To compute gradients, algorithms use [`value_and_gradient_closure`](@ref):
-# this relies on [AbstractDifferentiation](https://github.com/JuliaDiff/AbstractDifferentiation.jl), for automatic differentiation
+# To compute gradients, algorithms use [`value_and_gradient`](@ref):
+# this relies on [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl), for automatic differentiation
 # with any of its supported backends, when functions are wrapped in [`AutoDifferentiable`](@ref),
 # as the examples below show.
 # 
 # If however you would like to provide your own gradient implementation (e.g. for efficiency reasons),
-# you can simply implement a method for [`value_and_gradient_closure`](@ref) on your own function type.
+# you can simply implement a method for [`value_and_gradient`](@ref) on your own function type.
 # 
 # ```@docs
 # ProximalCore.prox
 # ProximalCore.prox!
-# ProximalAlgorithms.value_and_gradient_closure
+# ProximalAlgorithms.value_and_gradient
 # ProximalAlgorithms.AutoDifferentiable
 # ```
 # 
@@ -32,12 +32,12 @@
 # Let's try to minimize the celebrated Rosenbrock function, but constrained to the unit norm ball. The cost function is
 
 using Zygote
-using AbstractDifferentiation: ZygoteBackend
+using DifferentiationInterface: AutoZygote
 using ProximalAlgorithms
 
 rosenbrock2D = ProximalAlgorithms.AutoDifferentiable(
     x -> 100 * (x[2] - x[1]^2)^2 + (1 - x[1])^2,
-    ZygoteBackend(),
+    AutoZygote(),
 )
 
 # To enforce the constraint, we define the indicator of the unit ball, together with its proximal mapping:
@@ -63,7 +63,7 @@ end
 # We can now minimize the function, for which we will use [`PANOC`](@ref), which is a Newton-type method:
 
 panoc = ProximalAlgorithms.PANOC()
-solution, iterations = panoc(x0 = -ones(2), f = rosenbrock2D, g = IndUnitBall())
+solution, iterations = panoc(x0=-ones(2), f=rosenbrock2D, g=IndUnitBall())
 
 # Plotting the solution against the cost function contour and constraint, gives an idea of its correctness.
 
@@ -73,17 +73,17 @@ contour(
     -2:0.1:2,
     -2:0.1:2,
     (x, y) -> rosenbrock2D([x, y]),
-    fill = true,
-    framestyle = :none,
-    background = nothing,
+    fill=true,
+    framestyle=:none,
+    background=nothing,
 )
-plot!(Shape(cos.(0:0.01:2*pi), sin.(0:0.01:2*pi)), opacity = 0.5, label = "feasible set")
+plot!(Shape(cos.(0:0.01:2*pi), sin.(0:0.01:2*pi)), opacity=0.5, label="feasible set")
 scatter!(
     [solution[1]],
     [solution[2]],
-    color = :red,
-    markershape = :star5,
-    label = "computed solution",
+    color=:red,
+    markershape=:star5,
+    label="computed solution",
 )
 
 # ## Example: counting operations
@@ -105,16 +105,17 @@ end
 
 Counting(f::T) where {T} = Counting{T}(f, 0, 0, 0)
 
-# Now we only need to intercept any call to [`value_and_gradient_closure`](@ref) and [`prox!`](@ref) and increase counters there:
-
-function ProximalAlgorithms.value_and_gradient_closure(f::Counting, x)
+function (f::Counting)(x)
     f.eval_count += 1
-    fx, pb = ProximalAlgorithms.value_and_gradient_closure(f.f, x)
-    function counting_pullback()
-        f.gradient_count += 1
-        return pb()
-    end
-    return fx, counting_pullback
+    return f.f(x)
+end
+
+# Now we only need to intercept any call to [`value_and_gradient`](@ref) and [`prox!`](@ref) and increase counters there:
+
+function ProximalAlgorithms.value_and_gradient(f::Counting, x)
+    f.eval_count += 1
+    f.gradient_count += 1
+    return ProximalAlgorithms.value_and_gradient(f.f, x)
 end
 
 function ProximalCore.prox!(y, f::Counting, x, gamma)
@@ -127,7 +128,7 @@ end
 f = Counting(rosenbrock2D)
 g = Counting(IndUnitBall())
 
-solution, iterations = panoc(x0 = -ones(2), f = f, g = g)
+solution, iterations = panoc(x0=-ones(2), f=f, g=g)
 
 # and check how many operations where actually performed:
 

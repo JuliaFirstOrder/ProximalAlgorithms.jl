@@ -1,5 +1,5 @@
 using Zygote
-using AbstractDifferentiation: ZygoteBackend
+using DifferentiationInterface: AutoZygote
 using ProximalOperators: NormL1
 using ProximalAlgorithms
 using LinearAlgebra
@@ -23,10 +23,10 @@ using LinearAlgebra
     end
 
     f_autodiff =
-        ProximalAlgorithms.AutoDifferentiable(x -> logistic_loss(x - b), ZygoteBackend())
+        ProximalAlgorithms.AutoDifferentiable(x -> logistic_loss(x - b), AutoZygote())
     fA_autodiff = ProximalAlgorithms.AutoDifferentiable(
         x -> logistic_loss(A * x - b),
-        ZygoteBackend(),
+        AutoZygote(),
     )
     lam = R(0.1)
     g = NormL1(lam)

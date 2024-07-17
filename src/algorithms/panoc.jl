@@ -87,8 +87,7 @@ f_model(iter::PANOCIteration, state::PANOCState) =
 function Base.iterate(iter::PANOCIteration{R}) where {R}
     x = copy(iter.x0)
     Ax = iter.A * x
-    f_Ax, cl = value_and_gradient_closure(iter.f, Ax)
-    grad_f_Ax = cl()
+    f_Ax, grad_f_Ax = value_and_gradient(iter.f, Ax)
     gamma =
         iter.gamma === nothing ?
         iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) :
@@ -182,8 +181,8 @@ function Base.iterate(iter::PANOCIteration{R,Tx,Tf}, state::PANOCState) where {R
 
     state.x_d .= state.x .+ state.d
     state.Ax_d .= state.Ax .+ state.Ad
-    state.f_Ax_d, cl = value_and_gradient_closure(iter.f, state.Ax_d)
-    state.grad_f_Ax_d .= cl()
+    state.f_Ax_d, grad_f_Ax_d = value_and_gradient(iter.f, state.Ax_d)
+    state.grad_f_Ax_d .= grad_f_Ax_d
     mul!(state.At_grad_f_Ax_d, adjoint(iter.A), state.grad_f_Ax_d)
 
     copyto!(state.x, state.x_d)
@@ -220,8 +219,8 @@ function Base.iterate(iter::PANOCIteration{R,Tx,Tf}, state::PANOCState) where {R
             # along a line using interpolation and linear combinations
             # this allows saving operations
             if isinf(f_Az)
-                f_Az, cl = value_and_gradient_closure(iter.f, state.Az)
-                state.grad_f_Az .= cl()
+                f_Az, grad_f_Az = value_and_gradient(iter.f, state.Az)
+                state.grad_f_Az .= grad_f_Az
             end
             if isinf(c)
                 mul!(state.At_grad_f_Az, iter.A', state.grad_f_Az)
@@ -239,8 +238,8 @@ function Base.iterate(iter::PANOCIteration{R,Tx,Tf}, state::PANOCState) where {R
         else
             # otherwise, in the general case where f is only smooth, we compute
             # one gradient and matvec per backtracking step
-            state.f_Ax, cl = value_and_gradient_closure(iter.f, state.Ax)
-            state.grad_f_Ax .= cl()
+            state.f_Ax, grad_f_Ax = value_and_gradient(iter.f, state.Ax)
+            state.grad_f_Ax .= grad_f_Ax
             mul!(state.At_grad_f_Ax, adjoint(iter.A), state.grad_f_Ax)
         end
 

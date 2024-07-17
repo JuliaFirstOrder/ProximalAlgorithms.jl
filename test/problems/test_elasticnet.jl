@@ -2,7 +2,7 @@ using LinearAlgebra
 using ProximalOperators: NormL1, SqrNormL2, ElasticNet, Translate
 using ProximalAlgorithms
 using Zygote
-using AbstractDifferentiation: ZygoteBackend
+using DifferentiationInterface: AutoZygote
 
 @testset "Elastic net ($T)" for T in [Float32, Float64, ComplexF32, ComplexF64]
     A = T[
@@ -22,7 +22,7 @@ using AbstractDifferentiation: ZygoteBackend
     reg2 = SqrNormL2(R(1))
     loss = Translate(SqrNormL2(R(1)), -b)
     cost =
-        ProximalAlgorithms.AutoDifferentiable(x -> (norm(A * x - b)^2) / 2, ZygoteBackend())
+        ProximalAlgorithms.AutoDifferentiable(x -> (norm(A * x - b)^2) / 2, AutoZygote())
 
     L = opnorm(A)^2
 
@@ -68,7 +68,7 @@ using AbstractDifferentiation: ZygoteBackend
         (x_afba, y_afba), it_afba = solver(
             x0 = x0,
             y0 = y0,
-            f = ProximalAlgorithms.AutoDifferentiable(reg2, ZygoteBackend()),
+            f = ProximalAlgorithms.AutoDifferentiable(reg2, AutoZygote()),
             g = reg1,
             h = loss,
             L = A,
@@ -92,7 +92,7 @@ using AbstractDifferentiation: ZygoteBackend
         (x_afba, y_afba), it_afba = solver(
             x0 = x0,
             y0 = y0,
-            f = ProximalAlgorithms.AutoDifferentiable(reg2, ZygoteBackend()),
+            f = ProximalAlgorithms.AutoDifferentiable(reg2, AutoZygote()),
             g = reg1,
             h = loss,
             L = A,

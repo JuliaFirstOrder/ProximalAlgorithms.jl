@@ -2,7 +2,7 @@ using LinearAlgebra
 using Test
 
 using Zygote
-using AbstractDifferentiation: ZygoteBackend
+using DifferentiationInterface: AutoZygote
 using ProximalOperators: NormL1, LeastSquares
 using ProximalAlgorithms
 
@@ -45,7 +45,7 @@ using ProximalAlgorithms
 
     fA_prox = LeastSquares(A, b)
     fA_autodiff =
-        ProximalAlgorithms.AutoDifferentiable(x -> (norm(A * x - b)^2) / 2, ZygoteBackend())
+        ProximalAlgorithms.AutoDifferentiable(x -> (norm(A * x - b)^2) / 2, AutoZygote())
     g = NormL1(lam)
 
     TOL = T(1e-4)
