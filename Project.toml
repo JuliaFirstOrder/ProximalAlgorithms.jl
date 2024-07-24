@@ -1,6 +1,6 @@
 name = "ProximalAlgorithms"
 uuid = "140ffc9f-1907-541a-a177-7475e0a401e9"
-version = "0.6.0"
+version = "0.7.0"
 
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
