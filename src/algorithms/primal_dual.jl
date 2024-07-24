@@ -175,8 +175,8 @@ function Base.iterate(
     state::AFBAState = AFBAState(x = copy(iter.x0), y = copy(iter.y0)),
 )
     # perform xbar-update step
-    f_x, cl = value_and_gradient_closure(iter.f, state.x)
-    state.gradf .= cl()
+    f_x, gradf = value_and_gradient(iter.f, state.x)
+    state.gradf .= gradf
     mul!(state.temp_x, iter.L', state.y)
     state.temp_x .+= state.gradf
     state.temp_x .*= -iter.gamma[1]
@@ -184,8 +184,8 @@ function Base.iterate(
     prox!(state.xbar, iter.g, state.temp_x, iter.gamma[1])
 
     # perform ybar-update step
-    lc_y, cl = value_and_gradient_closure(convex_conjugate(iter.l), state.y)
-    state.gradl .= cl()
+    lc_y, gradl = value_and_gradient(convex_conjugate(iter.l), state.y)
+    state.gradl .= gradl
     state.temp_x .= iter.theta .* state.xbar .+ (1 - iter.theta) .* state.x
     mul!(state.temp_y, iter.L, state.temp_x)
     state.temp_y .-= state.gradl

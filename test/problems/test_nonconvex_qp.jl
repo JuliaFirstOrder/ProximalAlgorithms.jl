@@ -1,5 +1,5 @@
 using Zygote
-using AbstractDifferentiation: ZygoteBackend
+using DifferentiationInterface: AutoZygote
 using ProximalAlgorithms
 using ProximalOperators: IndBox
 using LinearAlgebra
@@ -14,7 +14,7 @@ using Test
 
     f = ProximalAlgorithms.AutoDifferentiable(
         x -> dot(Q * x, x) / 2 + dot(q, x),
-        ZygoteBackend(),
+        AutoZygote(),
     )
     g = IndBox(low, upp)
 
@@ -83,7 +83,7 @@ end
 
         f = ProximalAlgorithms.AutoDifferentiable(
             x -> dot(Q * x, x) / 2 + dot(q, x),
-            ZygoteBackend(),
+            AutoZygote(),
         )
         g = IndBox(low, upp)
 

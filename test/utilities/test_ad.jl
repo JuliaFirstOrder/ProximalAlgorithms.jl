@@ -4,13 +4,13 @@ using ProximalOperators: NormL1
 using ProximalAlgorithms
 using Zygote
 using ReverseDiff
-using AbstractDifferentiation: ZygoteBackend, ReverseDiffBackend
+using DifferentiationInterface: AutoZygote, AutoReverseDiff
 
 @testset "Autodiff backend ($B on $T)" for (T, B) in Iterators.product(
     [Float32, Float64, ComplexF32, ComplexF64],
-    [ZygoteBackend, ReverseDiffBackend],
+    [AutoZygote, AutoReverseDiff],
 )
-    if T <: Complex && B == ReverseDiffBackend
+    if T <: Complex && B == AutoReverseDiff
         continue
     end
 
@@ -28,8 +28,8 @@ using AbstractDifferentiation: ZygoteBackend, ReverseDiffBackend
 
     x0 = zeros(T, n)
 
-    f_x0, cl = ProximalAlgorithms.value_and_gradient_closure(f, x0)
-    grad_f_x0 = @inferred cl()
+    # TODO: I removed the @inferred below, Zygote can infer the output type of the closure once it has the closure but it cannot infer the whole procedure of computing the gradient anyway
+    f_x0, grad_f_x0 = ProximalAlgorithms.value_and_gradient(f, x0)
 
     lam = R(0.1) * norm(A' * b, Inf)
     @test typeof(lam) == R

@@ -19,7 +19,7 @@ Implemented algorithms include:
 Check out [this section](https://juliafirstorder.github.io/ProximalAlgorithms.jl/stable/guide/implemented_algorithms/) for an overview of the available algorithms.
 
 Algorithms rely on:
-- [AbstractDifferentiation.jl](https://github.com/JuliaDiff/AbstractDifferentiation.jl) for automatic differentiation (but you can easily bring your own gradients)
+- [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl) for automatic differentiation (but you can easily bring your own gradients)
 - the [ProximalCore API](https://github.com/JuliaFirstOrder/ProximalCore.jl) for proximal mappings, projections, etc, to handle non-differentiable terms (see for example [ProximalOperators](https://github.com/JuliaFirstOrder/ProximalOperators.jl) for an extensive collection of functions).
 
 ## Documentation
