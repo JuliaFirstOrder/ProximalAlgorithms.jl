@@ -8,12 +8,12 @@ using FileIO
 
 const SUITE = BenchmarkGroup()
 
-function ProximalAlgorithms.value_and_gradient_closure(
+function ProximalAlgorithms.value_and_gradient(
     f::ProximalOperators.LeastSquaresDirect,
     x,
 )
     res = f.A * x - f.b
-    norm(res)^2 / 2, () -> f.A' * res
+    norm(res)^2 / 2, f.A' * res
 end
 
 struct SquaredDistance{Tb}
@@ -22,9 +22,9 @@ end
 
 (f::SquaredDistance)(x) = norm(x - f.b)^2 / 2
 
-function ProximalAlgorithms.value_and_gradient_closure(f::SquaredDistance, x)
+function ProximalAlgorithms.value_and_gradient(f::SquaredDistance, x)
     diff = x - f.b
-    norm(diff)^2 / 2, () -> diff
+    norm(diff)^2 / 2, diff
 end
 
 for (benchmark_name, file_name) in [

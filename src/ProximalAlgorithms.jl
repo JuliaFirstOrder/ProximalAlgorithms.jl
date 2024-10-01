@@ -1,6 +1,7 @@
 module ProximalAlgorithms
 
-using AbstractDifferentiation
+using ADTypes: ADTypes
+using DifferentiationInterface: DifferentiationInterface
 using ProximalCore
 using ProximalCore: prox, prox!
 
@@ -12,11 +13,11 @@ const Maybe{T} = Union{T,Nothing}
 
 Callable struct wrapping function `f` to be auto-differentiated using `backend`.
 
-When called, it evaluates the same as `f`, while [`value_and_gradient_closure`](@ref)
+When called, it evaluates the same as `f`, while its gradient
 is implemented using `backend` for automatic differentiation.
-The backend can be any from [AbstractDifferentiation](https://github.com/JuliaDiff/AbstractDifferentiation.jl).
+The backend can be any of those supported by [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl).
 """
-struct AutoDifferentiable{F,B}
+struct AutoDifferentiable{F,B<:ADTypes.AbstractADType}
     f::F
     backend::B
 end
@@ -24,21 +25,18 @@ end
 (f::AutoDifferentiable)(x) = f.f(x)
 
 """
-    value_and_gradient_closure(f, x)
+    value_and_gradient(f, x)
 
-Return a tuple containing the value of `f` at `x`, and a closure `cl`.
-
-Function `cl`, once called, yields the gradient of `f` at `x`.
+Return a tuple containing the value of `f` at `x` and the gradient of `f` at `x`.
 """
-value_and_gradient_closure
+value_and_gradient
 
-function value_and_gradient_closure(f::AutoDifferentiable, x)
-    fx, pb = AbstractDifferentiation.value_and_pullback_function(f.backend, f.f, x)
-    return fx, () -> pb(one(fx))[1]
+function value_and_gradient(f::AutoDifferentiable, x)
+    return DifferentiationInterface.value_and_gradient(f.f, f.backend, x)
 end
 
-function value_and_gradient_closure(f::ProximalCore.Zero, x)
-    f(x), () -> zero(x)
+function value_and_gradient(f::ProximalCore.Zero, x)
+    return f(x), zero(x)
 end
 
 # various utilities
