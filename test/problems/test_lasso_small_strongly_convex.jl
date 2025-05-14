@@ -54,8 +54,8 @@ using ProximalAlgorithms
     x0_backup = copy(x0)
 
     @testset "SFISTA" begin
-        solver = ProximalAlgorithms.SFISTA(tol = TOL)
-        y, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf, mf = mf)
+        solver = ProximalAlgorithms.SFISTA(tol=TOL)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf, mf=mf)
         @test eltype(y) == T
         @test norm(y - x_star) <= TOL
         @test it < 40
@@ -63,8 +63,8 @@ using ProximalAlgorithms
     end
 
     @testset "ForwardBackward" begin
-        solver = ProximalAlgorithms.ForwardBackward(tol = TOL)
-        y, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
+        solver = ProximalAlgorithms.ForwardBackward(tol=TOL)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 110
@@ -72,8 +72,8 @@ using ProximalAlgorithms
     end
 
     @testset "ForwardBackward (adaptive step)" begin
-        solver = ProximalAlgorithms.ForwardBackward(tol = TOL, adaptive = true)
-        y, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        solver = ProximalAlgorithms.ForwardBackward(tol=TOL, adaptive=true)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 300
@@ -82,11 +82,11 @@ using ProximalAlgorithms
 
     @testset "ForwardBackward (adaptive step, regret)" begin
         solver = ProximalAlgorithms.ForwardBackward(
-            tol = TOL,
-            adaptive = true,
-            increase_gamma = T(1.01),
+            tol=TOL,
+            adaptive=true,
+            increase_gamma=T(1.01),
         )
-        y, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 80
@@ -94,8 +94,8 @@ using ProximalAlgorithms
     end
 
     @testset "FastForwardBackward" begin
-        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
-        y, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf, mf = mf)
+        solver = ProximalAlgorithms.FastForwardBackward(tol=TOL)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf, mf=mf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 35
@@ -103,8 +103,8 @@ using ProximalAlgorithms
     end
 
     @testset "FastForwardBackward (adaptive step)" begin
-        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL, adaptive = true)
-        y, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        solver = ProximalAlgorithms.FastForwardBackward(tol=TOL, adaptive=true)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 100
@@ -113,11 +113,11 @@ using ProximalAlgorithms
 
     @testset "FastForwardBackward (adaptive step, regret)" begin
         solver = ProximalAlgorithms.FastForwardBackward(
-            tol = TOL,
-            adaptive = true,
-            increase_gamma = T(1.01),
+            tol=TOL,
+            adaptive=true,
+            increase_gamma=T(1.01),
         )
-        y, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 100
@@ -125,14 +125,14 @@ using ProximalAlgorithms
     end
 
     @testset "FastForwardBackward (custom extrapolation)" begin
-        solver = ProximalAlgorithms.FastForwardBackward(tol = TOL)
+        solver = ProximalAlgorithms.FastForwardBackward(tol=TOL)
         y, it = solver(
-            x0 = x0,
-            f = fA_autodiff,
-            g = g,
-            gamma = 1 / Lf,
-            mf = mf,
-            extrapolation_sequence = ProximalAlgorithms.ConstantNesterovSequence(
+            x0=x0,
+            f=fA_autodiff,
+            g=g,
+            gamma=1 / Lf,
+            mf=mf,
+            extrapolation_sequence=ProximalAlgorithms.ConstantNesterovSequence(
                 mf,
                 1 / Lf,
             ),
@@ -144,8 +144,8 @@ using ProximalAlgorithms
     end
 
     @testset "DRLS" begin
-        solver = ProximalAlgorithms.DRLS(tol = TOL)
-        v, it = solver(x0 = x0, f = fA_prox, g = g, mf = mf)
+        solver = ProximalAlgorithms.DRLS(tol=TOL)
+        v, it = solver(x0=x0, f=fA_prox, g=g, mf=mf)
         @test eltype(v) == T
         @test norm(v - x_star, Inf) <= TOL
         @test it < 14
@@ -153,8 +153,8 @@ using ProximalAlgorithms
     end
 
     @testset "PANOC" begin
-        solver = ProximalAlgorithms.PANOC(tol = TOL)
-        y, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
+        solver = ProximalAlgorithms.PANOC(tol=TOL)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 45
@@ -162,8 +162,17 @@ using ProximalAlgorithms
     end
 
     @testset "PANOCplus" begin
-        solver = ProximalAlgorithms.PANOCplus(tol = TOL)
-        y, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
+        solver = ProximalAlgorithms.PANOCplus(tol=TOL)
+        y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 45
+        @test x0 == x0_backup
+    end
+
+    @testset "PANOCplus (nonmonotone)" begin
+        solver = ProximalAlgorithms.PANOCplus(tol=TOL, monotonicity=T(0.1))
+        y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf)
         @test eltype(y) == T
         @test norm(y - x_star, Inf) <= TOL
         @test it < 45

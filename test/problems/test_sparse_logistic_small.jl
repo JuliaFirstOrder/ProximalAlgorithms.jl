@@ -120,4 +120,26 @@ using LinearAlgebra
         @test x0 == x0_backup
     end
 
+    @testset "PANOCplus (adaptive step, nonmonotone)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL, monotonicity=R(0.9))
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it < 50
+        @test x0 == x0_backup
+    end
+
+    @testset "PANOCplus (adaptive step, very nonmonotone)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL, monotonicity=R(0.1))
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it < 110
+        @test x0 == x0_backup
+    end
+
 end
