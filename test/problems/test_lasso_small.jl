@@ -241,6 +241,23 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
     end
 
+    @testset "DouglasRachford line search ($acc) (nonmonotone)" for (acc, maxit) in [
+        (LBFGS(5), 25),
+        (Broyden(), 20),
+        (AndersonAcceleration(5), 12),
+        (NesterovExtrapolation(FixedNesterovSequence), 60),
+        (NesterovExtrapolation(SimpleNesterovSequence), 50),
+    ]
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.DRLS(tol=10 * TOL, directions=acc, monotonicity=R(0.5))
+        z, it = @inferred solver(x0=x0, f=fA_prox, g=g, Lf=Lf)
+        @test eltype(z) == T
+        @test norm(z - x_star, Inf) <= 10 * TOL
+        @test it < maxit
+        @test x0 == x0_backup
+    end
+
     @testset "AFBA" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)

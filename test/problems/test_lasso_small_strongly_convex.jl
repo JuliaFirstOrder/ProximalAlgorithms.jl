@@ -152,6 +152,15 @@ using ProximalAlgorithms
         @test x0 == x0_backup
     end
 
+    @testset "DRLS (nonmonotone)" begin
+        solver = ProximalAlgorithms.DRLS(tol=TOL, monotonicity=T(0.1))
+        v, it = solver(x0=x0, f=fA_prox, g=g, mf=mf)
+        @test eltype(v) == T
+        @test norm(v - x_star, Inf) <= TOL
+        @test it < 14
+        @test x0 == x0_backup
+    end
+
     @testset "PANOC" begin
         solver = ProximalAlgorithms.PANOC(tol=TOL)
         y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf)
