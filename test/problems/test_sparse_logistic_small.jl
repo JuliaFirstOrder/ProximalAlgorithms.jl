@@ -98,6 +98,17 @@ using LinearAlgebra
         @test x0 == x0_backup
     end
 
+    @testset "ZeroFPR (adaptive, nonmonotone)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL, monotonicity=R(0.5))
+        x, it = solver(x0 = x0, f = f_autodiff, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it < 30
+        @test x0 == x0_backup
+    end
+
     @testset "PANOC (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
