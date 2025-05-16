@@ -145,6 +145,17 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
     end
 
+    @testset "ZeroFPR (fixed step, nonmonotone)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ZeroFPR(tol = TOL, monotonicity = R(0.2))
+        x, it = @inferred solver(x0 = x0, f = f_autodiff, A = A, g = g, Lf = Lf)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+        @test x0 == x0_backup
+    end
+
     @testset "ZeroFPR (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
@@ -153,6 +164,17 @@ using ProximalAlgorithms:
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
+        @test x0 == x0_backup
+    end
+
+    @testset "ZeroFPR (adaptive step, nonmonotone)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL, monotonicity = R(0.2))
+        x, it = @inferred solver(x0 = x0, f = f_autodiff, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 30
         @test x0 == x0_backup
     end
 

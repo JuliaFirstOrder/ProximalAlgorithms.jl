@@ -142,6 +142,16 @@ end
             @test x0 == x0_backup
         end
 
+        @testset "ZeroFPR (nonmonotone)" begin
+            x0 = zeros(T, n)
+            x0_backup = copy(x0)
+            solver = ProximalAlgorithms.ZeroFPR(tol = TOL, monotonicity=T(0.4))
+            x, it = solver(x0 = x0, f = f, g = g)
+            z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
+            @test norm(x - z, Inf) / gamma <= TOL
+            @test x0 == x0_backup
+        end
+
         @testset "LiLin" begin
             x0 = zeros(T, n)
             x0_backup = copy(x0)

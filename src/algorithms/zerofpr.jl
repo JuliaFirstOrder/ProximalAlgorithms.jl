@@ -33,6 +33,7 @@ See also: [`ZeroFPR`](@ref).
 - `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
 - `max_backtracks=20`: maximum number of line-search backtracks.
 - `directions=LBFGS(5)`: strategy to use to compute line-search directions.
+- `monotonicity=1`: parameter controlling the averaging scheme for nonmonotone linesearch; monotonicity ∈ (0,1], monotone scheme by default.
 
 # References
 1. Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms", SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274-2303 (2018).
@@ -50,6 +51,7 @@ Base.@kwdef struct ZeroFPRIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
     minimum_gamma::R = real(eltype(x0))(1e-7)
     max_backtracks::Int = 20
     directions::D = LBFGS(5)
+    monotonicity::R = real(eltype(x0))(1)
 end
 
 Base.IteratorSize(::Type{<:ZeroFPRIteration}) = Base.IsInfinite()
@@ -66,6 +68,7 @@ Base.@kwdef mutable struct ZeroFPRState{R,Tx,TAx,TH}
     g_xbar::R         # value of nonsmooth term (at xbar)
     res::Tx           # fixed-point residual at iterate (= x - xbar)
     H::TH             # variable metric
+    merit::R = zero(gamma)
     tau::R = zero(gamma)
     Axbar::TAx = similar(Ax)
     grad_f_Axbar::TAx = similar(Ax)
@@ -106,6 +109,8 @@ function Base.iterate(iter::ZeroFPRIteration{R}) where {R}
         res = x - xbar,
         H = initialize(iter.directions, x),
     )
+    # initialize merit
+    state.merit = f_model(iter, state) + state.g_xbar
     return state, state
 end
 
@@ -170,9 +175,6 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where {R}
         f_model(iter, state), f_Axbar
     end
 
-    # compute FBE
-    FBE_x = f_Axbar_upp + state.g_xbar
-
     # compute residual at xbar
     mul!(state.At_grad_f_Axbar, iter.A', state.grad_f_Axbar)
     state.y .= state.xbar .- state.gamma .* state.At_grad_f_Axbar
@@ -193,6 +195,8 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where {R}
     state.tau = R(1)
     mul!(state.Ad, iter.A, state.d)
 
+    # retrieve merit and set threshold
+    FBE_x = state.merit
     sigma = iter.beta * (0.5 / state.gamma) * (1 - iter.alpha)
     tol = 10 * eps(R) * (1 + abs(FBE_x))
     threshold = FBE_x - sigma * norm(state.res)^2 + tol
@@ -215,7 +219,8 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where {R}
 
         state.tau = k >= iter.max_backtracks - 1 ? R(0) : state.tau / 2
     end
-
+    # update merit with averaging rule
+    state.merit = (1 - iter.monotonicity) * state.merit + iter.monotonicity * FBE_x
     return state, state
 end
 

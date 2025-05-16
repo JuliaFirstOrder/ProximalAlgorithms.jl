@@ -161,6 +161,24 @@ using ProximalAlgorithms
         @test x0 == x0_backup
     end
 
+    @testset "ZeroFPR (fixed, nonmonotone)" begin
+        solver = ProximalAlgorithms.ZeroFPR(tol = TOL, monotonicity = T(0.2))
+        y, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf=Lf)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 30
+        @test x0 == x0_backup
+    end
+
+    @testset "ZeroFPR (adaptive, nonmonotone)" begin
+        solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL, monotonicity = T(0.2))
+        y, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf=Lf)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 30
+        @test x0 == x0_backup
+    end
+
     @testset "PANOC" begin
         solver = ProximalAlgorithms.PANOC(tol=TOL)
         y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf)
