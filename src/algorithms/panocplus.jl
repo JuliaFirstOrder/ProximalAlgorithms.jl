@@ -183,6 +183,7 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
 
     tau_backtracks = 0
     can_update_direction = true
+    FBE_x_new = R(0)
 
     while true
 
@@ -230,8 +231,6 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
 
         FBE_x_new = f_Az_upp + state.g_z
         if FBE_x_new <= threshold || tau_backtracks >= iter.max_backtracks
-            # update merit with averaging rule
-            state.merit = (1 - iter.monotonicity) * state.merit + iter.monotonicity * FBE_x_new
             break
         end
         state.tau = tau_backtracks >= iter.max_backtracks - 1 ? R(0) : state.tau / 2
@@ -240,6 +239,9 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
     end
 
     update_direction_state!(iter, state)
+
+    # update merit with averaging rule
+    state.merit = (1 - iter.monotonicity) * state.merit + iter.monotonicity * FBE_x_new
 
     return state, state
 
