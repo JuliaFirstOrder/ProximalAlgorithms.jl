@@ -145,7 +145,7 @@ function Base.iterate(iter::PANOCIteration{R,Tx,Tf}, state::PANOCState) where {R
 
     if iter.adaptive == true
         gamma_prev = state.gamma
-        state.gamma, state.g_z, f_Az, f_Az_upp = backtrack_stepsize!(
+        state.gamma, state.g_z, f_Az, _ = backtrack_stepsize!(
             state.gamma,
             iter.f,
             iter.A,
@@ -201,10 +201,10 @@ function Base.iterate(iter::PANOCIteration{R,Tx,Tf}, state::PANOCState) where {R
     state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
     state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
     state.res .= state.x .- state.z
-    FBE_x_new = f_model(iter, state) + state.g_z
+    FBE_x = f_model(iter, state) + state.g_z
 
     for k = 1:iter.max_backtracks
-        if FBE_x_new <= threshold
+        if FBE_x <= threshold
             break
         end
 
@@ -248,12 +248,12 @@ function Base.iterate(iter::PANOCIteration{R,Tx,Tf}, state::PANOCState) where {R
         state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
         state.g_z = prox!(state.z, iter.g, state.y, state.gamma)
         state.res .= state.x .- state.z
-        FBE_x_new = f_model(iter, state) + state.g_z
+        FBE_x = f_model(iter, state) + state.g_z
     end
 
     update_direction_state!(iter, state)
     # update merit with averaging rule
-    state.merit = (1 - iter.monotonicity) * state.merit + iter.monotonicity * FBE_x_new
+    state.merit = (1 - iter.monotonicity) * state.merit + iter.monotonicity * FBE_x
     return state, state
 end
 

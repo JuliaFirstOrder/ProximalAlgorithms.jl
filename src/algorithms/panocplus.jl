@@ -124,8 +124,7 @@ function Base.iterate(iter::PANOCplusIteration{R}) where {R}
         )
     else
         mul!(state.Az, iter.A, state.z)
-        f_Az, grad_f_Az = value_and_gradient(iter.f, state.Az)
-        state.grad_f_Az = grad_f_Az
+        _, state.grad_f_Az = value_and_gradient(iter.f, state.Az)
     end
     mul!(state.At_grad_f_Az, adjoint(iter.A), state.grad_f_Az)
     # initialize merit
@@ -183,7 +182,6 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
 
     tau_backtracks = 0
     can_update_direction = true
-    FBE_x_new = R(0)
 
     while true
 
@@ -229,8 +227,8 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
         end
         mul!(state.At_grad_f_Az, adjoint(iter.A), state.grad_f_Az)
 
-        FBE_x_new = f_Az_upp + state.g_z
-        if FBE_x_new <= threshold || tau_backtracks >= iter.max_backtracks
+        FBE_x = f_Az_upp + state.g_z
+        if FBE_x <= threshold || tau_backtracks >= iter.max_backtracks
             break
         end
         state.tau = tau_backtracks >= iter.max_backtracks - 1 ? R(0) : state.tau / 2
@@ -241,7 +239,7 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
     update_direction_state!(iter, state)
 
     # update merit with averaging rule
-    state.merit = (1 - iter.monotonicity) * state.merit + iter.monotonicity * FBE_x_new
+    state.merit = (1 - iter.monotonicity) * state.merit + iter.monotonicity * FBE_x
 
     return state, state
 

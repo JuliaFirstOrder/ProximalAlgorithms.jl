@@ -147,8 +147,8 @@ update_direction_state!(iter::DRLSIteration, state::DRLSState) =
 
 function Base.iterate(iter::DRLSIteration{R,Tx,Tf}, state::DRLSState) where {R,Tx,Tf}
     # retrieve merit and set threshold
-    DRE_curr = state.merit
-    threshold = iter.dre_sign * DRE_curr - iter.c / iter.gamma * norm(state.res)^2
+    DRE_x = state.merit
+    threshold = iter.dre_sign * DRE_x - iter.c / iter.gamma * norm(state.res)^2
 
     set_next_direction!(iter, state)
 
@@ -163,13 +163,14 @@ function Base.iterate(iter::DRLSIteration{R,Tx,Tf}, state::DRLSState) where {R,T
     state.g_v = prox!(state.v, iter.g, state.w, iter.gamma)
     state.res .= state.u .- state.v
     state.xbar .= state.x .- iter.lambda * state.res
+    DRE_x = DRE(state)
 
     update_direction_state!(iter, state)
 
     a, b, c = R(0), R(0), R(0)
 
     for k = 1:iter.max_backtracks
-        if iter.dre_sign * DRE(state) <= threshold
+        if iter.dre_sign * DRE_x <= threshold
             break
         end
 
@@ -195,9 +196,10 @@ function Base.iterate(iter::DRLSIteration{R,Tx,Tf}, state::DRLSState) where {R,T
         state.g_v = prox!(state.v, iter.g, state.w, iter.gamma)
         state.res .= state.u .- state.v
         state.xbar .= state.x .- iter.lambda * state.res
+        DRE_x = DRE(state)
     end
     # update merit with averaging rule
-    state.merit = (1 - iter.monotonicity) * state.merit + iter.monotonicity * DRE(state)
+    state.merit = (1 - iter.monotonicity) * state.merit + iter.monotonicity * DRE_x
 
     return state, state
 end
