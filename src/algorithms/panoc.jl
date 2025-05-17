@@ -32,6 +32,7 @@ See also: [`PANOC`](@ref).
 - `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
 - `max_backtracks=20`: maximum number of line-search backtracks.
 - `directions=LBFGS(5)`: strategy to use to compute line-search directions.
+- `monotonicity=1`: parameter controlling the averaging scheme for nonmonotone linesearch; monotonicity ∈ (0,1], monotone scheme by default.
 
 # References
 1. Stella, Themelis, Sopasakis, Patrinos, "A simple and efficient algorithm for nonlinear model predictive control", 56th IEEE Conference on Decision and Control (2017).
@@ -49,6 +50,7 @@ Base.@kwdef struct PANOCIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
     minimum_gamma::R = real(eltype(x0))(1e-7)
     max_backtracks::Int = 20
     directions::D = LBFGS(5)
+    monotonicity::R = real(eltype(x0))(1)
 end
 
 Base.IteratorSize(::Type{<:PANOCIteration}) = Base.IsInfinite()
@@ -65,6 +67,7 @@ Base.@kwdef mutable struct PANOCState{R,Tx,TAx,TH}
     g_z::R            # value of nonsmooth term (at z)
     res::Tx           # fixed-point residual at iterate (= x - z)
     H::TH             # variable metric
+    merit::R = zero(gamma)
     tau::R = zero(gamma)
     x_prev::Tx = similar(x)
     res_prev::Tx = similar(x)
@@ -108,6 +111,8 @@ function Base.iterate(iter::PANOCIteration{R}) where {R}
         res = x - z,
         H = initialize(iter.directions, x),
     )
+    # initialize merit
+    state.merit = f_model(iter, state) + state.g_z
     return state, state
 end
 
@@ -138,7 +143,7 @@ reset_direction_state!(iter::PANOCIteration, state::PANOCState) =
 function Base.iterate(iter::PANOCIteration{R,Tx,Tf}, state::PANOCState) where {R,Tx,Tf}
     f_Az, a, b, c = R(Inf), R(Inf), R(Inf), R(Inf)
 
-    f_Az_upp = if iter.adaptive == true
+    if iter.adaptive == true
         gamma_prev = state.gamma
         state.gamma, state.g_z, f_Az, f_Az_upp = backtrack_stepsize!(
             state.gamma,
@@ -160,13 +165,8 @@ function Base.iterate(iter::PANOCIteration{R,Tx,Tf}, state::PANOCState) where {R
         if state.gamma != gamma_prev
             reset_direction_state!(iter, state)
         end
-        f_Az_upp
-    else
-        f_model(iter, state)
     end
 
-    # compute FBE
-    FBE_x = f_Az_upp + state.g_z
 
     # compute direction
     set_next_direction!(iter, state)
@@ -192,6 +192,8 @@ function Base.iterate(iter::PANOCIteration{R,Tx,Tf}, state::PANOCState) where {R
     copyto!(state.z_curr, state.z)
     state.f_Ax = state.f_Ax_d
 
+    # retrieve merit and set threshold
+    FBE_x = state.merit
     sigma = iter.beta * (0.5 / state.gamma) * (1 - iter.alpha)
     tol = 10 * eps(R) * (1 + abs(FBE_x))
     threshold = FBE_x - sigma * norm(state.res)^2 + tol
@@ -250,7 +252,8 @@ function Base.iterate(iter::PANOCIteration{R,Tx,Tf}, state::PANOCState) where {R
     end
 
     update_direction_state!(iter, state)
-
+    # update merit with averaging rule
+    state.merit = (1 - iter.monotonicity) * state.merit + iter.monotonicity * FBE_x_new
     return state, state
 end
 
