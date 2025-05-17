@@ -145,9 +145,9 @@ reset_direction_state!(iter::ZeroFPRIteration, state::ZeroFPRState) =
     reset_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
 function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where {R}
-    f_Axbar_upp, f_Axbar = if iter.adaptive == true
+    if iter.adaptive == true
         gamma_prev = state.gamma
-        state.gamma, state.g_xbar, f_Axbar, f_Axbar_upp = backtrack_stepsize!(
+        state.gamma, state.g_xbar, _, _ = backtrack_stepsize!(
             state.gamma,
             iter.f,
             iter.A,
@@ -167,18 +167,15 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where {R}
         if state.gamma != gamma_prev
             reset_direction_state!(iter, state)
         end
-        f_Axbar_upp, f_Axbar
     else
         mul!(state.Axbar, iter.A, state.xbar)
-        f_Axbar, grad_f_Axbar = value_and_gradient(iter.f, state.Axbar)
-        state.grad_f_Axbar .= grad_f_Axbar
-        f_model(iter, state), f_Axbar
+        _, state.grad_f_Axbar = value_and_gradient(iter.f, state.Axbar)
     end
 
     # compute residual at xbar
     mul!(state.At_grad_f_Axbar, iter.A', state.grad_f_Axbar)
     state.y .= state.xbar .- state.gamma .* state.At_grad_f_Axbar
-    g_xbarbar = prox!(state.xbarbar, iter.g, state.y, state.gamma)
+    prox!(state.xbarbar, iter.g, state.y, state.gamma)
     state.res_xbar .= state.xbar .- state.xbarbar
 
     if state.is_prev_set == true
