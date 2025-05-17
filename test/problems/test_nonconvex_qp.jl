@@ -35,6 +35,16 @@ using Test
         @test x0 == x0_backup
     end
 
+    @testset "PANOC (nonmonotone)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOC(tol = TOL, monotonicity=T(0.1))
+        x, it = solver(x0 = x0, f = f, g = g)
+        z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
+        @test norm(x - z, Inf) / gamma <= TOL
+        @test x0 == x0_backup
+    end
+
     @testset "PANOCplus" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
@@ -106,6 +116,16 @@ end
             x0 = zeros(T, n)
             x0_backup = copy(x0)
             solver = ProximalAlgorithms.PANOC(tol = TOL)
+            x, it = solver(x0 = x0, f = f, g = g)
+            z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
+            @test norm(x - z, Inf) / gamma <= TOL
+            @test x0 == x0_backup
+        end
+
+        @testset "PANOC (nonmonotone)" begin
+            x0 = zeros(T, n)
+            x0_backup = copy(x0)
+            solver = ProximalAlgorithms.PANOC(tol = TOL, monotonicity=T(0.1))
             x, it = solver(x0 = x0, f = f, g = g)
             z = min.(upp, max.(low, x .- gamma .* (Q * x + q)))
             @test norm(x - z, Inf) / gamma <= TOL

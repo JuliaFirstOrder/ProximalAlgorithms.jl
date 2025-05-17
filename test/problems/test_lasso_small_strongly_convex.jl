@@ -188,6 +188,15 @@ using ProximalAlgorithms
         @test x0 == x0_backup
     end
 
+    @testset "PANOC (nonmonotone)" begin
+        solver = ProximalAlgorithms.PANOC(tol=TOL, monotonicity=T(0.2))
+        y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 45
+        @test x0 == x0_backup
+    end
+
     @testset "PANOCplus" begin
         solver = ProximalAlgorithms.PANOCplus(tol=TOL)
         y, it = solver(x0=x0, f=fA_autodiff, g=g, Lf=Lf)

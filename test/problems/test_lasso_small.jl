@@ -191,6 +191,17 @@ using ProximalAlgorithms:
 
     end
 
+    @testset "PANOC (fixed, nonmonotone)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOC(tol = TOL, monotonicity=R(0.3))
+        x, it = @inferred solver(x0 = x0, f = f_autodiff, A = A, g = g, Lf = Lf)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+        @test x0 == x0_backup
+    end
+
     @testset "PANOC (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
@@ -199,6 +210,17 @@ using ProximalAlgorithms:
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
+        @test x0 == x0_backup
+    end
+
+    @testset "PANOC (adaptive, nonmonotone)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOC(adaptive = true, tol = TOL, monotonicity=R(0.3))
+        x, it = @inferred solver(x0 = x0, f = f_autodiff, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 35
         @test x0 == x0_backup
     end
 
