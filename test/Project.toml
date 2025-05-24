@@ -1,5 +1,4 @@
 [deps]
-AbstractOperators = "d9c5613a-d543-52d8-9afd-8f241a8c3f1c"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
