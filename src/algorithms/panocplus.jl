@@ -175,10 +175,10 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
     state.res_prev .= state.res
 
     # retrieve merit and set threshold
-    FBE_x = state.merit
     sigma = iter.beta * (0.5 / state.gamma) * (1 - iter.alpha)
-    tol = 10 * eps(R) * (1 + abs(FBE_x))
-    threshold = FBE_x - sigma * norm(state.res)^2 + tol
+    tol = 10 * eps(R) * (1 + abs(state.merit))
+    threshold = state.merit - sigma * norm(state.res)^2 + tol
+    FBE_x = f_model(iter, state) + state.g_z
 
     tau_backtracks = 0
     can_update_direction = true

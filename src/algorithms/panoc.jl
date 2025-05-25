@@ -193,10 +193,9 @@ function Base.iterate(iter::PANOCIteration{R,Tx,Tf}, state::PANOCState) where {R
     state.f_Ax = state.f_Ax_d
 
     # retrieve merit and set threshold
-    FBE_x = state.merit
     sigma = iter.beta * (0.5 / state.gamma) * (1 - iter.alpha)
-    tol = 10 * eps(R) * (1 + abs(FBE_x))
-    threshold = FBE_x - sigma * norm(state.res)^2 + tol
+    tol = 10 * eps(R) * (1 + abs(state.merit))
+    threshold = state.merit - sigma * norm(state.res)^2 + tol
 
     state.y .= state.x .- state.gamma .* state.At_grad_f_Ax
     state.g_z = prox!(state.z, iter.g, state.y, state.gamma)

@@ -147,8 +147,7 @@ update_direction_state!(iter::DRLSIteration, state::DRLSState) =
 
 function Base.iterate(iter::DRLSIteration{R,Tx,Tf}, state::DRLSState) where {R,Tx,Tf}
     # retrieve merit and set threshold
-    DRE_x = state.merit
-    threshold = iter.dre_sign * DRE_x - iter.c / iter.gamma * norm(state.res)^2
+    threshold = iter.dre_sign * state.merit - iter.c / iter.gamma * norm(state.res)^2
 
     set_next_direction!(iter, state)
 

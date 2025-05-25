@@ -193,10 +193,10 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where {R}
     mul!(state.Ad, iter.A, state.d)
 
     # retrieve merit and set threshold
-    FBE_x = state.merit
     sigma = iter.beta * (0.5 / state.gamma) * (1 - iter.alpha)
-    tol = 10 * eps(R) * (1 + abs(FBE_x))
-    threshold = FBE_x - sigma * norm(state.res)^2 + tol
+    tol = 10 * eps(R) * (1 + abs(state.merit))
+    threshold = state.merit - sigma * norm(state.res)^2 + tol
+    FBE_x = f_model(iter, state) + state.g_xbar
 
     for k = 1:iter.max_backtracks
         state.x .= state.xbar_prev .+ state.tau .* state.d
