@@ -32,6 +32,7 @@ See also: [`PANOCplus`](@ref).
 - `minimum_gamma=1e-7`: lower bound to `gamma` in case `adaptive == true`.
 - `max_backtracks=20`: maximum number of line-search backtracks.
 - `directions=LBFGS(5)`: strategy to use to compute line-search directions.
+- `monotonicity=1`: parameter controlling the averaging scheme for nonmonotone linesearch; monotonicity ∈ (0,1], monotone scheme by default.
 
 # References
 1. De Marchi, Themelis, "Proximal Gradient Algorithms under Local Lipschitz Gradient Continuity", Journal of Optimization Theory and Applications, vol. 194, no. 3, pp. 771-794 (2022).
@@ -49,6 +50,7 @@ Base.@kwdef struct PANOCplusIteration{R,Tx,Tf,TA,Tg,TLf,Tgamma,D}
     minimum_gamma::R = real(eltype(x0))(1e-7)
     max_backtracks::Int = 20
     directions::D = LBFGS(5)
+    monotonicity::R = real(eltype(x0))(1)
 end
 
 Base.IteratorSize(::Type{<:PANOCplusIteration}) = Base.IsInfinite()
@@ -65,6 +67,7 @@ Base.@kwdef mutable struct PANOCplusState{R,Tx,TAx,TH}
     g_z::R            # value of nonsmooth term (at z)
     res::Tx           # fixed-point residual at iterate (= x - z)
     H::TH             # variable metric
+    merit::R = zero(gamma)
     tau::R = zero(gamma)
     x_prev::Tx = similar(x)
     res_prev::Tx = similar(x)
@@ -121,10 +124,11 @@ function Base.iterate(iter::PANOCplusIteration{R}) where {R}
         )
     else
         mul!(state.Az, iter.A, state.z)
-        f_Az, grad_f_Az = value_and_gradient(iter.f, state.Az)
-        state.grad_f_Az = grad_f_Az
+        _, state.grad_f_Az = value_and_gradient(iter.f, state.Az)
     end
     mul!(state.At_grad_f_Az, adjoint(iter.A), state.grad_f_Az)
+    # initialize merit
+    state.merit = f_model(iter, state) + state.g_z
     return state, state
 end
 
@@ -170,12 +174,11 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
     state.x_prev .= state.x
     state.res_prev .= state.res
 
-    # compute FBE
-    FBE_x = f_model(iter, state) + state.g_z
-
+    # retrieve merit and set threshold
     sigma = iter.beta * (0.5 / state.gamma) * (1 - iter.alpha)
-    tol = 10 * eps(R) * (1 + abs(FBE_x))
-    threshold = FBE_x - sigma * norm(state.res)^2 + tol
+    tol = 10 * eps(R) * (1 + abs(state.merit))
+    threshold = state.merit - sigma * norm(state.res)^2 + tol
+    FBE_x = f_model(iter, state) + state.g_z
 
     tau_backtracks = 0
     can_update_direction = true
@@ -224,8 +227,8 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
         end
         mul!(state.At_grad_f_Az, adjoint(iter.A), state.grad_f_Az)
 
-        FBE_x_new = f_Az_upp + state.g_z
-        if FBE_x_new <= threshold || tau_backtracks >= iter.max_backtracks
+        FBE_x = f_Az_upp + state.g_z
+        if FBE_x <= threshold || tau_backtracks >= iter.max_backtracks
             break
         end
         state.tau = tau_backtracks >= iter.max_backtracks - 1 ? R(0) : state.tau / 2
@@ -234,6 +237,9 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
     end
 
     update_direction_state!(iter, state)
+
+    # update merit with averaging rule
+    state.merit = (1 - iter.monotonicity) * state.merit + iter.monotonicity * FBE_x
 
     return state, state
 
@@ -280,13 +286,13 @@ See also: [`PANOCplusIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. De Marchi, Themelis, "Proximal Gradient Algorithms under Local Lipschitz Gradient Continuity", Journal of Optimization Theory and Applications, vol. 194, no. 3, pp. 771-794 (2022).
 """
 PANOCplus(;
-    maxit = 1_000,
-    tol = 1e-8,
-    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
-    solution = default_solution,
-    verbose = false,
-    freq = 10,
-    display = default_display,
+    maxit=1_000,
+    tol=1e-8,
+    stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+    solution=default_solution,
+    verbose=false,
+    freq=10,
+    display=default_display,
     kwargs...,
 ) = IterativeAlgorithm(
     PANOCplusIteration;

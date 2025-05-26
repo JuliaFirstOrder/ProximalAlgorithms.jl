@@ -145,6 +145,17 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
     end
 
+    @testset "ZeroFPR (fixed step, nonmonotone)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ZeroFPR(tol = TOL, monotonicity = R(0.2))
+        x, it = @inferred solver(x0 = x0, f = f_autodiff, A = A, g = g, Lf = Lf)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+        @test x0 == x0_backup
+    end
+
     @testset "ZeroFPR (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
@@ -153,6 +164,17 @@ using ProximalAlgorithms:
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
+        @test x0 == x0_backup
+    end
+
+    @testset "ZeroFPR (adaptive step, nonmonotone)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.ZeroFPR(adaptive = true, tol = TOL, monotonicity = R(0.2))
+        x, it = @inferred solver(x0 = x0, f = f_autodiff, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 30
         @test x0 == x0_backup
     end
 
@@ -169,6 +191,17 @@ using ProximalAlgorithms:
 
     end
 
+    @testset "PANOC (fixed, nonmonotone)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOC(tol = TOL, monotonicity=R(0.3))
+        x, it = @inferred solver(x0 = x0, f = f_autodiff, A = A, g = g, Lf = Lf)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 20
+        @test x0 == x0_backup
+    end
+
     @testset "PANOC (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
@@ -177,6 +210,17 @@ using ProximalAlgorithms:
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= TOL
         @test it < 20
+        @test x0 == x0_backup
+    end
+
+    @testset "PANOC (adaptive, nonmonotone)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOC(adaptive = true, tol = TOL, monotonicity=R(0.3))
+        x, it = @inferred solver(x0 = x0, f = f_autodiff, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 35
         @test x0 == x0_backup
     end
 
@@ -202,6 +246,17 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
     end
 
+    @testset "PANOCplus (adaptive step, nonmonotone)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.PANOCplus(adaptive = true, tol = TOL, monotonicity=R(0.1))
+        x, it = @inferred solver(x0 = x0, f = f_autodiff, A = A, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 40
+        @test x0 == x0_backup
+    end
+
     @testset "DouglasRachford" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
@@ -224,6 +279,23 @@ using ProximalAlgorithms:
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.DRLS(tol = 10 * TOL, directions = acc)
         z, it = @inferred solver(x0 = x0, f = fA_prox, g = g, Lf = Lf)
+        @test eltype(z) == T
+        @test norm(z - x_star, Inf) <= 10 * TOL
+        @test it < maxit
+        @test x0 == x0_backup
+    end
+
+    @testset "DouglasRachford line search ($acc) (nonmonotone)" for (acc, maxit) in [
+        (LBFGS(5), 25),
+        (Broyden(), 20),
+        (AndersonAcceleration(5), 12),
+        (NesterovExtrapolation(FixedNesterovSequence), 60),
+        (NesterovExtrapolation(SimpleNesterovSequence), 50),
+    ]
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.DRLS(tol=10 * TOL, directions=acc, monotonicity=R(0.5))
+        z, it = @inferred solver(x0=x0, f=fA_prox, g=g, Lf=Lf)
         @test eltype(z) == T
         @test norm(z - x_star, Inf) <= 10 * TOL
         @test it < maxit

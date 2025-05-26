@@ -43,6 +43,7 @@ See also: [`DRLS`](@ref).
 - `gamma`: stepsize to use, chosen appropriately based on Lf and mf by defaults.
 - `max_backtracks=20`: maximum number of line-search backtracks.
 - `directions=LBFGS(5)`: strategy to use to compute line-search directions.
+- `monotonicity=1`: parameter controlling the averaging scheme for nonmonotone linesearch; monotonicity ∈ (0,1], monotone scheme by default.
 
 # References
 1. Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM for nonconvex optimization: Accelerated and Newton-type linesearch algorithms", Computational Optimization and Applications, vol. 82, no. 2, pp. 395-440 (2022).
@@ -61,6 +62,7 @@ Base.@kwdef struct DRLSIteration{R,Tx,Tf,Tg,Tmf,TLf,D}
     dre_sign::Int = mf === nothing || mf <= 0 ? 1 : -1
     max_backtracks::Int = 20
     directions::D = LBFGS(5)
+    monotonicity::R = real(eltype(x0))(1)
 end
 
 Base.IteratorSize(::Type{<:DRLSIteration}) = Base.IsInfinite()
@@ -80,6 +82,7 @@ Base.@kwdef mutable struct DRLSState{R,Tx,TH}
     f_u::R
     g_v::R
     H::TH
+    merit::R = zero(gamma)
     tau::R = zero(gamma)
     u0::Tx = similar(x)
     u1::Tx = similar(x)
@@ -116,6 +119,8 @@ function Base.iterate(iter::DRLSIteration)
         g_v = g_v,
         H = initialize(iter.directions, x),
     )
+    # initialize merit
+    state.merit = DRE(state)
     return state, state
 end
 
@@ -141,8 +146,8 @@ update_direction_state!(iter::DRLSIteration, state::DRLSState) =
     update_direction_state!(acceleration_style(typeof(iter.directions)), iter, state)
 
 function Base.iterate(iter::DRLSIteration{R,Tx,Tf}, state::DRLSState) where {R,Tx,Tf}
-    DRE_curr = DRE(state)
-    threshold = iter.dre_sign * DRE_curr - iter.c / iter.gamma * norm(state.res)^2
+    # retrieve merit and set threshold
+    threshold = iter.dre_sign * state.merit - iter.c / iter.gamma * norm(state.res)^2
 
     set_next_direction!(iter, state)
 
@@ -157,13 +162,14 @@ function Base.iterate(iter::DRLSIteration{R,Tx,Tf}, state::DRLSState) where {R,T
     state.g_v = prox!(state.v, iter.g, state.w, iter.gamma)
     state.res .= state.u .- state.v
     state.xbar .= state.x .- iter.lambda * state.res
+    DRE_x = DRE(state)
 
     update_direction_state!(iter, state)
 
     a, b, c = R(0), R(0), R(0)
 
     for k = 1:iter.max_backtracks
-        if iter.dre_sign * DRE(state) <= threshold
+        if iter.dre_sign * DRE_x <= threshold
             break
         end
 
@@ -189,7 +195,10 @@ function Base.iterate(iter::DRLSIteration{R,Tx,Tf}, state::DRLSState) where {R,T
         state.g_v = prox!(state.v, iter.g, state.w, iter.gamma)
         state.res .= state.u .- state.v
         state.xbar .= state.x .- iter.lambda * state.res
+        DRE_x = DRE(state)
     end
+    # update merit with averaging rule
+    state.merit = (1 - iter.monotonicity) * state.merit + iter.monotonicity * DRE_x
 
     return state, state
 end
