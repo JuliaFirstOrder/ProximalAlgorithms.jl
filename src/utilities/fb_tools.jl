@@ -1,4 +1,4 @@
-using LinearAlgebra
+
 
 function f_model(f_x, grad_f_x, res, L)
     return f_x - real(dot(grad_f_x, res)) + (L / 2) * norm(res)^2

@@ -1,7 +1,3 @@
-using LinearAlgebra
-import Base: *
-import LinearAlgebra: mul!
-
 mutable struct AndersonAccelerationOperator{M,I,T}
     currmem::I
     curridx::I

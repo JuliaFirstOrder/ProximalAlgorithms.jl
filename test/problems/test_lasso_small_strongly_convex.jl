@@ -170,4 +170,22 @@ using ProximalAlgorithms
         @test x0 == x0_backup
     end
 
+    @testset "ADMM" begin
+        @testset "$(typeof(ps).name.name)" for ps in [
+            ProximalAlgorithms.FixedPenalty(),
+            ProximalAlgorithms.ResidualBalancingPenalty(),
+            ProximalAlgorithms.WohlbergPenalty(),
+            # ProximalAlgorithms.BarzilaiBorweinSpectralPenalty(), # TODO: This does not converge, needs debugging
+            # ProximalAlgorithms.SpectralRadiusBoundPenalty(), # TODO: This does not converge, needs parameter tuning
+            # ProximalAlgorithms.SpectralRadiusApproximationPenalty(), # TODO: This does not converge, needs parameter tuning
+        ]
+            solver = ProximalAlgorithms.ADMM(tol = 1e-5, maxit=1000, penalty_sequence = ps)
+            x_admm, it_admm = @inferred solver(; x0, A, b, g)
+            @test eltype(x_admm) == T
+            @test norm(x_admm - x_star, Inf) <= 1e-3
+            @test it_admm < 50
+            @test x0 == x0_backup
+        end
+    end
+
 end

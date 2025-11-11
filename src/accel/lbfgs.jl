@@ -1,7 +1,3 @@
-using LinearAlgebra
-import Base: *
-import LinearAlgebra: mul!
-
 mutable struct LBFGSOperator{M,R,I,T}
     currmem::I
     curridx::I

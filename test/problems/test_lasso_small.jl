@@ -3,7 +3,7 @@ using Test
 
 using Zygote
 using DifferentiationInterface: AutoZygote
-using ProximalOperators: NormL1, LeastSquares
+using ProximalOperators: NormL1, LeastSquares, SqrNormL2, ElasticNet, Translate
 using ProximalAlgorithms
 using ProximalAlgorithms:
     LBFGS,
@@ -280,6 +280,26 @@ using ProximalAlgorithms:
         @test norm(y - x_star, Inf) <= 10 * TOL
         @test it < 100
         @test x0 == x0_backup
+    end
+
+    @testset "ADMM" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        @testset "$(typeof(ps).name.name)" for ps in [
+            ProximalAlgorithms.FixedPenalty(),
+            # ProximalAlgorithms.ResidualBalancingPenalty(adp_freq = 5), # TODO: This does not converge, needs parameter tuning
+            # ProximalAlgorithms.WohlbergPenalty(), # TODO: This does not converge, needs parameter tuning
+            # ProximalAlgorithms.BarzilaiBorweinSpectralPenalty(), # TODO: This does not converge, needs debugging
+            ProximalAlgorithms.SpectralRadiusBoundPenalty(),
+            ProximalAlgorithms.SpectralRadiusApproximationPenalty(),
+        ]
+            solver = ProximalAlgorithms.ADMM(tol = 1e-5, maxit=500, penalty_sequence = ps)
+            x_admm, it_admm = @inferred solver(; x0, A, b, g)
+            @test eltype(x_admm) == T
+            @test norm(x_admm - x_star, Inf) <= 1e-3
+            @test it_admm ≤ 500
+            @test x0 == x0_backup
+        end
     end
 
 end

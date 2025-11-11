@@ -1,7 +1,7 @@
 using Zygote
 using DifferentiationInterface: AutoZygote
 using ProximalAlgorithms
-using ProximalOperators: IndBox
+using ProximalOperators: IndBox, Quadratic
 using LinearAlgebra
 using Random
 using Test

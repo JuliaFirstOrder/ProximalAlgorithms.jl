@@ -175,7 +175,6 @@ end
     end
 
     @testset "DavisYin" begin
-
         f = ProximalAlgorithms.AutoDifferentiable(x -> dot(c, x), AutoZygote())
         g = IndNonnegative()
         h = IndAffine(A, b)
@@ -187,13 +186,29 @@ end
         xf, it = solver(x0 = x0, f = f, g = g, h = h)
 
         @test eltype(xf) == T
-
         @test it <= maxit
-
-        @assert norm(xf - x_star) <= 1e2 * tol
-
+        @test norm(xf - x_star) <= 1e2 * tol
         @test x0 == x0_backup
+    end
 
+    @testset "ADMM" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        @testset "$(typeof(ps).name.name)" for ps in [
+            ProximalAlgorithms.FixedPenalty(),
+            # ProximalAlgorithms.ResidualBalancingPenalty(normalized=true), # TODO: This does not converge, needs parameter tuning
+            # ProximalAlgorithms.WohlbergPenalty(), # TODO: This does not converge, needs parameter tuning
+            # ProximalAlgorithms.BarzilaiBorweinSpectralPenalty(), # TODO: This does not converge, needs debugging
+            # ProximalAlgorithms.SpectralRadiusBoundPenalty(), # TODO: This does not converge, needs parameter tuning
+            # ProximalAlgorithms.SpectralRadiusApproximationPenalty(), # TODO: This does not converge, needs parameter tuning
+        ]
+            solver = ProximalAlgorithms.ADMM(; tol=1e-6, maxit=10000, penalty_sequence = ps)
+            x_admm, it_admm = @inferred solver(; x0, g = (Linear(c), IndNonnegative(), IndPoint(b)), B = (I, I, A))
+            @test eltype(x_admm) == T
+            @test norm(x_admm - x_star, Inf) <= 1e-3
+            @test it_admm < maxit
+            @test x0 == x0_backup
+        end
     end
 
 end

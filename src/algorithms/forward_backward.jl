@@ -1,12 +1,6 @@
 # Lions, Mercier, “Splitting algorithms for the sum of two nonlinear
 # operators,” SIAM Journal on Numerical Analysis, vol. 16, pp. 964–979 (1979).
 
-using Base.Iterators
-using ProximalAlgorithms.IterationTools
-using ProximalCore: Zero
-using LinearAlgebra
-using Printf
-
 """
     ForwardBackwardIteration(; <keyword-arguments>)
 
@@ -125,8 +119,8 @@ end
 default_stopping_criterion(tol, ::ForwardBackwardIteration, state::ForwardBackwardState) =
     norm(state.res, Inf) / state.gamma <= tol
 default_solution(::ForwardBackwardIteration, state::ForwardBackwardState) = state.z
-default_display(it, ::ForwardBackwardIteration, state::ForwardBackwardState) =
-    @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
+default_iteration_summary(it, ::ForwardBackwardIteration, state::ForwardBackwardState) =
+    ("" => it, "γ" => state.gamma, "f(x)" => state.f_x, "g(z)" => state.g_z, "‖x - y‖/γ" => norm(state.res, Inf) / state.gamma)
 
 """
     ForwardBackward(; <keyword-arguments>)
@@ -165,6 +159,7 @@ ForwardBackward(;
     solution = default_solution,
     verbose = false,
     freq = 100,
+    summary = default_iteration_summary,
     display = default_display,
     kwargs...,
 ) = IterativeAlgorithm(
@@ -174,8 +169,14 @@ ForwardBackward(;
     solution,
     verbose,
     freq,
+    summary,
     display,
     kwargs...,
+)
+
+get_assumptions(::Type{<:ForwardBackwardIteration}) = AssumptionGroup(
+    SimpleTerm(:f => (is_locally_smooth,)),
+    SimpleTerm(:g => (is_proximable,))
 )
 
 # Aliases
