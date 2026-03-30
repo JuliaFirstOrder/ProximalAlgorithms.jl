@@ -44,6 +44,7 @@ Base.@kwdef struct SFISTAIteration{R,C<:Union{R,Complex{R}},Tx<:AbstractArray{C}
     g::Th = Zero()
     Lf::R
     mf::R = real(eltype(Lf))(0.0)
+    termination_type::Symbol = :classic # can be :AIPP or :classic (default)
 end
 
 Base.IteratorSize(::Type{<:SFISTAIteration}) = Base.IsInfinite()
@@ -60,6 +61,7 @@ Base.@kwdef mutable struct SFISTAState{R,Tx}
     APrev::R = real(eltype(yPrev))(1.0) # previous A (helper variable).
     A::R = real(eltype(yPrev))(0.0)     # helper variable (see [3]).
     gradf_xt::Tx = zero(yPrev)          # array containing ∇f(xt).
+    res_norm::R = real(eltype(yPrev))(0.0) # norm of the residual (for stopping criterion).
 end
 
 function Base.iterate(
@@ -88,8 +90,8 @@ function Base.iterate(
 end
 
 # Different stopping conditions (sc). Returns the current residual value and whether or not a stopping condition holds.
-function check_sc(state::SFISTAState, iter::SFISTAIteration, tol, termination_type)
-    if termination_type == "AIPP"
+function calc_residual!(state::SFISTAState, iter::SFISTAIteration)
+    if iter.termination_type == :AIPP
         # AIPP-style termination [4]. The main inclusion is: r ∈ ∂_η(f + h)(y).
         r = (iter.y0 - state.x) / state.A
         η = (norm(iter.y0 - state.y)^2 - norm(state.x - state.y)^2) / (2 * state.A)
@@ -101,10 +103,16 @@ function check_sc(state::SFISTAState, iter::SFISTAIteration, tol, termination_ty
         r = gradf_y - state.gradf_xt + (state.xt - state.y) / λ2
         res = norm(r)
     end
-    return res, (res <= tol || res ≈ tol)
+    state.res_norm = res
 end
 
+default_stopping_criterion(tol, iter::SFISTAIteration, state::SFISTAState) = begin
+    calc_residual!(state, iter)
+    state.res_norm <= tol || state.res_norm ≈ tol
+end
 default_solution(::SFISTAIteration, state::SFISTAState) = state.y
+default_iteration_summary(it, iter::SFISTAIteration, state::SFISTAState) =
+    ("" => it, (iter.termination_type == :AIPP ? "‖∂_η(f + h)(y)‖" : "‖∇f(y) + ∂h(y)‖") => state.res_norm)
 
 """
     SFISTA(; <keyword-arguments>)
@@ -130,11 +138,12 @@ See also: [`SFISTAIteration`](@ref), [`IterativeAlgorithm`](@ref).
 # Arguments
 - `maxit::Int=10_000`: maximum number of iteration
 - `tol::1e-6`: tolerance for the default stopping criterion
-- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
-- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `stop::Function=(iter, state) -> default_stopping_criterion(tol, iter, state)`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function=default_solution`: solution mapping, `solution(::T, state)` should return the identified solution
 - `verbose::Bool=false`: whether the algorithm state should be displayed
-- `freq::Int=100`: every how many iterations to display the algorithm state
-- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `freq::Int=100`: every how many iterations to display the algorithm state. If `freq <= 0`, only the final iteration is displayed.
+- `summary::Function=default_iteration_summary`: function to generate iteration summaries, `summary(::Int, iter::T, state)` should return a summary of the iteration state
+- `display::Function=default_display`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
 - `kwargs...`: additional keyword arguments to pass on to the `SFISTAIteration` constructor upon call
 
 # References
@@ -147,13 +156,12 @@ See also: [`SFISTAIteration`](@ref), [`IterativeAlgorithm`](@ref).
 SFISTA(;
     maxit = 10_000,
     tol = 1e-6,
-    termination_type = "",
-    stop = (iter, state) -> check_sc(state, iter, tol, termination_type)[2],
+    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
     solution = default_solution,
     verbose = false,
     freq = 100,
-    display = (it, iter, state) ->
-        @printf("%5d | %.3e\n", it, check_sc(state, iter, tol, termination_type)[1]),
+    summary = default_iteration_summary,
+    display = default_display,
     kwargs...,
 ) = IterativeAlgorithm(
     SFISTAIteration;
@@ -162,6 +170,7 @@ SFISTA(;
     solution,
     verbose,
     freq,
+    summary,
     display,
     kwargs...,
 )

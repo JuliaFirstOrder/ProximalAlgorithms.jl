@@ -257,13 +257,8 @@ end
 default_stopping_criterion(tol, ::PANOCIteration, state::PANOCState) =
     norm(state.res, Inf) / state.gamma <= tol
 default_solution(::PANOCIteration, state::PANOCState) = state.z
-default_display(it, ::PANOCIteration, state::PANOCState) = @printf(
-    "%5d | %.3e | %.3e | %.3e\n",
-    it,
-    state.gamma,
-    norm(state.res, Inf) / state.gamma,
-    state.tau,
-)
+default_iteration_summary(it, ::PANOCIteration, state::PANOCState) =
+    ("" => it, "f(Ax)" => state.f_Ax, "g(z)" => state.g_z, "γ" => state.gamma, "‖x - z‖/γ" => norm(state.res, Inf) / state.gamma)
 
 """
     PANOC(; <keyword-arguments>)
@@ -284,11 +279,12 @@ See also: [`PANOCIteration`](@ref), [`IterativeAlgorithm`](@ref).
 # Arguments
 - `maxit::Int=1_000`: maximum number of iteration
 - `tol::1e-8`: tolerance for the default stopping criterion
-- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
-- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `stop::Function=(iter, state) -> default_stopping_criterion(tol, iter, state)`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function=default_solution`: solution mapping, `solution(::T, state)` should return the identified solution
 - `verbose::Bool=false`: whether the algorithm state should be displayed
-- `freq::Int=10`: every how many iterations to display the algorithm state
-- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `freq::Int=10`: every how many iterations to display the algorithm state. If `freq <= 0`, only the final iteration is displayed.
+- `summary::Function=default_iteration_summary`: function to generate iteration summaries, `summary(::Int, iter::T, state)` should return a summary of the iteration state
+- `display::Function=default_display`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
 - `kwargs...`: additional keyword arguments to pass on to the `PANOCIteration` constructor upon call
 
 # References
@@ -301,6 +297,7 @@ PANOC(;
     solution = default_solution,
     verbose = false,
     freq = 10,
+    summary = default_iteration_summary,
     display = default_display,
     kwargs...,
 ) = IterativeAlgorithm(
@@ -310,6 +307,7 @@ PANOC(;
     solution,
     verbose,
     freq,
+    summary,
     display,
     kwargs...,
 )

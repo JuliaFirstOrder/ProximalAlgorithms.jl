@@ -80,7 +80,7 @@ f_model(iter::PANOCplusIteration, state::PANOCplusState) =
 function Base.iterate(iter::PANOCplusIteration{R}) where {R}
     x = copy(iter.x0)
     Ax = iter.A * x
-    f_Ax, grad_f_Ax = value_and_gradient(iter.f, Ax)
+     f_Ax, grad_f_Ax = value_and_gradient(iter.f, Ax)
     gamma =
         iter.gamma === nothing ?
         iter.alpha / lower_bound_smoothness_constant(iter.f, iter.A, x, grad_f_Ax) :
@@ -242,13 +242,8 @@ end
 default_stopping_criterion(tol, ::PANOCplusIteration, state::PANOCplusState) =
     norm((state.res / state.gamma) - state.At_grad_f_Ax + state.At_grad_f_Az, Inf) <= tol
 default_solution(::PANOCplusIteration, state::PANOCplusState) = state.z
-default_display(it, ::PANOCplusIteration, state::PANOCplusState) = @printf(
-    "%5d | %.3e | %.3e | %.3e\n",
-    it,
-    state.gamma,
-    norm(state.res, Inf) / state.gamma,
-    state.tau,
-)
+default_iteration_summary(it, ::PANOCplusIteration, state::PANOCplusState) =
+    ("" => it, "f(Ax)" => state.f_Ax, "g(z)" => state.g_z, "γ" => state.gamma, "‖x - z‖/γ" => norm(state.res, Inf) / state.gamma)
 
 """
     PANOCplus(; <keyword-arguments>)
@@ -269,11 +264,12 @@ See also: [`PANOCplusIteration`](@ref), [`IterativeAlgorithm`](@ref).
 # Arguments
 - `maxit::Int=1_000`: maximum number of iteration
 - `tol::1e-8`: tolerance for the default stopping criterion
-- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
-- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `stop::Function=(iter, state) -> default_stopping_criterion(tol, iter, state)`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function=default_solution`: solution mapping, `solution(::T, state)` should return the identified solution
 - `verbose::Bool=false`: whether the algorithm state should be displayed
-- `freq::Int=10`: every how many iterations to display the algorithm state
-- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `freq::Int=10`: every how many iterations to display the algorithm state. If `freq <= 0`, only the final iteration is displayed.
+- `summary::Function=default_iteration_summary`: function to generate iteration summaries, `summary(::Int, iter::T, state)` should return a summary of the iteration state
+- `display::Function=default_display`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
 - `kwargs...`: additional keyword arguments to pass on to the `PANOCplusIteration` constructor upon call
 
 # References
@@ -286,6 +282,7 @@ PANOCplus(;
     solution = default_solution,
     verbose = false,
     freq = 10,
+    summary = default_iteration_summary,
     display = default_display,
     kwargs...,
 ) = IterativeAlgorithm(
@@ -295,6 +292,7 @@ PANOCplus(;
     solution,
     verbose,
     freq,
+    summary,
     display,
     kwargs...,
 )

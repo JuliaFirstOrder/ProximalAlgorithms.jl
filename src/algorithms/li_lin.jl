@@ -148,8 +148,8 @@ end
 default_stopping_criterion(tol, ::LiLinIteration, state::LiLinState) =
     norm(state.res, Inf) / state.gamma <= tol
 default_solution(::LiLinIteration, state::LiLinState) = state.z
-default_display(it, ::LiLinIteration, state::LiLinState) =
-    @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
+default_iteration_summary(it, ::LiLinIteration, state::LiLinState) =
+    ("" => it, "γ" => state.gamma, "f(y)" => state.f_y, "g(z)" => state.g_z, "‖y - z‖/γ" => norm(state.res, Inf) / state.gamma)
 
 """
     LiLin(; <keyword-arguments>)
@@ -171,11 +171,12 @@ See also: [`LiLinIteration`](@ref), [`IterativeAlgorithm`](@ref).
 # Arguments
 - `maxit::Int=10_000`: maximum number of iteration
 - `tol::1e-8`: tolerance for the default stopping criterion
-- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
-- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `stop::Function=(iter, state) -> default_stopping_criterion(tol, iter, state)`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function=default_solution`: solution mapping, `solution(::T, state)` should return the identified solution
 - `verbose::Bool=false`: whether the algorithm state should be displayed
-- `freq::Int=100`: every how many iterations to display the algorithm state
-- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `freq::Int=100`: every how many iterations to display the algorithm state. If `freq <= 0`, only the final iteration is displayed.
+- `summary::Function=default_iteration_summary`: function to generate iteration summaries, `summary(::Int, iter::T, state)` should return a summary of the iteration state
+- `display::Function=default_display`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
 - `kwargs...`: additional keyword arguments to pass on to the `LiLinIteration` constructor upon call
 
 # References
@@ -188,6 +189,7 @@ LiLin(;
     solution = default_solution,
     verbose = false,
     freq = 100,
+    summary = default_iteration_summary,
     display = default_display,
     kwargs...,
 ) = IterativeAlgorithm(
@@ -197,6 +199,7 @@ LiLin(;
     solution,
     verbose,
     freq,
+    summary,
     display,
     kwargs...,
 )

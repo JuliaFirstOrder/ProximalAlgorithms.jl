@@ -44,12 +44,14 @@ end
 
 Base.IteratorSize(::Type{<:DavisYinIteration}) = Base.IsInfinite()
 
-struct DavisYinState{T}
+struct DavisYinState{T,R}
     z::T
     xg::T
+    f_xg::R
     grad_f_xg::T
     z_half::T
     xh::T
+    g_xh::R
     res::T
 end
 
@@ -58,10 +60,10 @@ function Base.iterate(iter::DavisYinIteration)
     xg, = prox(iter.g, z, iter.gamma)
     f_xg, grad_f_xg = value_and_gradient(iter.f, xg)
     z_half = 2 .* xg .- z .- iter.gamma .* grad_f_xg
-    xh, = prox(iter.h, z_half, iter.gamma)
+    xh, g_xh = prox(iter.h, z_half, iter.gamma)
     res = xh - xg
     z .+= iter.lambda .* res
-    state = DavisYinState(z, xg, grad_f_xg, z_half, xh, res)
+    state = DavisYinState(z, xg, f_xg, grad_f_xg, z_half, xh, g_xh, res)
     return state, state
 end
 
@@ -79,8 +81,8 @@ end
 default_stopping_criterion(tol, ::DavisYinIteration, state::DavisYinState) =
     norm(state.res, Inf) <= tol
 default_solution(::DavisYinIteration, state::DavisYinState) = state.xh
-default_display(it, ::DavisYinIteration, state::DavisYinState) =
-    @printf("%5d | %.3e\n", it, norm(state.res, Inf))
+default_iteration_summary(it, ::DavisYinIteration, state::DavisYinState) =
+    ("" => it, "f(xg)" => state.f_xg, "g(xh)" => state.g_xh, "‖xg - xh‖" => norm(state.res, Inf))
 
 """
     DavisYin(; <keyword-arguments>)
@@ -101,11 +103,12 @@ See also: [`DavisYinIteration`](@ref), [`IterativeAlgorithm`](@ref).
 # Arguments
 - `maxit::Int=10_000`: maximum number of iteration
 - `tol::1e-8`: tolerance for the default stopping criterion
-- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
-- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `stop::Function=(iter, state) -> default_stopping_criterion(tol, iter, state)`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function=default_solution`: solution mapping, `solution(::T, state)` should return the identified solution
 - `verbose::Bool=false`: whether the algorithm state should be displayed
-- `freq::Int=100`: every how many iterations to display the algorithm state
-- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `freq::Int=100`: every how many iterations to display the algorithm state. If `freq <= 0`, only the final iteration is displayed.
+- `summary::Function=default_iteration_summary`: function to generate iteration summaries, `summary(::Int, iter::T, state)` should return a summary of the iteration state
+- `display::Function=default_display`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
 - `kwargs...`: additional keyword arguments to pass on to the `DavisYinIteration` constructor upon call
 
 # References
@@ -118,6 +121,7 @@ DavisYin(;
     solution = default_solution,
     verbose = false,
     freq = 100,
+	summary=default_iteration_summary,
     display = default_display,
     kwargs...,
 ) = IterativeAlgorithm(
@@ -127,6 +131,7 @@ DavisYin(;
     solution,
     verbose,
     freq,
+    summary,
     display,
     kwargs...,
 )

@@ -42,11 +42,13 @@ end
 
 Base.IteratorSize(::Type{<:DouglasRachfordIteration}) = Base.IsInfinite()
 
-Base.@kwdef struct DouglasRachfordState{Tx}
+Base.@kwdef struct DouglasRachfordState{Tx,R}
     x::Tx
     y::Tx = similar(x)
+    f_y::R = real(eltype(x))(0)
     r::Tx = similar(x)
     z::Tx = similar(x)
+    g_z::R = real(eltype(x))(0)
     res::Tx = similar(x)
 end
 
@@ -54,11 +56,12 @@ function Base.iterate(
     iter::DouglasRachfordIteration,
     state::DouglasRachfordState = DouglasRachfordState(x = copy(iter.x0)),
 )
-    prox!(state.y, iter.f, state.x, iter.gamma)
+    f_y = prox!(state.y, iter.f, state.x, iter.gamma)
     state.r .= 2 .* state.y .- state.x
-    prox!(state.z, iter.g, state.r, iter.gamma)
+    g_z = prox!(state.z, iter.g, state.r, iter.gamma)
     state.res .= state.y .- state.z
     state.x .-= state.res
+    state = DouglasRachfordState(state.x, state.y, f_y, state.r, state.z, g_z, state.res)
     return state, state
 end
 
@@ -68,8 +71,8 @@ default_stopping_criterion(
     state::DouglasRachfordState,
 ) = norm(state.res, Inf) / iter.gamma <= tol
 default_solution(::DouglasRachfordIteration, state::DouglasRachfordState) = state.y
-default_display(it, iter::DouglasRachfordIteration, state::DouglasRachfordState) =
-    @printf("%5d | %.3e\n", it, norm(state.res, Inf) / iter.gamma)
+default_iteration_summary(it, iter::DouglasRachfordIteration, state::DouglasRachfordState) =
+    ("" => it, "f(y)" => state.f_y, "g(z)" => state.g_z, "‖y - z‖" => norm(state.res, Inf) / iter.gamma)
 
 """
     DouglasRachford(; <keyword-arguments>)
@@ -88,11 +91,12 @@ See also: [`DouglasRachfordIteration`](@ref), [`IterativeAlgorithm`](@ref).
 # Arguments
 - `maxit::Int=1_000`: maximum number of iteration
 - `tol::1e-8`: tolerance for the default stopping criterion
-- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
-- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `stop::Function=(iter, state) -> default_stopping_criterion(tol, iter, state)`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function=default_solution`: solution mapping, `solution(::T, state)` should return the identified solution
 - `verbose::Bool=false`: whether the algorithm state should be displayed
-- `freq::Int=100`: every how many iterations to display the algorithm state
-- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `freq::Int=100`: every how many iterations to display the algorithm state. If `freq <= 0`, only the final iteration is displayed.
+- `summary::Function=default_iteration_summary`: function to generate iteration summaries, `summary(::Int, iter::T, state)` should return a summary of the iteration state
+- `display::Function=default_display`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
 - `kwargs...`: additional keyword arguments to pass on to the `DouglasRachfordIteration` constructor upon call
 
 # References
@@ -105,6 +109,7 @@ DouglasRachford(;
     solution = default_solution,
     verbose = false,
     freq = 100,
+    summary = default_iteration_summary,
     display = default_display,
     kwargs...,
 ) = IterativeAlgorithm(
@@ -114,6 +119,7 @@ DouglasRachford(;
     solution,
     verbose,
     freq,
+    summary,
     display,
     kwargs...,
 )
