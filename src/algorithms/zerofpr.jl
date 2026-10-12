@@ -165,7 +165,9 @@ function Base.iterate(iter::ZeroFPRIteration{R}, state::ZeroFPRState) where {R}
             minimum_gamma = iter.minimum_gamma,
         )
         if state.gamma != gamma_prev
+            # reset because gamma changed
             reset_direction_state!(iter, state)
+            state.merit = f_model(iter, state) + state.g_xbar
         end
     else
         mul!(state.Axbar, iter.A, state.xbar)

@@ -221,7 +221,9 @@ function Base.iterate(iter::PANOCplusIteration{R}, state::PANOCplusState) where 
                     @warn "stepsize `gamma` became too small ($(state.gamma))"
                 end
                 can_update_direction = true
+                # reset because gamma changed
                 reset_direction_state!(iter, state)
+                state.merit = f_model(iter, state) + state.g_z
                 continue
             end
         end
