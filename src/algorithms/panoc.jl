@@ -163,7 +163,9 @@ function Base.iterate(iter::PANOCIteration{R,Tx,Tf}, state::PANOCState) where {R
             minimum_gamma = iter.minimum_gamma,
         )
         if state.gamma != gamma_prev
+            # reset because gamma changed
             reset_direction_state!(iter, state)
+            state.merit = f_model(iter, state) + state.g_z
         end
     end
 
