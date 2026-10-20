@@ -20,6 +20,9 @@ authors:
     orcid: 0000-0002-3545-6898
     corresponding: true
     affiliation: 4
+  - name: Panagiotis Patrinos
+    orcid: 0000-0003-4824-7697
+    affiliation: 5
 affiliations:
  - name: AWS AI Labs, Berlin, Germany (work done prior to joining Amazon)
    index: 1
@@ -29,6 +32,8 @@ affiliations:
    index: 3
  - name: University of the Bundeswehr Munich, Germany
    index: 4
+ - name: KU Leuven, Belgium
+   index: 5
 date: xx xxxxxxx 202x
 bibliography: paper.bib
 header-includes: |
@@ -158,7 +163,7 @@ Although the final objective values differ, in some cases, due to the nonconvexi
 
 # Acknowledgements
 
-We acknowledge contributions from Ellis Brown, Guillaume Dalle, William Kong, Paulo J. S. Silva, and Tamás Hakkel, and support from Panagiotis Patrinos and Andreas Themelis during the genesis of this project.
+We acknowledge contributions from Ellis Brown, Guillaume Dalle, William Kong, Paulo J. S. Silva, and Tamás Hakkel, and support (mathematical and typographical) from Andreas Themelis.
 
 # AI usage disclosure
 
