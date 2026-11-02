@@ -14,13 +14,13 @@ authors:
   - name: Niccoló Antonello
     orcid: 0000-0002-0803-5385
     affiliation: 2
-  - name: Puya Latafat
-    orcid: 0000-0002-7969-8565
-    affiliation: 3
   - name: Alberto De Marchi
     orcid: 0000-0002-3545-6898
-    affiliation: 4
+    affiliation: 3
     corresponding: true
+  - name: Puya Latafat
+    orcid: 0000-0002-7969-8565
+    affiliation: 4
   - name: Andreas Themelis
     orcid: 0000-0002-6044-0169
     affiliation: 5
