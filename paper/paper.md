@@ -11,7 +11,7 @@ authors:
   - name: Lorenzo Stella
     orcid: 0000-0002-8304-7327
     affiliation: 1
-  - name: Niccoló Antonello
+  - name: Niccolò Antonello
     orcid: 0000-0002-0803-5385
     affiliation: 2
   - name: Alberto De Marchi
@@ -33,9 +33,9 @@ affiliations:
   - index: 2
     name: EssilorLuxottica, Milan, Italy (work done prior to joining EssilorLuxottica)
   - index: 3
-    name: IMT School for Advanced Studies Lucca, Italy
-  - index: 4
     name: University of the Bundeswehr Munich, Germany
+  - index: 4
+    name: IMT School for Advanced Studies Lucca, Italy
   - index: 5
     name: Kyushu University, Japan
   - index: 6
@@ -67,18 +67,18 @@ This makes the methods well suited to large-scale problems in which nonsmooth te
 - **Three-term splitting** ($f + g + h$): the Davis-Yin splitting scheme [@davis2017].
 - **Primal-dual splitting** ($f + g + h \circ L$): Chambolle-Pock [@chambolle2011], Vũ-Condat [@vu2013; @condat2013], and the asymmetric forward-backward-adjoint (AFBA) method [@latafat2017].
 
-Adaptive schemes for convex problems are being introduced as well, particularly AdaPGM and AdaPDM [@latafat2025].
+Adaptive schemes for convex problems are being implemented as well, particularly AdaPGM and AdaPDM [@latafat2025].
 
 # Statement of need
 
-Nonsmooth structured optimization problems arise pervasively in statistics, machine learning, signal and image processing, and optimal control, wherever nonsmooth regularizers or constraints are combined with a differentiable loss or data-fidelity term.
+Nonsmooth structured optimization problems arise pervasively in statistics, machine learning, signal and image processing, and optimal control, wherever a differentiable loss or data-fidelity term is combined with nonsmooth regularizers or constraints.
 Because no single algorithm applies uniformly well to every instance of this problem class, practitioners benefit from a library that offers many interchangeable methods behind a common interface, rather than a single monolithic solver.
 Moreover, methods differ in the number and structure of terms they support, in the convexity and smoothness assumptions they require, and in their empirical convergence behavior.
 
 # Software design
 
 All solvers in `ProximalAlgorithms.jl` are implemented as Julia iterators, so that users can either call a solver directly to obtain a solution, or loop over the underlying iterator to gain fine-grained control over logging, stopping criteria, or warm-starting.
-Gradients are obtained, by default, through automatic differentiation via [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl), which gives access to essentially every Julia automatic-differentiation backend, while proximal mappings follow the lightweight [ProximalCore.jl](https://github.com/JuliaFirstOrder/ProximalCore.jl) interface implemented, among others, by [ProximalOperators.jl](https://github.com/JuliaFirstOrder/ProximalOperators.jl).
+Gradients are obtained, by default, through automatic differentiation via [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl), which gives access to essentially every Julia automatic-differentiation backend, while proximal mappings follow the lightweight [ProximalCore.jl](https://github.com/JuliaFirstOrder/ProximalCore.jl) interface implemented by [ProximalOperators.jl](https://github.com/JuliaFirstOrder/ProximalOperators.jl) and other packages.
 Users can just as easily supply hand-written gradients or proximal mappings for custom objective terms.
 
 `ProximalAlgorithms.jl` deliberately does not provide a modeling language that automatically decomposes an arbitrary objective into terms and picks a matching algorithm, in the way that, e.g., disciplined convex programming frameworks do for problems expressible in their grammar.
@@ -86,22 +86,22 @@ Instead, the user formulates the problem directly in terms of the objective term
 This design keeps the package lightweight and composable: new algorithms can be added by implementing a small, self-contained iterator interface, and existing algorithms can be reused as subproblem solvers inside other packages.
 [StructuredOptimization.jl](https://github.com/JuliaFirstOrder/StructuredOptimization.jl) provides a high-level modeling language and a user-friendly interface to invoke `ProximalAlgorithms.jl`.
 
-## State of the field
+# State of the field
 
 `ProximalAlgorithms.jl` has been under development since October 2017, positioning it as one of the earlier general-purpose toolboxes offering a broad, unified interface to first-order splitting methods.
-`ProximalAlgorithms.jl` gives users of the Julia optimization ecosystems direct access to a wide range of well-established, first-order splitting algorithms through a single, consistent, allocation-conscious interface, backed by [ProximalOperators.jl](https://github.com/JuliaFirstOrder/ProximalOperators.jl)'s extensive library of proximable functions.
+`ProximalAlgorithms.jl` gives users of the Julia optimization ecosystem direct access to a wide range of well-established, first-order splitting algorithms through a single, consistent, allocation-conscious interface, backed by [ProximalOperators.jl](https://github.com/JuliaFirstOrder/ProximalOperators.jl)'s extensive library of proximable functions.
 
 This complements, rather than duplicates, other optimization software in the Julia ecosystem.
 [RegularizedOptimization.jl](https://github.com/JuliaSmoothOptimizers/RegularizedOptimization.jl) [@gollier2026] implements model-based trust-region and quadratic-regularization methods for a similar class of nonsmooth problems.
 Such methods typically require fewer evaluations of the smooth term and its gradient than the line-search-based methods in `ProximalAlgorithms.jl`, at the cost of more proximal-operator evaluations.
-[FrankWolfe.jl](https://github.com/ZIB-IOL/FrankWolfe.jl) is a toolbox for convex optimization using conditional gradient algorihms [@besancon2022], which rely on linear minimization oracles instead of proximal mappings.
+[FrankWolfe.jl](https://github.com/ZIB-IOL/FrankWolfe.jl) is a toolbox for convex optimization using conditional gradient algorithms [@besancon2022], which rely on linear minimization oracles instead of proximal mappings.
 [Manopt.jl](https://manoptjl.org/) [@bergmann2022] provides algorithms for optimization problems given on a Riemannian manifold and includes some splitting-based methods.
 
 There are also related Python packages that implement proximal methods, often restricted to convex problems or designed for specific applications, such as 
 [SCICO](https://github.com/lanl/scico) [@scico2022] and
 [PyProximal](https://github.com/PyLops/pyproximal) [@pyproximal2024].
 
-## Research impact
+# Research impact
 
 Since its initial release, `ProximalAlgorithms.jl` has grown both its user base and contributor community, while supporting research in control and signal processing as well as for advancing optimization methods.
 [@antonello2019] address joint acoustic source localization and dereverberation via sparse regularization.
@@ -114,7 +114,7 @@ The package has also seen adoption beyond its original developer community:
 
 # Example
 
-The following condensed example minimizes the two-dimensional Rosenbrock function added to a $\ell_1$-norm regularizer, using the accelerated (fast) forward-backward splitting method:
+The following condensed example minimizes the two-dimensional Rosenbrock function plus an $\ell_1$-norm regularizer, using the accelerated (fast) forward-backward splitting method:
 
 ```julia
 using ProximalOperators, ProximalAlgorithms
@@ -130,7 +130,7 @@ end
 f = Rosenbrock(1.0)
 g = NormL1(2.0)
 
-solver = ProximalAlgorithms.FastForwardBackward(tol = 1e-5, verbose = true)
+solver = ProximalAlgorithms.FastForwardBackward(tol = 1e-6, verbose = true)
 x, iters = solver(x0 = ones(2), f = f, g = g)
 ```
 
@@ -146,7 +146,7 @@ f_auto = ProximalAlgorithms.AutoDifferentiable(x -> f(x), AutoZygote())
 x, iters = solver(x0 = ones(2), f = f_auto, g = g)
 ```
 
-## Numerical illustration
+# Numerical illustration
 
 We compare proximal-gradient solvers `ForwardBackward`, `FastForwardBackward`, `ZeroFPR`, `PANOC`, and `PANOCplus` on a regularized line spectra estimation problem, which seeks to recover the frequencies and amplitudes of a signal that consists of a mixture of sinusoids.
 The least-squares cost function $f$ is complemented with different regularizers $g$ from `ProximalOperators.jl`, either convex (`NormLinf`) or nonconvex (`IndBallL0`).
@@ -173,7 +173,7 @@ We acknowledge contributions from Ellis Brown, Guillaume Dalle, William Kong, Pa
 
 # AI usage disclosure
 
-No generative AI tools were used in the development of this software or the preparation of supporting materials.
+Generative AI tools were not used to develop the software.
 Claude Sonnet 5 was adopted to improve readability and proofread this text.
 All AI-generated suggestions were critically reviewed, modified where necessary, and fully validated by the authors, who retain complete responsibility.
 
