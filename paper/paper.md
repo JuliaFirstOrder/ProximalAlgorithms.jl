@@ -49,21 +49,21 @@ header-includes: |
 # Summary
 
 [ProximalAlgorithms.jl](https://github.com/JuliaFirstOrder/ProximalAlgorithms.jl) is a Julia package that implements a broad collection of first-order splitting methods, commonly known as *proximal algorithms*, for solving structured nonsmooth optimization problems of the form
-\begin{equation}\label{eq:generic}
+\begin{equation*}
     \underset{x \in \mathbb{R}^n}{\text{minimize}} \quad \sum_{i=1}^{N} f_i(x),
-\end{equation}
+\end{equation*}
 where $N$ depends on the algorithm of choice, and each term $f_i$ may be smooth or nonsmooth, convex or, for some algorithms, nonconvex.
 Terms can also be composed with a linear mapping, as in $h(Lx)$, which arises frequently in imaging, signal processing, and control applications.
 Proximal splitting methods exploit the problem structure and rely only on first-order information about each term: its gradient $\nabla f_i$, when it is differentiable, or its proximal mapping
-\begin{equation}\label{eq:prox}
+\begin{equation*}
     \operatorname{prox}_{\gamma f_i}(v) = \underset{x \in \mathbb{R}^n}{\arg\min} \left\{ f_i(x) + \frac{1}{2\gamma}\|x - v\|^2 \right\},
-\end{equation}
+\end{equation*}
 when it is not.
 This makes splitting methods well suited to large-scale problems in which nonsmooth terms (indicator functions of simple sets, sparsity-inducing penalties, norms, etc.) admit an inexpensive proximal mapping, even when the proximal mapping of their sum is difficult to compute.
 
 `ProximalAlgorithms.jl` organizes its solvers according to the structure of the problem they address:
 
-- **Two-term splitting** ($f + g$): (Fast) proximal gradient / forward-backward splitting [@lions1979; @beck2009], Douglas–Rachford splitting [@eckstein1992], and the line-search-based methods ZeroFPR [@themelis2018], PANOC [@stella2017], PANOC+ [@demarchi2022], and Douglas-Rachford line search (DRLS) [@themelis2022].
+- **Two-term splitting** ($f + g$): (Fast) proximal gradient / forward-backward splitting [@lions1979; @beck2009], Douglas–Rachford splitting [@eckstein1992], and the line-search-based methods ZeroFPR [@themelis2018], PANOC [@stella2017], PANOC+ [@demarchi2022], and Douglas–Rachford line search (DRLS) [@themelis2022].
 - **Three-term splitting** ($f + g + h$): the Davis–Yin splitting scheme [@davis2017].
 - **Primal-dual splitting** ($f + g + h \circ L$): Chambolle–Pock [@chambolle2011], Vũ–Condat [@vu2013; @condat2013], and the asymmetric forward-backward-adjoint (AFBA) method [@latafat2017].
 
@@ -90,7 +90,7 @@ This design keeps the package lightweight and composable: new algorithms can be 
 # State of the field
 
 `ProximalAlgorithms.jl` has been under development since October 2017, positioning it as one of the earlier general-purpose toolboxes offering a broad, unified interface to first-order splitting methods.
-`ProximalAlgorithms.jl` gives users of the Julia optimization ecosystem direct access to a wide range of well-established, first-order splitting algorithms through a single, consistent, allocation-conscious interface, backed by [ProximalOperators.jl](https://github.com/JuliaFirstOrder/ProximalOperators.jl)'s extensive library of proximable functions.
+`ProximalAlgorithms.jl` gives users of the Julia optimization ecosystem direct access to a wide range of well-established, first-order splitting algorithms through a single, consistent, allocation-conscious interface, backed by `ProximalOperators.jl`s extensive library of proximable functions.
 
 This complements, rather than duplicates, other optimization software in the Julia ecosystem.
 [RegularizedOptimization.jl](https://github.com/JuliaSmoothOptimizers/RegularizedOptimization.jl) [@gollier2026] implements model-based trust-region and quadratic-regularization methods for a similar class of nonsmooth problems.
@@ -101,7 +101,7 @@ Such methods typically require fewer evaluations of the smooth term and its grad
 There are also related Python packages that implement proximal methods, often restricted to convex problems or designed for specific applications, such as 
 [SCICO](https://github.com/lanl/scico) [@scico2022] and
 [PyProximal](https://github.com/PyLops/pyproximal) [@pyproximal2024].
-Related software includes [alpaqa](https://github.com/kul-optec/alpaqa) [@pas2022] in C++, which combines an augmented Lagrangian framework with PANOC for constrained nonconvex optimization, and [OpEn](https://alphaville.github.io/optimization-engine/) [@sopasakis2020] in Rust, which generates solvers for embedded nonconvex optimization.
+Related software includes [alpaqa](https://github.com/kul-optec/alpaqa) [@pas2022] in C++, which combines an augmented Lagrangian framework with `PANOC` for constrained nonconvex optimization, and [OpEn](https://alphaville.github.io/optimization-engine/) [@sopasakis2020] in Rust, which generates solvers for embedded nonconvex optimization.
 
 # Research impact
 
@@ -152,10 +152,10 @@ x, iters = solver(x0 = ones(2), f = f_auto, g = g)
 
 We compare proximal-gradient solvers `ForwardBackward`, `FastForwardBackward`, `ZeroFPR`, `PANOC`, and `PANOCplus` on a regularized line spectra estimation problem, which seeks to recover the frequencies and amplitudes of a signal that consists of a mixture of sinusoids.
 The least-squares cost function $f$ is complemented with different regularizers $g$ from `ProximalOperators.jl`, either convex (`NormLinf`) or nonconvex (`IndBallL0`).
-Experiments were performed with Ubuntu 64-bit on an Intel Core i7 (8-core) machine, using Julia 1.13.2.
+Experiments were performed with Ubuntu 64-bit on an Intel Core i7 (8-core) machine, using Julia 1.13.3.
 
 The tables report, for each regularizer, the convergence status of each solver, the runtime, the number of function, gradient, and proximal evaluations, and the final objective value.
-For `ZeroFPR`, `PANOC`, and `PANOCplus`, we use the limited-memory BFGS Hessian approximation (default with memory 5).
+For `ZeroFPR`, `PANOC`, and `PANOCplus`, we use the default limited-memory BFGS Hessian approximation (memory 5).
 
 \begin{center}
   `NormLinf`
@@ -176,7 +176,7 @@ We acknowledge contributions from Ellis Brown, Guillaume Dalle, William Kong, Pa
 # AI usage disclosure
 
 Generative AI tools were not used to develop the software.
-Claude Sonnet 5 was adopted to improve readability and proofread this text.
+Claude Sonnet 5.5 was adopted to improve readability and proofread this text.
 All AI-generated suggestions were critically reviewed, modified where necessary, and fully validated by the authors, who retain complete responsibility.
 
 # References
