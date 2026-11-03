@@ -11,7 +11,7 @@ end
 f = Rosenbrock(1.0)
 g = NormL1(2.0)
 
-solver = ProximalAlgorithms.FastForwardBackward(tol = 1e-5, verbose = true)
+solver = ProximalAlgorithms.ForwardBackward(tol = 1e-6, verbose = true)
 x, iters = solver(x0 = ones(2), f = f, g = g)
 
 using Zygote

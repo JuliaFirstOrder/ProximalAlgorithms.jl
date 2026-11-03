@@ -54,20 +54,21 @@ header-includes: |
 \end{equation}
 where $N$ depends on the algorithm of choice, and each term $f_i$ may be smooth or nonsmooth, convex or, for some algorithms, nonconvex.
 Terms can also be composed with a linear mapping, as in $h(Lx)$, which arises frequently in imaging, signal processing, and control applications.
-Rather than assuming access to explicit derivatives or closed-form solutions, proximal algorithms rely only on first-order information about each term: its gradient $\nabla f_i$, when it is differentiable, or its proximal mapping
+Proximal splitting methods exploit the problem structure and rely only on first-order information about each term: its gradient $\nabla f_i$, when it is differentiable, or its proximal mapping
 \begin{equation}\label{eq:prox}
     \operatorname{prox}_{\gamma f_i}(v) = \underset{x \in \mathbb{R}^n}{\arg\min} \left\{ f_i(x) + \frac{1}{2\gamma}\|x - v\|^2 \right\},
 \end{equation}
 when it is not.
-This makes the methods well suited to large-scale problems in which nonsmooth terms (indicator functions of simple sets, sparsity-inducing penalties, norms, etc.) admit an inexpensive proximal mapping, even though the objective as a whole is not directly minimizable in closed form.
+This makes splitting methods well suited to large-scale problems in which nonsmooth terms (indicator functions of simple sets, sparsity-inducing penalties, norms, etc.) admit an inexpensive proximal mapping, even when the proximal mapping of their sum is difficult to compute.
 
 `ProximalAlgorithms.jl` organizes its solvers according to the structure of the problem they address:
 
-- **Two-term splitting** ($f + g$): (Fast) proximal gradient / forward-backward splitting [@lions1979; @beck2009], Douglas-Rachford splitting [@eckstein1992], and the line-search-based methods ZeroFPR [@themelis2018], PANOC [@stella2017], PANOC+ [@demarchi2022], and Douglas-Rachford line search (DRLS) [@themelis2022].
-- **Three-term splitting** ($f + g + h$): the Davis-Yin splitting scheme [@davis2017].
-- **Primal-dual splitting** ($f + g + h \circ L$): Chambolle-Pock [@chambolle2011], Vũ-Condat [@vu2013; @condat2013], and the asymmetric forward-backward-adjoint (AFBA) method [@latafat2017].
+- **Two-term splitting** ($f + g$): (Fast) proximal gradient / forward-backward splitting [@lions1979; @beck2009], Douglas–Rachford splitting [@eckstein1992], and the line-search-based methods ZeroFPR [@themelis2018], PANOC [@stella2017], PANOC+ [@demarchi2022], and Douglas-Rachford line search (DRLS) [@themelis2022].
+- **Three-term splitting** ($f + g + h$): the Davis–Yin splitting scheme [@davis2017].
+- **Primal-dual splitting** ($f + g + h \circ L$): Chambolle–Pock [@chambolle2011], Vũ–Condat [@vu2013; @condat2013], and the asymmetric forward-backward-adjoint (AFBA) method [@latafat2017].
 
-Adaptive schemes for convex problems are being implemented as well, particularly AdaPGM and AdaPDM [@latafat2025].
+Several of the line-search methods implemented in the package build on the forward-backward and Douglas–Rachford envelopes, introduced by [@patrinos2013] and [@patrinos2014], respectively.
+More recent adaptive schemes for convex problems are being implemented as well, particularly AdaPGM and AdaPDM [@latafat2025].
 
 # Statement of need
 
@@ -100,6 +101,7 @@ Such methods typically require fewer evaluations of the smooth term and its grad
 There are also related Python packages that implement proximal methods, often restricted to convex problems or designed for specific applications, such as 
 [SCICO](https://github.com/lanl/scico) [@scico2022] and
 [PyProximal](https://github.com/PyLops/pyproximal) [@pyproximal2024].
+Related software includes [alpaqa](https://github.com/kul-optec/alpaqa) [@pas2022] in C++, which combines an augmented Lagrangian framework with PANOC for constrained nonconvex optimization, and [OpEn](https://alphaville.github.io/optimization-engine/) [@sopasakis2020] in Rust, which generates solvers for embedded nonconvex optimization.
 
 # Research impact
 
@@ -114,7 +116,7 @@ The package has also seen adoption beyond its original developer community:
 
 # Example
 
-The following condensed example minimizes the two-dimensional Rosenbrock function plus an $\ell_1$-norm regularizer, using the accelerated (fast) forward-backward splitting method:
+The following condensed example minimizes the two-dimensional Rosenbrock function plus an $\ell_1$-norm regularizer, using the classical forward-backward splitting method:
 
 ```julia
 using ProximalOperators, ProximalAlgorithms
@@ -130,12 +132,12 @@ end
 f = Rosenbrock(1.0)
 g = NormL1(2.0)
 
-solver = ProximalAlgorithms.FastForwardBackward(tol = 1e-6, verbose = true)
+solver = ProximalAlgorithms.ForwardBackward(tol = 1e-6, verbose = true)
 x, iters = solver(x0 = ones(2), f = f, g = g)
 ```
 
 Here `f` wraps the smooth Rosenbrock term and `g` is the scaled $\ell_1$-norm, whose proximal mapping is the coordinate-wise soft-thresholding operator.
-The `FastForwardBackward` algorithm is instantiated with a termination tolerance and verbosity option, and then called with the initial point and the two objective terms to produce the solution and the iteration count. 
+The `ForwardBackward` algorithm is instantiated with a termination tolerance and verbosity option, and then called with the initial point and the two objective terms to produce the solution and the iteration count. 
 Instead of providing the gradient of $f$, one can wrap the smooth cost for automatic differentiation, as with `f_auto`:
 
 ```julia
