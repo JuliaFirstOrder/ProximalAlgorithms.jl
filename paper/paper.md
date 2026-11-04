@@ -52,13 +52,14 @@ header-includes: |
 \begin{equation*}
     \underset{x \in \mathbb{R}^n}{\text{minimize}} \quad \sum_{i=1}^{N} f_i(x),
 \end{equation*}
-where $N$ depends on the algorithm of choice, and each term $f_i$ may be smooth or nonsmooth, convex or, for some algorithms, nonconvex.
+where the number of terms $N$ depends on the algorithm, and each term $f_i$ may be smooth or nonsmooth, convex or, for some algorithms, nonconvex.
+Since each $f_i$ may be extended-real valued, constraints can be encoded by means of indicator functions: given a feasible set $S$, $f_i$ can be defined as $f_i(x)=0$ if $x\in S$ and $f_i(x)=\infty$ otherwise.
 Terms can also be composed with a linear mapping, as in $h(Lx)$, which arises frequently in imaging, signal processing, and control applications.
-Proximal splitting methods exploit the problem structure and rely only on first-order information about each term: its gradient $\nabla f_i$, when it is differentiable, or its proximal mapping
+Proximal splitting methods exploit the problem structure and rely only on first-order information about each term: its gradient $\nabla f_i$, when differentiable, or its proximal mapping
 \begin{equation*}
-    \operatorname{prox}_{\gamma f_i}(v) = \underset{x \in \mathbb{R}^n}{\arg\min} \left\{ f_i(x) + \frac{1}{2\gamma}\|x - v\|^2 \right\},
+    \operatorname{prox}_{\gamma f_i}(v) \in \underset{x \in \mathbb{R}^n}{\arg\min} \left\{ f_i(x) + \frac{1}{2\gamma}\|x - v\|^2 \right\}
 \end{equation*}
-when it is not.
+for some stepsize $\gamma>0$.
 This makes splitting methods well suited to large-scale problems in which nonsmooth terms (indicator functions of simple sets, sparsity-inducing penalties, norms, etc.) admit an inexpensive proximal mapping, even when the proximal mapping of their sum is difficult to compute.
 
 `ProximalAlgorithms.jl` organizes its solvers according to the structure of the problem they address:
