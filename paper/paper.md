@@ -29,7 +29,7 @@ authors:
     affiliation: 6
 affiliations:
   - index: 1
-    name: Independent researcher
+    name: Amazon Web Services, Berlin, Germany (this work does not relate to the author's position at Amazon.)
   - index: 2
     name: EssilorLuxottica, Milan, Italy (work done prior to joining EssilorLuxottica)
   - index: 3
