@@ -68,7 +68,7 @@ This makes splitting methods well suited to large-scale problems in which nonsmo
 - **Three-term splitting** ($f + g + h$): the Davis–Yin splitting scheme [@davis2017].
 - **Primal-dual splitting** ($f + g + h \circ L$): Chambolle–Pock [@chambolle2011], Vũ–Condat [@vu2013; @condat2013], and the asymmetric forward-backward-adjoint (AFBA) method [@latafat2017].
 
-Several of the line-search methods implemented in the package build on the forward-backward and Douglas–Rachford envelopes, introduced by [@patrinos2013] and [@patrinos2014], respectively.
+Several of the line-search methods implemented in the package build on the forward-backward and Douglas–Rachford envelopes, introduced by @patrinos2013 and @patrinos2014, respectively.
 More recent adaptive schemes for convex problems are being implemented as well, particularly AdaPGM and AdaPDM [@latafat2025].
 
 # Statement of need
@@ -107,13 +107,13 @@ Related software includes [alpaqa](https://github.com/kul-optec/alpaqa) [@pas202
 # Research impact
 
 Since its initial release, `ProximalAlgorithms.jl` has grown both its user base and contributor community, while supporting research in control and signal processing as well as for advancing optimization methods.
-[@antonello2019] address joint acoustic source localization and dereverberation via sparse regularization.
+@antonello2019 address joint acoustic source localization and dereverberation via sparse regularization.
 In control, the `PANOC` solver has been used for embedded nonlinear model predictive control [@sathya2018], distributed motion planning at road intersections [@katriniok2019], and Gauss-Newton-accelerated nonlinear optimal control [@pas2023].
-Within optimization, [@demarchi2023] builds on the `PANOCplus` solver to implement augmented Lagrangian methods for constrained nonsmooth problems.
+Within optimization, @demarchi2023 builds on the `PANOCplus` solver to implement augmented Lagrangian methods for constrained nonsmooth problems.
 The package has also seen adoption beyond its original developer community:
-[@liang2025] invokes `FISTA` as a subroutine for their numerical scheme,
-[@waldmann2026] use it to implement their proximal multi-objective method in genomic prediction,
-[@adeoye2026] benchmark their smoothing approach against several proximal-gradient algorithms in `ProximalAlgorithms.jl`.
+@liang2025 invokes `FISTA` as a subroutine for their numerical scheme,
+@waldmann2026 use it to implement their proximal multi-objective method in genomic prediction,
+@adeoye2026 benchmark their smoothing approach against several proximal-gradient algorithms in `ProximalAlgorithms.jl`.
 
 # Example
 
