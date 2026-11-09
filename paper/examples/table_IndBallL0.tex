@@ -1,11 +1,11 @@
-\begin{tabular}{rrrrrrr}
+\begin{tabular}{rrrrrr}
   \toprule
-  \textbf{Method} & \textbf{Status} & \textbf{$t$ ($s$)} & \textbf{$\#f$} & \textbf{$\#\nabla f$} & \textbf{$\#prox$} & \textbf{Objective} \\
+  \textbf{Method} & \textbf{Success rate} & \textbf{$t$ ($s$)} & \textbf{$\#\nabla f$} & \textbf{$\#prox$} & \textbf{Objective} \\
   \midrule
-  ForwardBackward & first\_order & 0.5424 & 7508 & 7508 & 7507 & 19.4546 \\
-  FastForwardBackward & first\_order & 0.1386 & 3066 & 3066 & 1533 & 23.8179 \\
-  ZeroFPR & first\_order & 0.0366 & 541 & 541 & 540 & 18.7917 \\
-  PANOC & first\_order & 0.0337 & 669 & 669 & 343 & 23.5366 \\
-  PANOCplus & first\_order & 0.0328 & 687 & 687 & 343 & 23.5366 \\
+  ForwardBackward & 20/20 & 0.5451 & 7509.5 & 7508.5 & 19.4546 \\
+  FastForwardBackward & 20/20 & 0.1482 & 3066.0 & 1533.0 & 23.8179 \\
+  ZeroFPR & 20/20 & 0.0374 & 521.5 & 520.5 & 18.7917 \\
+  PANOC & 20/20 & 0.0253 & 523.0 & 269.5 & 11.1509 \\
+  PANOCplus & 20/20 & 0.0272 & 517.0 & 258.0 & 11.1509 \\
   \bottomrule
 \end{tabular}

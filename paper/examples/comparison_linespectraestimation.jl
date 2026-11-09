@@ -19,6 +19,7 @@ CFG = Dict(
     "verbose" => false,
     "solvers" => [:ForwardBackward, :FastForwardBackward, :ZeroFPR, :PANOC, :PANOCplus],
     "regularizers" => [:NormL1, :NormLinf, :NormL0, :IndBallL0],
+    "num_samples" => 20,
     "print_table" => true,
 )
 
@@ -102,17 +103,55 @@ function run_solver(f, g, x0, solversym, cfg)
     )
 end
 
+function run_solver_mult(f, g, x0, solversym, cfg)
+    nsamples = cfg["num_samples"]
+    nx = length(x0)
+    objx = zeros(nsamples)
+    status = zeros(nsamples)
+    runtime = zeros(nsamples)
+    iters = zeros(nsamples)
+    fevals = zeros(nsamples)
+    gradevals = zeros(nsamples)
+    proxevals = zeros(nsamples)
+    for i = 1:nsamples
+        # random initial guess
+        seed = cfg["seed"] + i - 1
+        Random.seed!(seed) # For reproducibility
+        x0 .= randn(ComplexF64, nx)
+        # call solver
+        res = run_solver(f, g, x0, solversym, cfg)
+        # store results
+        objx[i] = res.objective
+        status[i] = res.status == "first_order" ? 1 : 0
+        runtime[i] = res.runtime
+        iters[i] = res.iters
+        fevals[i] = res.fevals
+        gradevals[i] = res.gradevals
+        proxevals[i] = res.proxevals
+    end
+    nsolved = Int(sum(status))
+    return (
+        name=String(solversym),
+        objective=median(objx),
+        status="$(nsolved)/$(nsamples)",
+        runtime=median(runtime),
+        iters=median(iters),
+        fevals=median(fevals),
+        gradevals=median(gradevals),
+        proxevals=median(proxevals)
+    )
+end
+
 function bench_regularizer(f, g, x0, cfg)
     results = NamedTuple[]
     for solversym in cfg["solvers"]
-        push!(results, run_solver(f, g, x0, solversym, cfg))
+        push!(results, run_solver_mult(f, g, x0, solversym, cfg))
     end
 
     restable = [
         (; name=m.name,
             status=string(m.status),
             runtime=round(m.runtime, digits=4),
-            fevals=m.fevals,
             gradevals=m.gradevals,
             proxevals=m.proxevals,
             objx=round(m.objective, digits=4))
@@ -150,7 +189,7 @@ function main(; cfg=CFG, latex_out=true)
             table_str = pretty_table(String,
                 restable;
                 backend=:latex,
-                column_labels=["Method", "Status", L"$t$ ($s$)", L"$\#f$", L"$\#\nabla f$", L"$\#prox$", "Objective"],
+                column_labels=["Method", "Success rate", L"$t$ ($s$)", L"$\#\nabla f$", L"$\#prox$", "Objective"],
                 style=LatexTableStyle(column_label=String[]),
                 table_format=latex_table_format__booktabs
             )

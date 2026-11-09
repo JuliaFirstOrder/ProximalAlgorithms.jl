@@ -121,7 +121,6 @@ The following condensed example minimizes the two-dimensional Rosenbrock functio
 
 ```julia
 using ProximalOperators, ProximalAlgorithms
-
 struct Rosenbrock{T}
   a::T
 end
@@ -129,10 +128,8 @@ end
 function ProximalAlgorithms.value_and_gradient(f::Rosenbrock, x)
   return f(x), [2*(x[1]-f.a) + 400*(x[1]^2-x[2])*x[1], 200*(x[2]-x[1]^2)]
 end
-
 f = Rosenbrock(1.0)
 g = NormL1(2.0)
-
 solver = ProximalAlgorithms.ForwardBackward(tol = 1e-6, verbose = true)
 x, iters = solver(x0 = ones(2), f = f, g = g)
 ```
@@ -144,7 +141,6 @@ Instead of providing the gradient of $f$, one can wrap the smooth cost for autom
 ```julia
 using Zygote
 using DifferentiationInterface: AutoZygote
-
 f_auto = ProximalAlgorithms.AutoDifferentiable(x -> f(x), AutoZygote())
 x, iters = solver(x0 = ones(2), f = f_auto, g = g)
 ```
@@ -155,7 +151,7 @@ We compare proximal-gradient solvers `ForwardBackward`, `FastForwardBackward`, `
 The least-squares cost function $f$ is complemented with different regularizers $g$ from `ProximalOperators.jl`, either convex (`NormLinf`) or nonconvex (`IndBallL0`).
 Experiments were performed with Ubuntu 64-bit on an Intel Core i7 (8-core) machine, using Julia 1.13.3.
 
-The tables report, for each regularizer, the convergence status of each solver, the runtime, the number of function, gradient, and proximal evaluations, and the final objective value.
+The tables report, for each regularizer, the success rate of each solver and the median values of runtime, the number of gradient and proximal evaluations, and the final objective value.
 For `ZeroFPR`, `PANOC`, and `PANOCplus`, we use the default limited-memory BFGS Hessian approximation (memory 5).
 
 \begin{center}
@@ -168,7 +164,7 @@ For `ZeroFPR`, `PANOC`, and `PANOCplus`, we use the default limited-memory BFGS 
   \input{examples/table_IndBallL0.tex}
 \end{center}
 
-Although the final objective values differ, in some cases, due to the nonconvexity of the problem, all solvers successfully returned an approximate first-order stationary point, within the specified tolerance of $10^{-6}$.
+Although the final objective values differ when the problem is nonconvex, all solvers successfully returned an approximate first-order stationary point, within the specified tolerance of $10^{-6}$, for all starting points.
 
 # Acknowledgements
 
