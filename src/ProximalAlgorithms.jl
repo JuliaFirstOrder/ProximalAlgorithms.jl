@@ -135,5 +135,6 @@ include("algorithms/davis_yin.jl")
 include("algorithms/li_lin.jl")
 include("algorithms/sfista.jl")
 include("algorithms/panocplus.jl")
+include("algorithms/adapgm.jl")
 
 end # module

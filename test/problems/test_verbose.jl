@@ -77,6 +77,24 @@ using LinearAlgebra
         @test it < 200
     end
 
+    @testset "AdaptiveProximalGradient" begin
+        # with Lf
+        x0 = zeros(T, n)
+        solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL, verbose=true)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 35
+
+        # w/o Lf
+        x0 = zeros(T, n)
+        solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL, verbose=true)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 40
+    end
+
     @testset "ZeroFPR" begin
 
         # ZeroFPR/Nonadaptive

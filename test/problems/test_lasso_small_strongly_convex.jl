@@ -143,6 +143,24 @@ using ProximalAlgorithms
         @test x0 == x0_backup
     end
 
+    @testset "AdaptiveProximalGradient (with Lf)" begin
+        solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL)
+        y, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 35
+        @test x0 == x0_backup
+    end
+
+    @testset "AdaptiveProximalGradient (w/o Lf)" begin
+        solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL)
+        y, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(y) == T
+        @test norm(y - x_star, Inf) <= TOL
+        @test it < 40
+        @test x0 == x0_backup
+    end
+
     @testset "DRLS" begin
         solver = ProximalAlgorithms.DRLS(tol=TOL)
         v, it = solver(x0=x0, f=fA_prox, g=g, mf=mf)

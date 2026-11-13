@@ -134,6 +134,28 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
     end
 
+    @testset "AdaptiveProximalGradient (with Lf)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL)
+        x, it = @inferred solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 30
+        @test x0 == x0_backup
+    end
+
+    @testset "AdaptiveProximalGradient (w/o Lf)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL)
+        x, it = @inferred solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 40
+        @test x0 == x0_backup
+    end
+
     @testset "ZeroFPR (fixed step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
