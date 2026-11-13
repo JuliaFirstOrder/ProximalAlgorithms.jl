@@ -164,3 +164,9 @@ AdaptiveProximalGradient(;
     display,
     kwargs...,
 )
+
+# Aliases
+
+const AdaPGMState = AdaptiveProximalGradientState
+const AdaPGMIteration = AdaptiveProximalGradientIteration
+const AdaPGM = AdaptiveProximalGradient
