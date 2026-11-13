@@ -64,12 +64,12 @@ This makes splitting methods well suited to large-scale problems in which nonsmo
 
 `ProximalAlgorithms.jl` organizes its solvers according to the structure of the problem they address:
 
-- **Two-term splitting** ($f + g$): (Fast) proximal gradient / forward-backward splitting [@lions1979; @beck2009], Douglas–Rachford splitting [@eckstein1992], and the line-search-based methods ZeroFPR [@themelis2018], PANOC [@stella2017], PANOC+ [@demarchi2022], and Douglas–Rachford line search (DRLS) [@themelis2022].
+- **Two-term splitting** ($f + g$): (Fast) proximal gradient / forward-backward splitting [@lions1979; @beck2009], Douglas–Rachford splitting [@eckstein1992], and the linesearch-based methods ZeroFPR [@themelis2018], PANOC [@stella2017], PANOC+ [@demarchi2022], and Douglas–Rachford line search (DRLS) [@themelis2022].
 - **Three-term splitting** ($f + g + h$): the Davis–Yin splitting scheme [@davis2017].
 - **Primal-dual splitting** ($f + g + h \circ L$): Chambolle–Pock [@chambolle2011], Vũ–Condat [@vu2013; @condat2013], and the asymmetric forward-backward-adjoint (AFBA) method [@latafat2017].
 
-Several of the line-search methods implemented in the package build on the forward-backward and Douglas–Rachford envelopes, introduced by @patrinos2013 and @patrinos2014, respectively.
-More recent adaptive schemes for convex problems are being implemented as well, particularly AdaPGM and AdaPDM [@latafat2025].
+Several of the linesearch methods implemented in the package build on the forward-backward and Douglas–Rachford envelopes, introduced by @patrinos2013 and @patrinos2014, respectively.
+More recent linesearch-free adaptive schemes for convex problems are being implemented as well, particularly AdaPGM and AdaPDM [@latafat2025].
 
 # Statement of need
 
@@ -84,7 +84,7 @@ Gradients are obtained, by default, through automatic differentiation via [Diffe
 Users can just as easily supply hand-written gradients or proximal mappings for custom objective terms.
 
 `ProximalAlgorithms.jl` deliberately does not provide a modeling language that automatically decomposes an arbitrary objective into terms and picks a matching algorithm, in the way that, e.g., disciplined convex programming frameworks do for problems expressible in their grammar.
-Instead, the user formulates the problem directly in terms of the objective terms ($f$, $g$, $h$, and, where relevant, a linear operator $L$) that a chosen algorithm expects, and the package supplies the iteration logic, termination handling, and (where applicable) adaptive step-size or line-search machinery.
+Instead, the user formulates the problem directly in terms of the objective terms ($f$, $g$, $h$, and, where relevant, a linear operator $L$) that a chosen algorithm expects, and the package supplies the iteration logic, termination handling, and (where applicable) adaptive stepsize with or without linesearch machinery.
 This design keeps the package lightweight and composable: new algorithms can be added by implementing a small, self-contained iterator interface, and existing algorithms can be reused as subproblem solvers inside other packages.
 [StructuredOptimization.jl](https://github.com/JuliaFirstOrder/StructuredOptimization.jl) provides a high-level modeling language and a user-friendly interface to invoke `ProximalAlgorithms.jl`.
 
@@ -95,7 +95,7 @@ This design keeps the package lightweight and composable: new algorithms can be 
 
 This complements, rather than duplicates, other optimization software in the Julia ecosystem.
 [RegularizedOptimization.jl](https://github.com/JuliaSmoothOptimizers/RegularizedOptimization.jl) [@gollier2026] implements model-based trust-region and quadratic-regularization methods for a similar class of nonsmooth problems.
-Such methods typically require fewer evaluations of the smooth term and its gradient than the line-search-based methods in `ProximalAlgorithms.jl`, at the cost of more proximal-operator evaluations.
+Such methods typically require fewer evaluations of the smooth term and its gradient than the linesearch-based methods in `ProximalAlgorithms.jl`, at the cost of more proximal-operator evaluations.
 [FrankWolfe.jl](https://github.com/ZIB-IOL/FrankWolfe.jl) is a toolbox for convex optimization using conditional gradient algorithms [@besancon2022], which rely on linear minimization oracles instead of proximal mappings.
 [Manopt.jl](https://manoptjl.org/) [@bergmann2022] provides algorithms for optimization problems given on a Riemannian manifold and includes some splitting-based methods.
 
