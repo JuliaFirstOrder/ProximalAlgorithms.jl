@@ -16,7 +16,7 @@ This iterator solves convex optimization problems of the form
 
     minimize f(x) + g(x),
 
-where `f` is smooth.
+where `f` is smooth and `g` is prox-friendly.
 
 See also: [`AdaptiveProximalGradient`](@ref).
 
@@ -24,7 +24,7 @@ See also: [`AdaptiveProximalGradient`](@ref).
 - `x0`: initial point.
 - `f=Zero()`: smooth objective term.
 - `g=Zero()`: proximable objective term.
-- `Lf=nothing`: Lipschitz constant of the gradient of `f`.
+- `Lf=nothing`: Lipschitz constant estimate of the gradient of `f`.
 - `gamma=nothing`: stepsize, defaults to `1/Lf` if `Lf` is set, and `nothing` otherwise.
 
 # References
@@ -54,12 +54,16 @@ Base.@kwdef mutable struct AdaptiveProximalGradientState{R,Tx}
     gamma_old::R      # previous stepsize parameter
 end
 
+function initial_stepsize(f, g, x, grad_f_x)
+    R = real(eltype(x))
+    L = lower_bound_smoothness_constant(f, I, x, grad_f_x)
+    return (isfinite(L) && L > 0) ? 1/R(L) : one(R)
+end
+
 function Base.iterate(iter::AdaptiveProximalGradientIteration)
     x = copy(iter.x0)
     f_x, grad_f_x = value_and_gradient(iter.f, x)
-    gamma =
-        iter.gamma === nothing ?
-        1 / lower_bound_smoothness_constant(iter.f, I, x, grad_f_x) : iter.gamma
+    gamma = iter.gamma === nothing ? initial_stepsize(iter.f, iter.g, x, grad_f_x) : iter.gamma
     y = x - gamma .* grad_f_x
     z, g_z = prox(iter.g, y, gamma)
     f_z, grad_f_z = value_and_gradient(iter.f, z)
@@ -83,9 +87,9 @@ nan_to_zero(v) = ifelse(isnan(v), zero(v), v)
 
 # stepsize rule as defined in Algorithm 2.1 of [1]
 function get_stepsize(gamma, x, grad_x, gamma_old, x_old, grad_x_old)
-    C = norm(grad_x - grad_x_old)^2 / real(dot(grad_x - grad_x_old, x - x_old)) |> nan_to_zero
+    LC = norm(grad_x - grad_x_old)^2 / norm(x - x_old)^2 |> nan_to_zero
     L = real(dot(grad_x - grad_x_old, x - x_old)) / norm(x - x_old)^2 |> nan_to_zero
-    D = max(0, gamma * L * (gamma * C - 1))
+    D = gamma * max(0, gamma*LC - L)
     gamma_new = gamma * min(sqrt(1 + gamma / gamma_old), 1 / (2 * sqrt(D)))
     return gamma_new, gamma
 end
