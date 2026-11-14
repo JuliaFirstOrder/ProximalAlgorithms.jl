@@ -83,8 +83,6 @@ function Base.iterate(iter::AdaptiveProximalGradientIteration)
     return state, state
 end
 
-nan_to_zero(v) = ifelse(isnan(v), zero(v), v)
-
 # stepsize rule as defined in Algorithm 2.1 of [1]
 function get_stepsize(gamma, x, grad_x, gamma_old, x_old, grad_x_old)
     LC = norm(grad_x - grad_x_old)^2 / norm(x - x_old)^2 |> nan_to_zero

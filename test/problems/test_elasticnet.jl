@@ -24,7 +24,7 @@ using DifferentiationInterface: AutoZygote
     cost =
         ProximalAlgorithms.AutoDifferentiable(x -> (norm(A * x - b)^2) / 2, AutoZygote())
 
-    L = opnorm(A)^2
+    Lf = opnorm(A)^2
 
     x_star = T[-0.6004983388704322, 0.0, 0.0, 0.195182724252491, 0.764119601328903]
 
@@ -35,7 +35,7 @@ using DifferentiationInterface: AutoZygote
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.DavisYin(tol = R(1e-6))
-        xf_dys, it_dys = @inferred solver(x0 = x0, f = cost, g = reg1, h = reg2, Lf = L)
+        xf_dys, it_dys = @inferred solver(x0 = x0, f = cost, g = reg1, h = reg2, Lf = Lf)
         @test eltype(xf_dys) == T
         @test norm(xf_dys - x_star, Inf) <= 1e-3
         @test it_dys <= 140
@@ -46,7 +46,7 @@ using DifferentiationInterface: AutoZygote
         x0 = randn(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.DavisYin(tol = R(1e-6))
-        xf_dys, it_dys = @inferred solver(x0 = x0, f = cost, g = reg1, h = reg2, Lf = L)
+        xf_dys, it_dys = @inferred solver(x0 = x0, f = cost, g = reg1, h = reg2, Lf = Lf)
         @test eltype(xf_dys) == T
         @test norm(xf_dys - x_star, Inf) <= 1e-3
         @test x0 == x0_backup
@@ -104,5 +104,58 @@ using DifferentiationInterface: AutoZygote
         @test x0 == x0_backup
         @test y0 == y0_backup
 
+    end
+
+    adapdm_test_params = [(1.0, 1e-6, 350), (2.0, 1e-6, 300), (1.0, 1e-3, 350), (1.0, 1.0, 700)]
+
+    @testset "AdaPDM" for (t, epsil, maxit) in adapdm_test_params
+
+        # with known initial iterates
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        y0 = zeros(T, m)
+        y0_backup = copy(y0)
+
+        solver = ProximalAlgorithms.AdaptivePrimalDual(tol=R(1e-6))
+        (x_adapdm, y_adapdm), it_adapdm = solver(
+            x0=x0,
+            y0=y0,
+            f=ProximalAlgorithms.AutoDifferentiable(reg2, AutoZygote()),
+            g=reg1,
+            h=loss,
+            L=A,
+            t=t,
+            epsil=epsil,
+        )
+        @test eltype(x_adapdm) == T
+        @test eltype(y_adapdm) == T
+        @test norm(x_adapdm - x_star, Inf) <= 1e-4
+        @test it_adapdm <= maxit
+        @test x0 == x0_backup
+        @test y0 == y0_backup
+
+        # with random initial iterates
+        x0 = randn(T, n)
+        x0_backup = copy(x0)
+        y0 = randn(T, m)
+        y0_backup = copy(y0)
+
+        solver = ProximalAlgorithms.AdaptivePrimalDual(tol=R(1e-6))
+        (x_adapdm, y_adapdm), it_adapdm = solver(
+            x0=x0,
+            y0=y0,
+            f=ProximalAlgorithms.AutoDifferentiable(reg2, AutoZygote()),
+            g=reg1,
+            h=loss,
+            L=A,
+            t=t,
+            epsil=epsil,
+        )
+        @test eltype(x_adapdm) == T
+        @test eltype(y_adapdm) == T
+        @test norm(x_adapdm - x_star, Inf) <= 1e-4
+        @test it_adapdm <= maxit
+        @test x0 == x0_backup
+        @test y0 == y0_backup
     end
 end

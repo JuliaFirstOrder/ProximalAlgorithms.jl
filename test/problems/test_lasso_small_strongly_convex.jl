@@ -143,7 +143,7 @@ using ProximalAlgorithms
         @test x0 == x0_backup
     end
 
-    @testset "AdaptiveProximalGradient (with Lf)" begin
+    @testset "AdaPGM (with Lf)" begin
         solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL)
         y, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
         @test eltype(y) == T
@@ -152,7 +152,7 @@ using ProximalAlgorithms
         @test x0 == x0_backup
     end
 
-    @testset "AdaptiveProximalGradient (w/o Lf)" begin
+    @testset "AdaPGM (w/o Lf)" begin
         solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL)
         y, it = solver(x0 = x0, f = fA_autodiff, g = g)
         @test eltype(y) == T
@@ -176,6 +176,38 @@ using ProximalAlgorithms
         @test eltype(v) == T
         @test norm(v - x_star, Inf) <= TOL
         @test it < 14
+        @test x0 == x0_backup
+    end
+
+    @testset "AdaPDM" begin
+        solver = ProximalAlgorithms.AdaptivePrimalDual(tol = TOL)
+        (v, vy), it = solver(
+            x0 = x0,
+            y0 = zeros(T, length(x0)),
+            f = fA_autodiff,
+            g = g,
+        )
+        @test eltype(v) == T
+        @test norm(v - x_star, Inf) <= 5*TOL
+        @test it <= 40
+        @test x0 == x0_backup
+
+        (v, vy), it = solver(
+            x0 = x0,
+            y0 = zeros(T, length(x0)),
+            f = fA_autodiff,
+            h = g,
+        )
+        @test eltype(v) == T
+        @test norm(v - x_star, Inf) <= 5*TOL
+        @test it <= 90
+        @test x0 == x0_backup
+
+        (v, vy), it = solver(x0 = x0, y0 = zeros(T, length(x0)), h = fA_prox, g = g)
+        @test eltype(v) == T
+        @test eltype(vy) == T
+        @test norm(v - x_star, Inf) <= 5*TOL
+        @test it <= 120
         @test x0 == x0_backup
     end
 

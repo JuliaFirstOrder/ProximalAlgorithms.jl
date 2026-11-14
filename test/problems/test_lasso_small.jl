@@ -134,7 +134,7 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
     end
 
-    @testset "AdaptiveProximalGradient (with Lf)" begin
+    @testset "AdaPGM (with Lf)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL)
@@ -145,7 +145,7 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
     end
 
-    @testset "AdaptiveProximalGradient (w/o Lf)" begin
+    @testset "AdaPGM (w/o Lf)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL)
@@ -362,6 +362,45 @@ using ProximalAlgorithms:
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
         @test it_afba <= 150
+        @test x0 == x0_backup
+    end
+
+    @testset "AdaPDM" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.AdaptivePrimalDual(tol = R(1e-6))
+        (x_adapdm, y_adapdm), it_adapdm = @inferred solver(
+            x0 = x0,
+            y0 = zeros(T, n),
+            f = fA_autodiff,
+            g = g,
+        )
+        @test eltype(x_adapdm) == T
+        @test eltype(y_adapdm) == T
+        @test norm(x_adapdm - x_star, Inf) <= 1e-4
+        @test it_adapdm <= 80
+        @test x0 == x0_backup
+
+        solver = ProximalAlgorithms.AdaPDM(tol = R(1e-6))
+        (x_adapdm, y_adapdm), it_adapdm = @inferred solver(
+            x0 = x0,
+            y0 = zeros(T, n),
+            f = fA_autodiff,
+            h = g,
+        )
+        @test eltype(x_adapdm) == T
+        @test eltype(y_adapdm) == T
+        @test norm(x_adapdm - x_star, Inf) <= 1e-4
+        @test it_adapdm <= 2700
+        @test x0 == x0_backup
+
+        solver = ProximalAlgorithms.AdaPDM(tol = R(1e-6))
+        (x_adapdm, y_adapdm), it_adapdm =
+            @inferred solver(x0 = x0, y0 = zeros(T, m), h = f_prox, L = A, g = g)
+        @test eltype(x_adapdm) == T
+        @test eltype(y_adapdm) == T
+        @test norm(x_adapdm - x_star, Inf) <= 1e-4
+        @test it_adapdm <= 550
         @test x0 == x0_backup
     end
 

@@ -98,6 +98,25 @@ using LinearAlgebra
         @test x0 == x0_backup
     end
 
+    @testset "AdaPDM" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.AdaPDM(tol = TOL)
+        (x, vy), it = solver(x0 = x0, y0=zeros(T,n), f = fA_autodiff, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it < 270
+        @test x0 == x0_backup
+
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        (x, vy), it = solver(x0 = x0, y0=zeros(T,n), f = fA_autodiff, h = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it < 270
+        @test x0 == x0_backup
+    end
+
     @testset "ZeroFPR (adaptive step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)

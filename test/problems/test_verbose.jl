@@ -178,4 +178,13 @@ using LinearAlgebra
 
     end
 
+    @testset "AdaPDM" begin
+        x0 = zeros(T, n)
+        solver = ProximalAlgorithms.AdaPDM(tol=TOL, verbose=true)
+        (x, y), it = solver(x0=x0, y0=zeros(T, n), g=fA_prox, h=g)
+
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 5*TOL
+        @test it < 250
+    end
 end
