@@ -157,5 +157,33 @@ using DifferentiationInterface: AutoZygote
         @test it_adapdm <= maxit
         @test x0 == x0_backup
         @test y0 == y0_backup
+
+        # with explicit Lopnorm::Float64 to test type stability
+        (x_adapdm, y_adapdm), it_adapdm = solver(
+            x0=x0,
+            y0=y0,
+            f=ProximalAlgorithms.AutoDifferentiable(reg2, AutoZygote()),
+            g=reg1,
+            h=loss,
+            L=A,
+            t=t,
+            epsil=epsil,
+            Lopnorm=Float64(2*opnorm(A)),
+        )
+        @test eltype(x_adapdm) == T
+        @test eltype(y_adapdm) == T
+        @test norm(x_adapdm - x_star, Inf) <= 1e-4
+        @test it_adapdm <= 2*maxit
+        @test x0 == x0_backup
+        @test y0 == y0_backup
+
+        # input arguments
+        @test_throws MethodError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, epsil=0)
+        @test_throws MethodError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, t=0)
+        @test_throws MethodError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, nu=1)
+        @test_throws ArgumentError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, epsil=R(0))
+        @test_throws ArgumentError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, t=R(0))
+        @test_throws ArgumentError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, nu=R(1))
+        @test_throws ArgumentError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, Lopnorm=0)
     end
 end

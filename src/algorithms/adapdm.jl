@@ -8,7 +8,7 @@ using ProximalCore: Zero, convex_conjugate
 using LinearAlgebra
 using Printf
 
-# TODO implement AdaPDMplus
+# TODO implement AdaPDMplus (Algorithm 3.2 of [1])
 
 """
     AdaptivePrimalDualIteration(; <keyword-arguments>)
@@ -25,8 +25,8 @@ Points `x0` and `y0` are the initial primal and dual iterates, respectively.
 If unspecified, functions `f`, `g`, and `h` default to the identically zero
 function, and `L` defaults to the identity.
 
-The iterator implements Algorithms 3.1 and 3.2 of [1], the latter being a linesearch 
-variant that does not require the linear operator norm.
+The iterator implements Algorithm 3.1 of [1]. A linesearch variant that does not require
+the linear operator norm is given by Algorithm 3.2 of [1], not yet implemented.
 
 See also: [`AdaptivePrimalDual`](@ref).
 
@@ -40,22 +40,22 @@ See also: [`AdaptivePrimalDual`](@ref).
 - `Lopnorm=opnorm(L)`: operator norm of `L`.
 - `t=1`: positive algorithm parameter.
 - `epsil=1e-6`: positive algorithm parameter.
-- `nu=1.2`: algorithm parameter such that `nu > 1 + epsil`.
+- `nu=max(1.2,1+2*epsil)`: algorithm parameter such that `nu > 1 + epsil`.
 
 # References
 1. Latafat, Themelis, Stella, Patrinos, "Adaptive proximal algorithms for convex optimization under local Lipschitz continuity of the gradient", Mathematical Programming, vol. 213, pp. 433-471 (2025).
 """
-Base.@kwdef struct AdaptivePrimalDualIteration{R,Tx,Ty,Tf,Tg,Th,TL,Tnormop}
+Base.@kwdef struct AdaptivePrimalDualIteration{R<:Real,Tx,Ty,Tf,Tg,Th,TL,Tnormop}
     f::Tf = Zero()
     g::Tg = Zero()
     h::Th = Zero()
     L::TL = I
     x0::Tx
     y0::Ty
-    Lopnorm::Tnormop = LinearAlgebra.opnorm(L) # TODO not provided? then linesearch variant
-    t::R = 1.0
-    epsil::R = 1e-6
-    nu::R = max(1.2, 1+2*epsil)
+    Lopnorm::Tnormop = LinearAlgebra.opnorm(L) # TODO not provided? then linesearch variant AdaPDMplus
+    t::R = real(eltype(x0))(1)
+    epsil::R = real(eltype(x0))(1e-6)
+    nu::R = max(real(eltype(x0))(1.2), 1+2*epsil)
 end
 
 Base.IteratorSize(::Type{<:AdaptivePrimalDualIteration}) = Base.IsInfinite()
@@ -78,20 +78,17 @@ Base.@kwdef mutable struct AdaptivePrimalDualState{R,Tx,Ty}
 end
 
 function Base.iterate(iter::AdaptivePrimalDualIteration)
-    @assert isreal(iter.Lopnorm)
-    @assert isreal(iter.t)
-    @assert isreal(iter.epsil)
-    @assert isreal(iter.nu)
-    @assert iter.Lopnorm > 0
-    @assert iter.t > 0
-    @assert iter.epsil > 0
-    @assert iter.nu > 1 + iter.epsil
+    iter.Lopnorm > 0 || throw(ArgumentError("`Lopnorm` must be positive, got $iter.Lopnorm"))
+    iter.t > 0 || throw(ArgumentError("`t` must be positive, got $iter.t"))
+    iter.epsil > 0 || throw(ArgumentError("`epsil` must be positive, got $iter.epsil"))
+    iter.nu > 1 + iter.epsil || throw(ArgumentError("`nu` must satisfy nu > 1 + epsil, got nu = $iter.nu, epsil = $iter.epsil"))
 
     x = copy(iter.x0)
     y = copy(iter.y0)
     L_x = similar(y)
     mul!(L_x, iter.L, x)
-    gamma = 1/(2 * iter.nu * iter.t * iter.Lopnorm)
+    R = real(eltype(x))
+    gamma = R(1/(2 * iter.nu * iter.t * iter.Lopnorm))
 
     state = AdaptivePrimalDualState(
         x=x,
@@ -128,6 +125,7 @@ end
 
 # stepsize rule as defined in Algorithm 3.1 of [1]
 function get_stepsizes(iter::AdaptivePrimalDualIteration, gamma, x, grad_x, gamma_old, x_old, grad_x_old)
+    R = real(eltype(x))
     t = iter.t
     nu = iter.nu
     epsil = iter.epsil
@@ -146,7 +144,7 @@ function get_stepsizes(iter::AdaptivePrimalDualIteration, gamma, x, grad_x, gamm
     cc2 = 1/(2*nu*t*Lopnorm)
     cc0 = 1-4*xi*(1+epsil)^2
     cc3 = gamma*sqrt(cc0/(2*(1+epsil)*(sqrt(delta^2 + xi*cc0) + delta)))
-    gamma_new = min(cc1, cc2, cc3)
+    gamma_new = R(min(cc1, cc2, cc3))
     return gamma_new, gamma
 end
 
@@ -196,7 +194,7 @@ default_display(it, ::AdaptivePrimalDualIteration, state::AdaptivePrimalDualStat
 """
     AdaptivePrimalDual(; <keyword-arguments>)
 
-Constructs the the adaptive three-term primal-dual algorithm (AdaPDM, see [1]).
+Constructs the adaptive linesearch-free three-term primal-dual algorithm (AdaPDM, see [1]).
 
 This algorithm solves convex optimization problems of the form
 
@@ -206,12 +204,13 @@ where `f` is smooth, `g` and `h` are possibly nonsmooth, and `L` is a linear map
 
 The returned object has type `IterativeAlgorithm{AdaptivePrimalDualIteration}`,
 and can be called with the problem's arguments to trigger its solution.
+The solution is returned as an (x, y) tuple.
 
 See also: [`AdaptivePrimalDualIteration`](@ref), [`IterativeAlgorithm`](@ref).
 
 # Arguments
 - `maxit::Int=10_000`: maximum number of iteration
-- `tol::1e-5`: tolerance for the default stopping criterion
+- `tol=1e-5`: tolerance for the default stopping criterion
 - `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
 - `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
 - `verbose::Bool=false`: whether the algorithm state should be displayed
