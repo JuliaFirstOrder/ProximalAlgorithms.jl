@@ -125,15 +125,20 @@ end
 
 # stepsize rule as defined in Algorithm 3.1 of [1]
 function get_stepsizes(iter::AdaptivePrimalDualIteration, gamma, x, grad_x, gamma_old, x_old, grad_x_old)
-    R = real(eltype(x))
+    return get_stepsizes(iter, gamma, gamma_old, x-x_old, grad_x-grad_x_old)
+end
+
+function get_stepsizes(iter::AdaptivePrimalDualIteration, gamma, gamma_old, delta_x, delta_grad_x)
+    R = real(eltype(delta_x))
     t = iter.t
     nu = iter.nu
     epsil = iter.epsil
     Lopnorm = iter.Lopnorm
 
     # ℓ_k and c_k from (1.3) of [1]
-    l = real(dot(grad_x - grad_x_old, x - x_old)) / norm(x - x_old)^2 |> nan_to_zero
-    lc = norm(grad_x - grad_x_old)^2 / norm(x - x_old)^2 |> nan_to_zero
+    dx2 = norm(delta_x)^2
+    l = real(dot(delta_grad_x, delta_x)) / dx2 |> nan_to_zero
+    lc = norm(delta_grad_x)^2 / dx2 |> nan_to_zero
 
     # δ_k and ξ_k
     delta = gamma * (gamma*lc - l) |> nan_to_zero
@@ -158,7 +163,9 @@ function Base.iterate(
     mul!(state.L_x, iter.L, state.xbar)
 
     # stepsizes
-    state.gamma, state.gamma_old = get_stepsizes(iter, state.gamma, state.xbar, state.grad_f_x, state.gamma_old, state.x, state.grad_f_xold)
+    state.tmp_x .= state.xbar .- state.x # temporary
+    state.FPR_x .= state.grad_f_x .- state.grad_f_xold # temporary
+    state.gamma, state.gamma_old = get_stepsizes(iter, state.gamma, state.gamma_old, state.tmp_x, state.FPR_x)
     sigma = state.gamma * iter.t^2
 
     state.x .= state.xbar
@@ -166,7 +173,7 @@ function Base.iterate(
 
     # y-update
     rho = state.gamma / state.gamma_old
-    state.tmp_y .= (1+rho) .* state.L_x - rho .* state.L_xold
+    state.tmp_y .= (1+rho) .* state.L_x .- rho .* state.L_xold
     state.tmp_y .*= sigma
     state.tmp_y .+= state.y
     prox!(state.ybar, convex_conjugate(iter.h), state.tmp_y, sigma)
