@@ -83,7 +83,7 @@ struct CGIteration{Tx,TA,Tb,R} <: AbstractCGIteration
 	x0::Tx
 	A::TA
 	b::Tb
-	λ::R
+	λ::Union{Real,AbstractArray}
 	state::CGState{Tx,Tb,R}
 end
 
@@ -126,7 +126,7 @@ struct CGNRIteration{Tx,TA,Tb,R} <: AbstractCGIteration
 	x0::Tx
 	A::TA
 	b::Tb
-	λ::R
+	λ::Union{Real,AbstractArray}
 	state::CGState{Tx,Tb,R}
 end
 
@@ -172,7 +172,7 @@ struct PCGIteration{Tx,TA,Tb,TP,R} <: AbstractPCGIteration
 	b::Tb
 	P::TP
 	P_is_inverse::Bool
-	λ::R
+	λ::Union{Real,AbstractArray}
 	state::PCGState{Tx,Tb,R}
 end
 
@@ -220,7 +220,7 @@ struct PCGNRIteration{Tx,TA,Tb,TP,R} <: AbstractPCGIteration
 	b::Tb
 	P::TP
 	P_is_inverse::Bool
-	λ::R
+	λ::Union{Real,AbstractArray}
 	state::PCGState{Tx,Tb,R}
 end
 
@@ -230,8 +230,15 @@ function PCGNRIteration(;
 	return PCGNRIteration{Tx,TA,Tb,TP,real(eltype(x0))}(x0, A' * A, A' * b, P, P_is_inverse, λ, state)
 end
 
+# `λ` is a scalar or an array of the size of `x` (a per-element weight); zero means no regularization.
+_has_λ(λ::Number) = λ != 0
+_has_λ(λ::AbstractArray) = any(!iszero, λ)
+
+_λ_sqnorm(λ::Number, x) = λ * real(dot(vec(x), vec(x)))
+_λ_sqnorm(λ::AbstractArray, x) = real(dot(vec(x), vec(λ .* x)))
+
 function Base.iterate(iter::AbstractCGIteration)
-	if iter.λ != 0 && size(iter.A, 1) != size(iter.A, 2)
+	if _has_λ(iter.λ) && size(iter.A, 1) != size(iter.A, 2)
 		throw(ArgumentError("Operator A must be square when λ > 0"))
 	end
 
@@ -247,7 +254,7 @@ function Base.iterate(iter::AbstractCGIteration)
 	else
 		@. state.r = iter.b - state.r
 	end
-	if iter.λ > 0
+	if _has_λ(iter.λ)
 		@. state.r -= iter.λ * state.x
 	end
 
@@ -259,7 +266,7 @@ function Base.iterate(iter::AbstractCGIteration)
 end
 
 function Base.iterate(iter::AbstractPCGIteration)
-	if iter.λ != 0 && size(iter.A, 1) != size(iter.A, 2)
+	if _has_λ(iter.λ) && size(iter.A, 1) != size(iter.A, 2)
 		throw(ArgumentError("Operator A must be square when λ > 0"))
 	end
 
@@ -295,7 +302,7 @@ function Base.iterate(iter::AbstractCGIteration, state::CGState)
 	mul!(state.Ap, iter.A, state.p) # compute A*p
 
 	# Add regularization term if λ > 0
-	if iter.λ > 0
+	if _has_λ(iter.λ)
 		@. state.Ap += iter.λ * state.p # add regularization term λp
 	end
 
@@ -354,17 +361,17 @@ default_solution(::AbstractCGIteration, state::AbstractCGState) = state.x
 default_iteration_summary(it, ::AbstractCGIteration, state::AbstractCGState) =
 	("" => it, "‖b - Ax‖" => sqrt(state.r²))
 function default_iteration_summary(it, iter::CGNRIteration, state::AbstractCGState)
-	if iter.λ == 0
+	if !_has_λ(iter.λ)
 		return ("" => it, "‖Aᴴb - AᴴAx‖" => sqrt(state.r²))
 	else
-		return ("" => it, "‖Aᴴb - (AᴴA + λI)x‖" => sqrt(state.r²), "λ‖x‖²" => iter.λ * real(dot(vec(state.x), vec(state.x))))
+		return ("" => it, "‖Aᴴb - (AᴴA + λI)x‖" => sqrt(state.r²), "λ‖x‖²" => _λ_sqnorm(iter.λ, state.x))
 	end
 end
 function default_iteration_summary(it, iter::PCGNRIteration, state::AbstractCGState)
-	if iter.λ == 0
+	if !_has_λ(iter.λ)
 		return ("" => it, "‖Aᴴb - AᴴAx‖" => sqrt(state.r²))
 	else
-		return ("" => it, "‖Aᴴb - (AᴴA + λI)x‖" => sqrt(state.r²), "λ‖x‖²" => iter.λ * real(dot(vec(state.x), vec(state.x))))
+		return ("" => it, "‖Aᴴb - (AᴴA + λI)x‖" => sqrt(state.r²), "λ‖x‖²" => _λ_sqnorm(iter.λ, state.x))
 	end
 end
 

@@ -84,4 +84,21 @@ using Random
         x, it = cg()
         @test norm(A * x - b)^2 + λ * norm(x)^2 < norm(A * x0 - b)^2 + λ * norm(x0)^2
     end
+
+    @testset "Per-element λ" begin
+        # An array λ weights each unknown: CG solves (A + diag(λ)) x = b and CGNR
+        # (AᴴA + diag(λ)) x = Aᴴb.
+        n = 40
+        A = rand(n, n)
+        A = A'A + I
+        b = rand(n)
+        λ = rand(n)
+        x, _ = ProximalAlgorithms.CG(x0 = zeros(n), A = A, b = b, λ = λ, maxit = 500)()
+        @test x ≈ (A + Diagonal(λ)) \ b rtol = 1.0e-6
+        B = rand(ComplexF64, 2n, n)
+        c = rand(ComplexF64, 2n)
+        x, _ = ProximalAlgorithms.CGNR(x0 = zeros(ComplexF64, n), A = B, b = c, λ = λ, maxit = 500)()
+        @test x ≈ (B'B + Diagonal(λ)) \ (B'c) rtol = 1.0e-6
+        @test ProximalAlgorithms.CG(x0 = zeros(n), A = A, b = b, λ = zeros(n), maxit = 500)()[1] ≈ A \ b rtol = 1.0e-6
+    end
 end
