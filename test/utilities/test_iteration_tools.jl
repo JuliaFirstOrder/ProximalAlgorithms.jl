@@ -93,3 +93,23 @@ end
     end
 
 end
+
+@testset "explicit_parameters" begin
+    using ProximalAlgorithms: explicit_parameters, override_parameters
+    for Alg in (
+            ProximalAlgorithms.ForwardBackward, ProximalAlgorithms.FastForwardBackward, ProximalAlgorithms.POGM,
+            ProximalAlgorithms.ADMM, ProximalAlgorithms.DouglasRachford, ProximalAlgorithms.CG, ProximalAlgorithms.CGNR,
+            ProximalAlgorithms.AFBA, ProximalAlgorithms.PANOC, ProximalAlgorithms.ZeroFPR,
+        )
+        @test explicit_parameters(Alg()) == ()
+        @test explicit_parameters(Alg(maxit = 7)) == (:maxit,)
+        @test Alg(maxit = 7).maxit == 7
+        @test explicit_parameters(Alg(tol = 1.0e-3)) == (:tol,)
+        @test explicit_parameters(Alg(stop = (iter, state) -> true)) == (:tol,)
+        @test Set(explicit_parameters(Alg(maxit = 7, tol = 1.0e-3))) == Set((:maxit, :tol))
+        # The default value set explicitly is still explicit.
+        @test explicit_parameters(Alg(maxit = Alg().maxit)) == (:maxit,)
+        @test explicit_parameters(override_parameters(Alg(); maxit = 3)) == (:maxit,)
+        @test explicit_parameters(override_parameters(Alg(tol = 1.0e-3); verbose = true)) == (:tol,)
+    end
+end

@@ -183,9 +183,9 @@ See also: [`LiLinIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. Li, Lin, "Accelerated Proximal Gradient Methods for Nonconvex Programming", Proceedings of NIPS 2015 (2015).
 """
 LiLin(;
-    maxit = 10_000,
-    tol = 1e-8,
-    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    maxit = nothing,
+    tol = nothing,
+    stop = nothing,
     solution = default_solution,
     verbose = false,
     freq = 100,
@@ -194,8 +194,7 @@ LiLin(;
     kwargs...,
 ) = IterativeAlgorithm(
     LiLinIteration;
-    maxit,
-    stop,
+    termination_parameters(maxit, tol, stop; default_maxit = 10_000, default_tol = 1e-8)...,
     solution,
     verbose,
     freq,

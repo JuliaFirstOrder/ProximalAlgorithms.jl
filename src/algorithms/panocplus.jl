@@ -270,9 +270,9 @@ See also: [`PANOCplusIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. De Marchi, Themelis, "Proximal Gradient Algorithms under Local Lipschitz Gradient Continuity", Journal of Optimization Theory and Applications, vol. 194, no. 3, pp. 771-794 (2022).
 """
 PANOCplus(;
-    maxit = 1_000,
-    tol = 1e-8,
-    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    maxit = nothing,
+    tol = nothing,
+    stop = nothing,
     solution = default_solution,
     verbose = false,
     freq = 10,
@@ -281,8 +281,7 @@ PANOCplus(;
     kwargs...,
 ) = IterativeAlgorithm(
     PANOCplusIteration;
-    maxit,
-    stop,
+    termination_parameters(maxit, tol, stop; default_maxit = 1_000, default_tol = 1e-8)...,
     solution,
     verbose,
     freq,

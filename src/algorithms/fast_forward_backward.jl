@@ -183,9 +183,9 @@ See also: [`FastForwardBackwardIteration`](@ref), [`IterativeAlgorithm`](@ref).
 2. Beck, Teboulle, "A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems", SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183-202 (2009).
 """
 FastForwardBackward(;
-    maxit = 10_000,
-    tol = 1e-8,
-    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    maxit = nothing,
+    tol = nothing,
+    stop = nothing,
     solution = default_solution,
     verbose = false,
     freq = 100,
@@ -194,8 +194,7 @@ FastForwardBackward(;
     kwargs...,
 ) = IterativeAlgorithm(
     FastForwardBackwardIteration;
-    maxit,
-    stop,
+    termination_parameters(maxit, tol, stop; default_maxit = 10_000, default_tol = 1e-8)...,
     solution,
     verbose,
     freq,

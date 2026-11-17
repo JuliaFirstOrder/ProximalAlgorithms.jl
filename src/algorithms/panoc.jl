@@ -285,9 +285,9 @@ See also: [`PANOCIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. Stella, Themelis, Sopasakis, Patrinos, "A simple and efficient algorithm for nonlinear model predictive control", 56th IEEE Conference on Decision and Control (2017).
 """
 PANOC(;
-    maxit = 1_000,
-    tol = 1e-8,
-    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    maxit = nothing,
+    tol = nothing,
+    stop = nothing,
     solution = default_solution,
     verbose = false,
     freq = 10,
@@ -296,8 +296,7 @@ PANOC(;
     kwargs...,
 ) = IterativeAlgorithm(
     PANOCIteration;
-    maxit,
-    stop,
+    termination_parameters(maxit, tol, stop; default_maxit = 1_000, default_tol = 1e-8)...,
     solution,
     verbose,
     freq,

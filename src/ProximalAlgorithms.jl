@@ -88,6 +88,7 @@ struct IterativeAlgorithm{IteratorType,H,S,I,D,K}
     summary::I
     display::D
     kwargs::K
+    explicit::Tuple{Vararg{Symbol}}
 end
 
 """
@@ -124,9 +125,11 @@ for `stop`, `solution`, `summary`, `display`.
 * `freq::Int`: every how many iterations to display the algorithm state
 * `summary::Function`: function returning a summary of the iteration state, `summary(k::Int, iter::T, state)` should return a vector of pairs `(name, value)`
 * `display::Function`: display function, `display(k::Int, alg, iter::T, state)` should display a summary of the iteration state
+* `explicit`: the termination parameters, of `(:maxit, :tol)`, that the caller of the algorithm
+  constructor set (see [`explicit_parameters`](@ref)); `()` by default
 * `kwargs...`: keyword arguments to pass on to `T` when constructing the iterator
 """
-IterativeAlgorithm(T; maxit, stop, solution, verbose, freq, summary, display, kwargs...) =
+IterativeAlgorithm(T; maxit, stop, solution, verbose, freq, summary, display, explicit = (), kwargs...) =
     IterativeAlgorithm{T,typeof(stop),typeof(solution),typeof(summary),typeof(display),typeof(kwargs)}(
         maxit,
         stop,
@@ -136,7 +139,37 @@ IterativeAlgorithm(T; maxit, stop, solution, verbose, freq, summary, display, kw
         summary,
         display,
         kwargs,
+        Tuple(explicit),
     )
+
+"""
+    termination_parameters(maxit, tol, stop; default_maxit, default_tol)
+
+The `maxit`, `stop` and `explicit` keywords of [`IterativeAlgorithm`](@ref), for an algorithm
+constructor whose `maxit`, `tol` and `stop` keywords default to `nothing`. `nothing` stands for
+the algorithm's own default, `default_maxit` iterations and the stopping criterion
+`default_stopping_criterion(default_tol, iter, state)`, so that the algorithm records which of
+them the caller set: `:maxit` for `maxit`, `:tol` for `tol` or `stop`.
+"""
+function termination_parameters(maxit, tol, stop; default_maxit, default_tol)
+    explicit = (
+        (isnothing(maxit) ? () : (:maxit,))...,
+        (isnothing(tol) && isnothing(stop) ? () : (:tol,))...,
+    )
+    tol = something(tol, default_tol)
+    stop = something(stop, (iter, state) -> default_stopping_criterion(tol, iter, state))
+    return (; maxit = something(maxit, default_maxit), stop, explicit)
+end
+
+"""
+    explicit_parameters(alg::IterativeAlgorithm) -> Tuple{Vararg{Symbol}}
+
+The termination parameters the caller set when constructing `alg`: `:maxit` when `maxit` was
+given, `:tol` when `tol` or `stop` was. A caller that layers its own iteration limit or
+tolerance on top of an algorithm reads this to tell `FISTA(maxit = 10_000)` from `FISTA()`,
+which carry the same `maxit`. [`override_parameters`](@ref) adds the parameters it overrides.
+"""
+explicit_parameters(alg::IterativeAlgorithm) = alg.explicit
 
 """
     override_parameters(alg::IterativeAlgorithm; new_kwargs...)
@@ -158,6 +191,11 @@ function override_parameters(alg::IterativeAlgorithm; new_kwargs...)
         :display => alg.display)
     merge!(kwargs, alg.kwargs)
     merge!(kwargs, new_kwargs)
+    given = (
+        (:maxit in keys(new_kwargs) ? (:maxit,) : ())...,
+        (:tol in keys(new_kwargs) || :stop in keys(new_kwargs) ? (:tol,) : ())...,
+    )
+    kwargs[:explicit] = Tuple(union(alg.explicit, given))
     return IterativeAlgorithm(typeof(alg).parameters[1]; kwargs...)
 end
 

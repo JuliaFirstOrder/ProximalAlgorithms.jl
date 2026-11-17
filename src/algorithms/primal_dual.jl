@@ -260,9 +260,9 @@ See also: [`AFBAIteration`](@ref), [`IterativeAlgorithm`](@ref).
 2. Latafat, Patrinos, "Primal-dual proximal algorithms for structured convex optimization: a unifying framework", In Large-Scale and Distributed Optimization, Giselsson and Rantzer, Eds. Springer International Publishing, pp. 97-120 (2018).
 """
 AFBA(;
-    maxit = 10_000,
-    tol = 1e-5,
-    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    maxit = nothing,
+    tol = nothing,
+    stop = nothing,
     solution = default_solution,
     verbose = false,
     freq = 100,
@@ -271,8 +271,7 @@ AFBA(;
     kwargs...,
 ) = IterativeAlgorithm(
     AFBAIteration;
-    maxit,
-    stop,
+    termination_parameters(maxit, tol, stop; default_maxit = 10_000, default_tol = 1e-5)...,
     solution,
     verbose,
     freq,

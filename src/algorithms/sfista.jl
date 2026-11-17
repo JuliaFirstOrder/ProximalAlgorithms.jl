@@ -148,9 +148,9 @@ See also: [`SFISTAIteration`](@ref), [`IterativeAlgorithm`](@ref).
 5. Florea, M. I. (2018). Constructing Accelerated Algorithms for Large-scale Optimization-Framework, Algorithms, and Applications.
 """
 SFISTA(;
-    maxit = 10_000,
-    tol = 1e-6,
-    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    maxit = nothing,
+    tol = nothing,
+    stop = nothing,
     solution = default_solution,
     verbose = false,
     freq = 100,
@@ -159,8 +159,7 @@ SFISTA(;
     kwargs...,
 ) = IterativeAlgorithm(
     SFISTAIteration;
-    maxit,
-    stop,
+    termination_parameters(maxit, tol, stop; default_maxit = 10_000, default_tol = 1e-6)...,
     solution,
     verbose,
     freq,

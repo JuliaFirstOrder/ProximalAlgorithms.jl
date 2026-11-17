@@ -153,9 +153,9 @@ See also: [`ForwardBackwardIteration`](@ref), [`IterativeAlgorithm`](@ref).
 2. De Marchi, Themelis, "An interior proximal gradient method for nonconvex optimization," arXiv:2208.00799v2 (2024).
 """
 ForwardBackward(;
-    maxit = 10_000,
-    tol = 1e-8,
-    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    maxit = nothing,
+    tol = nothing,
+    stop = nothing,
     solution = default_solution,
     verbose = false,
     freq = 100,
@@ -164,8 +164,7 @@ ForwardBackward(;
     kwargs...,
 ) = IterativeAlgorithm(
     ForwardBackwardIteration;
-    maxit,
-    stop,
+    termination_parameters(maxit, tol, stop; default_maxit = 10_000, default_tol = 1e-8)...,
     solution,
     verbose,
     freq,

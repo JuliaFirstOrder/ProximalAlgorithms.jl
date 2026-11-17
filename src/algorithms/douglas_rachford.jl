@@ -98,9 +98,9 @@ See also: [`DouglasRachfordIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. Eckstein, Bertsekas, "On the Douglas-Rachford Splitting Method and the Proximal Point Algorithm for Maximal Monotone Operators", Mathematical Programming, vol. 55, no. 1, pp. 293-318 (1989).
 """
 DouglasRachford(;
-    maxit = 1_000,
-    tol = 1e-8,
-    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    maxit = nothing,
+    tol = nothing,
+    stop = nothing,
     solution = default_solution,
     verbose = false,
     freq = 100,
@@ -109,8 +109,7 @@ DouglasRachford(;
     kwargs...,
 ) = IterativeAlgorithm(
     DouglasRachfordIteration;
-    maxit,
-    stop,
+    termination_parameters(maxit, tol, stop; default_maxit = 1_000, default_tol = 1e-8)...,
     solution,
     verbose,
     freq,

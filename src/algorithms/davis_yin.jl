@@ -109,9 +109,9 @@ See also: [`DavisYinIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. Davis, Yin. "A Three-Operator Splitting Scheme and its Optimization Applications", Set-Valued and Variational Analysis, vol. 25, no. 4, pp. 829–858 (2017).
 """
 DavisYin(;
-    maxit = 10_000,
-    tol = 1e-8,
-    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    maxit = nothing,
+    tol = nothing,
+    stop = nothing,
     solution = default_solution,
     verbose = false,
     freq = 100,
@@ -120,8 +120,7 @@ DavisYin(;
     kwargs...,
 ) = IterativeAlgorithm(
     DavisYinIteration;
-    maxit,
-    stop,
+    termination_parameters(maxit, tol, stop; default_maxit = 10_000, default_tol = 1e-8)...,
     solution,
     verbose,
     freq,

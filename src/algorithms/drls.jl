@@ -230,9 +230,9 @@ See also: [`DRLSIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. Themelis, Stella, Patrinos, "Douglas-Rachford splitting and ADMM for nonconvex optimization: Accelerated and Newton-type linesearch algorithms", Computational Optimization and Applications, vol. 82, no. 2, pp. 395-440 (2022).
 """
 DRLS(;
-    maxit = 1_000,
-    tol = 1e-8,
-    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    maxit = nothing,
+    tol = nothing,
+    stop = nothing,
     solution = default_solution,
     verbose = false,
     freq = 10,
@@ -241,8 +241,7 @@ DRLS(;
     kwargs...,
 ) = IterativeAlgorithm(
     DRLSIteration;
-    maxit,
-    stop,
+    termination_parameters(maxit, tol, stop; default_maxit = 1_000, default_tol = 1e-8)...,
     solution,
     verbose,
     freq,

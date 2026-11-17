@@ -528,19 +528,19 @@ for their specific update rules and references.
 4. Mccann, M. T., & Wohlberg, B. (2024). Robust and Simple ADMM Penalty Parameter Selection. IEEE Open Journal of Signal Processing, 5, 402–420. https://doi.org/10.1109/OJSP.2023.3349115
 """
 function ADMM(;
-	maxit=10_000,
-	tol=1e-8,
-	stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+	maxit=nothing,
+	tol=nothing,
+	stop=nothing,
 	solution=default_solution,
 	verbose=false,
 	freq=100,
 	summary=default_iteration_summary,
 	display=default_display,
-	cg_tol=min(1e-2, tol*100),
+	cg_tol=min(1e-2, something(tol, 1e-8)*100),
 	kwargs...,
 )
 	IterativeAlgorithm(
-		ADMMIteration; maxit, stop, solution, verbose, freq, summary, display, cg_tol, kwargs...
+		ADMMIteration; termination_parameters(maxit, tol, stop; default_maxit = 10_000, default_tol = 1e-8)..., solution, verbose, freq, summary, display, cg_tol, kwargs...
 	)
 end
 

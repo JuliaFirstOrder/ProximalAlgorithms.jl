@@ -397,9 +397,9 @@ The returned object has type `IterativeAlgorithm{CGIteration}`.
    Journal of Research of the National Bureau of Standards 49.6 (1952): 409-436.
 """
 function CG(;
-	maxit=1000,
-	tol=1e-8,
-	stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+	maxit=nothing,
+	tol=nothing,
+	stop=nothing,
 	solution=default_solution,
 	verbose=false,
 	freq=100,
@@ -410,9 +410,9 @@ function CG(;
 	kwargs...,
 )
 	if isnothing(P)
-		return IterativeAlgorithm(CGIteration; maxit, stop, solution, verbose, freq, summary, display, kwargs...)
+		return IterativeAlgorithm(CGIteration; termination_parameters(maxit, tol, stop; default_maxit = 1000, default_tol = 1e-8)..., solution, verbose, freq, summary, display, kwargs...)
 	else
-		return IterativeAlgorithm(PCGIteration; maxit, stop, solution, verbose, freq, summary, display, P, P_is_inverse, kwargs...)
+		return IterativeAlgorithm(PCGIteration; termination_parameters(maxit, tol, stop; default_maxit = 1000, default_tol = 1e-8)..., solution, verbose, freq, summary, display, P, P_is_inverse, kwargs...)
 	end
 end
 
@@ -446,9 +446,9 @@ The returned object has type `IterativeAlgorithm{CGNRIteration}`.
 	SIAM Journal on Numerical Analysis, vol. 27, no. 6, pp. 1542–1568, 1990.
 """
 function CGNR(;
-	maxit=1000,
-	tol=1e-8,
-	stop=(iter, state) -> default_stopping_criterion(tol, iter, state),
+	maxit=nothing,
+	tol=nothing,
+	stop=nothing,
 	solution=default_solution,
 	verbose=false,
 	freq=100,
@@ -463,7 +463,7 @@ function CGNR(;
 	else
 		iterType = PCGNRIteration
 	end
-	IterativeAlgorithm(iterType; maxit, stop, solution, verbose, freq, summary, display, kwargs...)
+	IterativeAlgorithm(iterType; termination_parameters(maxit, tol, stop; default_maxit = 1000, default_tol = 1e-8)..., solution, verbose, freq, summary, display, kwargs...)
 end
 
 is_square(A) = size(A, 1) == size(A, 2)

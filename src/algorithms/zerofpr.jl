@@ -256,9 +256,9 @@ See also: [`ZeroFPRIteration`](@ref), [`IterativeAlgorithm`](@ref).
 1. Themelis, Stella, Patrinos, "Forward-backward envelope for the sum of two nonconvex functions: Further properties and nonmonotone line-search algorithms", SIAM Journal on Optimization, vol. 28, no. 3, pp. 2274-2303 (2018).
 """
 ZeroFPR(;
-    maxit = 1_000,
-    tol = 1e-8,
-    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    maxit = nothing,
+    tol = nothing,
+    stop = nothing,
     solution = default_solution,
     verbose = false,
     freq = 10,
@@ -267,8 +267,7 @@ ZeroFPR(;
     kwargs...,
 ) = IterativeAlgorithm(
     ZeroFPRIteration;
-    maxit,
-    stop,
+    termination_parameters(maxit, tol, stop; default_maxit = 1_000, default_tol = 1e-8)...,
     solution,
     verbose,
     freq,
