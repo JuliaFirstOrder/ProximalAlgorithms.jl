@@ -1,8 +1,14 @@
 using Test
 using LinearAlgebra
-using ProximalCore: Zero
+using ProximalCore: Zero, gradient
 using ProximalAlgorithms
-using DifferentiationInterface
+using ProximalOperators: Quadratic
+import ProximalAlgorithms: value_and_gradient
+
+function value_and_gradient(f::Quadratic, x)
+    y, fx = gradient(f, x)
+    return fx, y
+end
 
 @testset "Lipschitz constant estimation" for R in [Float32, Float64]
 

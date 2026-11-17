@@ -1,12 +1,6 @@
 # Li, Lin, "Accelerated Proximal Gradient Methods for Nonconvex Programming",
 # Proceedings of NIPS 2015 (2015).
 
-using Base.Iterators
-using ProximalAlgorithms.IterationTools
-using ProximalCore: Zero
-using LinearAlgebra
-using Printf
-
 """
     LiLinIteration(; <keyword-arguments>)
 
@@ -104,28 +98,34 @@ function Base.iterate(iter::LiLinIteration{R}, state::LiLinState{R,Tx}) where {R
 
     theta1 = (R(1) + sqrt(R(1) + 4 * state.theta^2)) / R(2)
 
-    if Fz <= state.F_average - iter.delta * norm(state.res)^2
-        case = 1
+    # The candidate `v` exists only in the branch that computes it, so each case writes its own
+    # update instead of a flag that is decided first and acted on afterwards.
+    function take_z_step!()
+        state.y .= state.z .+ ((state.theta - R(1)) / theta1) .* (state.z .- state.x)
+        state.x, state.z = state.z, state.x
+        return Fz
+    end
+
+    Fx = if Fz <= state.F_average - iter.delta * norm(state.res)^2
+        take_z_step!()
     else
         # TODO: re-use available space in state?
         # TODO: backtrack gamma at x
-        f_x, grad_f_x = value_and_gradient(iter.f, x)
+        _, grad_f_x = value_and_gradient(iter.f, state.x)
         x_forward = state.x - state.gamma .* grad_f_x
         v, g_v = prox(iter.g, x_forward, state.gamma)
         Fv = iter.f(v) + g_v
-        case = Fz <= Fv ? 1 : 2
-    end
-
-    if case == 1
-        state.y .= state.z .+ ((state.theta - R(1)) / theta1) .* (state.z .- state.x)
-        state.x, state.z = state.z, state.x
-        Fx = Fz
-    elseif case == 2
-        state.y .=
-            state.z .+ (state.theta / theta1) .* (state.z .- v) .+
-            ((state.theta - R(1)) / theta1) .* (v .- state.x)
-        state.x = v
-        Fx = Fv
+        if Fz <= Fv
+            take_z_step!()
+        else
+            # Monotone APG extrapolates from the new iterate, which in this case is `v`, not `z`
+            # (Li & Lin 2015, Algorithm 2): y = x⁺ + (θ/θ⁺)(z - x⁺) + ((θ-1)/θ⁺)(x⁺ - x).
+            state.y .=
+                v .+ (state.theta / theta1) .* (state.z .- v) .+
+                ((state.theta - R(1)) / theta1) .* (v .- state.x)
+            state.x = v
+            Fv
+        end
     end
 
     state.f_y, grad_f_y = value_and_gradient(iter.f, state.y)
@@ -148,8 +148,8 @@ end
 default_stopping_criterion(tol, ::LiLinIteration, state::LiLinState) =
     norm(state.res, Inf) / state.gamma <= tol
 default_solution(::LiLinIteration, state::LiLinState) = state.z
-default_display(it, ::LiLinIteration, state::LiLinState) =
-    @printf("%5d | %.3e | %.3e\n", it, state.gamma, norm(state.res, Inf) / state.gamma)
+default_iteration_summary(it, ::LiLinIteration, state::LiLinState) =
+    ("" => it, "γ" => state.gamma, "f(y)" => state.f_y, "g(z)" => state.g_z, "‖y - z‖/γ" => norm(state.res, Inf) / state.gamma)
 
 """
     LiLin(; <keyword-arguments>)
@@ -171,32 +171,39 @@ See also: [`LiLinIteration`](@ref), [`IterativeAlgorithm`](@ref).
 # Arguments
 - `maxit::Int=10_000`: maximum number of iteration
 - `tol::1e-8`: tolerance for the default stopping criterion
-- `stop::Function`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
-- `solution::Function`: solution mapping, `solution(::T, state)` should return the identified solution
+- `stop::Function=(iter, state) -> default_stopping_criterion(tol, iter, state)`: termination condition, `stop(::T, state)` should return `true` when to stop the iteration
+- `solution::Function=default_solution`: solution mapping, `solution(::T, state)` should return the identified solution
 - `verbose::Bool=false`: whether the algorithm state should be displayed
-- `freq::Int=100`: every how many iterations to display the algorithm state
-- `display::Function`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
+- `freq::Int=100`: every how many iterations to display the algorithm state. If `freq <= 0`, only the final iteration is displayed.
+- `summary::Function=default_iteration_summary`: function to generate iteration summaries, `summary(::Int, iter::T, state)` should return a summary of the iteration state
+- `display::Function=default_display`: display function, `display(::Int, ::T, state)` should display a summary of the iteration state
 - `kwargs...`: additional keyword arguments to pass on to the `LiLinIteration` constructor upon call
 
 # References
 1. Li, Lin, "Accelerated Proximal Gradient Methods for Nonconvex Programming", Proceedings of NIPS 2015 (2015).
 """
 LiLin(;
-    maxit = 10_000,
-    tol = 1e-8,
-    stop = (iter, state) -> default_stopping_criterion(tol, iter, state),
+    maxit = nothing,
+    tol = nothing,
+    stop = nothing,
     solution = default_solution,
     verbose = false,
     freq = 100,
+    summary = default_iteration_summary,
     display = default_display,
     kwargs...,
 ) = IterativeAlgorithm(
     LiLinIteration;
-    maxit,
-    stop,
+    termination_parameters(maxit, tol, stop; default_maxit = 10_000, default_tol = 1e-8)...,
     solution,
     verbose,
     freq,
+    summary,
     display,
     kwargs...,
+)
+
+get_assumptions(::Type{<:LiLinIteration}) = AssumptionGroup(
+    SimpleTerm(:f => (is_smooth,)),
+    SimpleTerm(:g => (is_proximable,))
 )

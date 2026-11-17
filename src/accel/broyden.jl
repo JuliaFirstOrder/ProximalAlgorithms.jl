@@ -1,7 +1,3 @@
-using LinearAlgebra
-import Base: *
-import LinearAlgebra: mul!
-
 struct BroydenOperator{R,TH}
     H::TH
     theta_bar::R
