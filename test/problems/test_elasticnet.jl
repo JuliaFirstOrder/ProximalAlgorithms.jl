@@ -106,9 +106,10 @@ using DifferentiationInterface: AutoZygote
 
     end
 
-    adapdm_test_params = [(1.0, 1e-6, 350), (2.0, 1e-6, 300), (1.0, 1e-3, 350), (1.0, 1.0, 700)]
+    adapdm_test_params = [(1.0, 1e-6, 450), (2.0, 1e-6, 450), (1.0, 1e-3, 450), (1.0, 1.0, 1000)]
 
     @testset "AdaPDM" for (t, epsil, maxit) in adapdm_test_params
+        tmptol = T in [Float32, ComplexF32] ? R(1e-5) : R(1e-7)
 
         # with known initial iterates
         x0 = zeros(T, n)
@@ -116,8 +117,8 @@ using DifferentiationInterface: AutoZygote
         y0 = zeros(T, m)
         y0_backup = copy(y0)
 
-        solver = ProximalAlgorithms.AdaptivePrimalDual(tol=R(1e-6))
-        (x_adapdm, y_adapdm), it_adapdm = solver(
+        solver = ProximalAlgorithms.AdaptivePrimalDual(tol=tmptol)
+        (x, y), it = solver(
             x0=x0,
             y0=y0,
             f=ProximalAlgorithms.AutoDifferentiable(reg2, AutoZygote()),
@@ -127,10 +128,10 @@ using DifferentiationInterface: AutoZygote
             t=t,
             epsil=epsil,
         )
-        @test eltype(x_adapdm) == T
-        @test eltype(y_adapdm) == T
-        @test norm(x_adapdm - x_star, Inf) <= 1e-4
-        @test it_adapdm <= maxit
+        @test eltype(x) == T
+        @test eltype(y) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it <= maxit
         @test x0 == x0_backup
         @test y0 == y0_backup
 
@@ -140,8 +141,8 @@ using DifferentiationInterface: AutoZygote
         y0 = randn(T, m)
         y0_backup = copy(y0)
 
-        solver = ProximalAlgorithms.AdaptivePrimalDual(tol=R(1e-6))
-        (x_adapdm, y_adapdm), it_adapdm = solver(
+        solver = ProximalAlgorithms.AdaptivePrimalDual(tol=tmptol)
+        (x, y), it = solver(
             x0=x0,
             y0=y0,
             f=ProximalAlgorithms.AutoDifferentiable(reg2, AutoZygote()),
@@ -151,15 +152,15 @@ using DifferentiationInterface: AutoZygote
             t=t,
             epsil=epsil,
         )
-        @test eltype(x_adapdm) == T
-        @test eltype(y_adapdm) == T
-        @test norm(x_adapdm - x_star, Inf) <= 1e-4
-        @test it_adapdm <= maxit
+        @test eltype(x) == T
+        @test eltype(y) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it <= maxit
         @test x0 == x0_backup
         @test y0 == y0_backup
 
         # with explicit Lopnorm::Float64 to test type stability
-        (x_adapdm, y_adapdm), it_adapdm = solver(
+        (x, y), it = solver(
             x0=x0,
             y0=y0,
             f=ProximalAlgorithms.AutoDifferentiable(reg2, AutoZygote()),
@@ -170,10 +171,10 @@ using DifferentiationInterface: AutoZygote
             epsil=epsil,
             Lopnorm=Float64(2*opnorm(A)),
         )
-        @test eltype(x_adapdm) == T
-        @test eltype(y_adapdm) == T
-        @test norm(x_adapdm - x_star, Inf) <= 1e-4
-        @test it_adapdm <= 2*maxit
+        @test eltype(x) == T
+        @test eltype(y) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it <= 2*maxit
         @test x0 == x0_backup
         @test y0 == y0_backup
 

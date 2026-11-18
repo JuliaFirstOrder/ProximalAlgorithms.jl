@@ -105,7 +105,7 @@ using LinearAlgebra
         (x, vy), it = solver(x0 = x0, y0=zeros(T,n), f = fA_autodiff, g = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= 1e-4
-        @test it < 270
+        @test it < 280
         @test x0 == x0_backup
 
         x0 = zeros(T, n)
@@ -113,7 +113,7 @@ using LinearAlgebra
         (x, vy), it = solver(x0 = x0, y0=zeros(T,n), f = fA_autodiff, h = g)
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= 1e-4
-        @test it < 270
+        @test it < 280
         @test x0 == x0_backup
     end
 

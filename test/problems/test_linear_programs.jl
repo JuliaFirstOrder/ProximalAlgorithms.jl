@@ -207,7 +207,7 @@ end
         (v, vy), it = solver(x0 = x0, y0=zeros(T, n), f = f, g = g, h = IndAffine(A, b))
 
         @test eltype(v) == T
-        @test it <= maxit
+        @test it <= 25_000
         @test norm(v - x_star) <= 1e2 * tol
         @test x0 == x0_backup
     end

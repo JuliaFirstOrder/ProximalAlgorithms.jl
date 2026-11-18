@@ -186,5 +186,12 @@ using LinearAlgebra
         @test eltype(x) == T
         @test norm(x - x_star, Inf) <= 5*TOL
         @test it < 250
+
+        solver = ProximalAlgorithms.AdaPDM(tol=TOL, verbose=true, freq=42)
+        (x, y), it = solver(x0=x0, y0=zeros(T, n), g=fA_prox, h=g)
+
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 5*TOL
+        @test it < 250
     end
 end

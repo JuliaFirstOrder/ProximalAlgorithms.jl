@@ -10,6 +10,11 @@ using Printf
 
 # TODO implement AdaPDMplus (Algorithm 3.2 of [1])
 
+# TODO Default Lopnorm = opnorm(L)
+# For a dense L this is a full SVD, which can be expensive at scale. It also fails or is 
+# impractical for sparse or matrix-free operators. Document that users can pass Lopnorm 
+# themselves, or use a power-iteration estimate as the default (with a safety factor, since 
+# an underestimate breaks the stepsize bound).
 """
     AdaptivePrimalDualIteration(; <keyword-arguments>)
 
@@ -168,6 +173,10 @@ function Base.iterate(
     state.gamma, state.gamma_old = get_stepsizes(iter, state.gamma, state.gamma_old, state.tmp_x, state.FPR_x)
     sigma = state.gamma * iter.t^2
 
+    # x-residual
+    # (tmp_x = xbar - x, FPR_x = grad_x - grad_xold at this point)
+    state.FPR_x .-= state.tmp_x ./ state.gamma_old
+
     state.x .= state.xbar
     state.y .= state.ybar
 
@@ -178,6 +187,9 @@ function Base.iterate(
     state.tmp_y .+= state.y
     prox!(state.ybar, convex_conjugate(iter.h), state.tmp_y, sigma)
 
+    # y-residual
+    state.FPR_y .= (state.tmp_y .- state.ybar) ./ sigma .- state.L_x
+
     # x-update
     mul!(state.tmp_x, iter.L', state.ybar)
     state.tmp_x .+= state.grad_f_x
@@ -185,18 +197,14 @@ function Base.iterate(
     state.tmp_x .+= state.x
     prox!(state.xbar, iter.g, state.tmp_x, state.gamma)
 
-    # residuals
-    state.FPR_x .= state.xbar .- state.x
-    state.FPR_y .= state.ybar .- state.y
-
     return state, state
 end
 
 default_stopping_criterion(tol, ::AdaptivePrimalDualIteration, state::AdaptivePrimalDualState) =
-    norm(state.FPR_x, Inf) + norm(state.FPR_y, Inf) <= tol
-default_solution(::AdaptivePrimalDualIteration, state::AdaptivePrimalDualState) = (state.xbar, state.ybar)
+    sqrt(norm(state.FPR_x)^2 + norm(state.FPR_y)^2) <= tol
+default_solution(::AdaptivePrimalDualIteration, state::AdaptivePrimalDualState) = (state.x, state.ybar)
 default_display(it, ::AdaptivePrimalDualIteration, state::AdaptivePrimalDualState) =
-    @printf("%6d | %7.4e %7.4e\n", it, norm(state.FPR_x, Inf), norm(state.FPR_y, Inf))
+    @printf("%6d | %7.4e %7.4e\n", it, norm(state.FPR_x), norm(state.FPR_y))
 
 """
     AdaptivePrimalDual(; <keyword-arguments>)

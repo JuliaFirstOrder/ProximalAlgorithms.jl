@@ -189,7 +189,7 @@ using ProximalAlgorithms
         )
         @test eltype(v) == T
         @test norm(v - x_star, Inf) <= 5*TOL
-        @test it <= 40
+        @test it <= 50
         @test x0 == x0_backup
 
         (v, vy), it = solver(
@@ -200,14 +200,14 @@ using ProximalAlgorithms
         )
         @test eltype(v) == T
         @test norm(v - x_star, Inf) <= 5*TOL
-        @test it <= 90
+        @test it <= 100
         @test x0 == x0_backup
 
         (v, vy), it = solver(x0 = x0, y0 = zeros(T, length(x0)), h = fA_prox, g = g)
         @test eltype(v) == T
         @test eltype(vy) == T
         @test norm(v - x_star, Inf) <= 5*TOL
-        @test it <= 120
+        @test it <= 140
         @test x0 == x0_backup
     end
 
