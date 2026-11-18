@@ -24,7 +24,7 @@ using DifferentiationInterface: AutoZygote
     cost =
         ProximalAlgorithms.AutoDifferentiable(x -> (norm(A * x - b)^2) / 2, AutoZygote())
 
-    L = opnorm(A)^2
+    Lf = opnorm(A)^2
 
     x_star = T[-0.6004983388704322, 0.0, 0.0, 0.195182724252491, 0.764119601328903]
 
@@ -35,7 +35,7 @@ using DifferentiationInterface: AutoZygote
         x0 = zeros(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.DavisYin(tol = R(1e-6))
-        xf_dys, it_dys = @inferred solver(x0 = x0, f = cost, g = reg1, h = reg2, Lf = L)
+        xf_dys, it_dys = @inferred solver(x0 = x0, f = cost, g = reg1, h = reg2, Lf = Lf)
         @test eltype(xf_dys) == T
         @test norm(xf_dys - x_star, Inf) <= 1e-3
         @test it_dys <= 140
@@ -46,7 +46,7 @@ using DifferentiationInterface: AutoZygote
         x0 = randn(T, n)
         x0_backup = copy(x0)
         solver = ProximalAlgorithms.DavisYin(tol = R(1e-6))
-        xf_dys, it_dys = @inferred solver(x0 = x0, f = cost, g = reg1, h = reg2, Lf = L)
+        xf_dys, it_dys = @inferred solver(x0 = x0, f = cost, g = reg1, h = reg2, Lf = Lf)
         @test eltype(xf_dys) == T
         @test norm(xf_dys - x_star, Inf) <= 1e-3
         @test x0 == x0_backup
@@ -104,5 +104,87 @@ using DifferentiationInterface: AutoZygote
         @test x0 == x0_backup
         @test y0 == y0_backup
 
+    end
+
+    adapdm_test_params = [(1.0, 1e-6, 450), (2.0, 1e-6, 450), (1.0, 1e-3, 450), (1.0, 1.0, 1000)]
+
+    @testset "AdaPDM" for (t, epsil, maxit) in adapdm_test_params
+        tmptol = T in [Float32, ComplexF32] ? R(1e-5) : R(1e-7)
+
+        # with known initial iterates
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        y0 = zeros(T, m)
+        y0_backup = copy(y0)
+
+        solver = ProximalAlgorithms.AdaptivePrimalDual(tol=tmptol)
+        (x, y), it = solver(
+            x0=x0,
+            y0=y0,
+            f=ProximalAlgorithms.AutoDifferentiable(reg2, AutoZygote()),
+            g=reg1,
+            h=loss,
+            L=A,
+            t=t,
+            epsil=epsil,
+        )
+        @test eltype(x) == T
+        @test eltype(y) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it <= maxit
+        @test x0 == x0_backup
+        @test y0 == y0_backup
+
+        # with random initial iterates
+        x0 = randn(T, n)
+        x0_backup = copy(x0)
+        y0 = randn(T, m)
+        y0_backup = copy(y0)
+
+        solver = ProximalAlgorithms.AdaptivePrimalDual(tol=tmptol)
+        (x, y), it = solver(
+            x0=x0,
+            y0=y0,
+            f=ProximalAlgorithms.AutoDifferentiable(reg2, AutoZygote()),
+            g=reg1,
+            h=loss,
+            L=A,
+            t=t,
+            epsil=epsil,
+        )
+        @test eltype(x) == T
+        @test eltype(y) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it <= maxit
+        @test x0 == x0_backup
+        @test y0 == y0_backup
+
+        # with explicit Lopnorm::Float64 to test type stability
+        (x, y), it = solver(
+            x0=x0,
+            y0=y0,
+            f=ProximalAlgorithms.AutoDifferentiable(reg2, AutoZygote()),
+            g=reg1,
+            h=loss,
+            L=A,
+            t=t,
+            epsil=epsil,
+            Lopnorm=Float64(2*opnorm(A)),
+        )
+        @test eltype(x) == T
+        @test eltype(y) == T
+        @test norm(x - x_star, Inf) <= 1e-4
+        @test it <= 2*maxit
+        @test x0 == x0_backup
+        @test y0 == y0_backup
+
+        # input arguments
+        @test_throws MethodError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, epsil=0)
+        @test_throws MethodError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, t=0)
+        @test_throws MethodError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, nu=1)
+        @test_throws ArgumentError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, epsil=R(0))
+        @test_throws ArgumentError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, t=R(0))
+        @test_throws ArgumentError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, nu=R(1))
+        @test_throws ArgumentError solver(x0=x0, y0=y0, f=cost, g=reg1, h=loss, L=A, Lopnorm=0)
     end
 end

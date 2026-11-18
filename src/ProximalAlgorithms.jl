@@ -43,6 +43,7 @@ end
 
 include("utilities/fb_tools.jl")
 include("utilities/iteration_tools.jl")
+nan_to_zero(v) = ifelse(isnan(v), zero(v), v)
 
 # acceleration utilities
 
@@ -135,5 +136,7 @@ include("algorithms/davis_yin.jl")
 include("algorithms/li_lin.jl")
 include("algorithms/sfista.jl")
 include("algorithms/panocplus.jl")
+include("algorithms/adapgm.jl")
+include("algorithms/adapdm.jl")
 
 end # module

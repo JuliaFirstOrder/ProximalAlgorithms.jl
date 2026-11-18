@@ -77,6 +77,24 @@ using LinearAlgebra
         @test it < 200
     end
 
+    @testset "AdaptiveProximalGradient" begin
+        # with Lf
+        x0 = zeros(T, n)
+        solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL, verbose=true)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 35
+
+        # w/o Lf
+        x0 = zeros(T, n)
+        solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL, verbose=true)
+        x, it = solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 40
+    end
+
     @testset "ZeroFPR" begin
 
         # ZeroFPR/Nonadaptive
@@ -160,4 +178,20 @@ using LinearAlgebra
 
     end
 
+    @testset "AdaPDM" begin
+        x0 = zeros(T, n)
+        solver = ProximalAlgorithms.AdaPDM(tol=TOL, verbose=true)
+        (x, y), it = solver(x0=x0, y0=zeros(T, n), g=fA_prox, h=g)
+
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 5*TOL
+        @test it < 250
+
+        solver = ProximalAlgorithms.AdaPDM(tol=TOL, verbose=true, freq=42)
+        (x, y), it = solver(x0=x0, y0=zeros(T, n), g=fA_prox, h=g)
+
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= 5*TOL
+        @test it < 250
+    end
 end
