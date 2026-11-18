@@ -40,7 +40,7 @@ using ProximalCore: Zero, gradient!, prox!
 using LinearAlgebra, Printf
 
 # Iterator: problem data and algorithm parameters (immutable).
-# `gamma`` defaults to `1/Lf``, and `restart` switches the restart rule on or off.
+# `gamma` defaults to `1/Lf`, and `restart` switches the restart rule on or off.
 Base.@kwdef struct RestartFISTAIteration{R,Tx,Tf,Tg}
     f::Tf = Zero()
     g::Tg = Zero()
@@ -71,7 +71,7 @@ function Base.iterate(iter::RestartFISTAIteration)
     return state, state
 end
 
-# Gradient restart test: restart when the momentum points against the direction of descent, i.e. when `⟨y − x^+, x^+ − x⟩ > 0`.
+# Gradient restart test: restart when the momentum points against the direction of descent, i.e. when ``\langle y - x^+, x^+ − x \rangle > 0``.
 restart_condition(state::RestartFISTAState) = real(dot(state.y .- state.x, state.x .- state.x_prev)) > 0
 
 # One iteration: gradient step at `y`, proximal step, then either a momentum update or a restart.
@@ -159,6 +159,7 @@ FBalg = ProximalAlgorithms.FastForwardBackward(tol=TOL, stop=(iter, state) -> be
     norm(state.res) / state.gamma <= TOL
 end)
 xFB, itersFB = FBalg(x0=zeros(300), f=LeastSquares(A, b), g=NormL1(λ), Lf=Lf)
+plot!(history, label="FastForwardBackward")
 
 # The plot shows the effect of restarting: the residual decreases more quickly when close to a solution and reaches the tolerance in fewer iterations.
 # Implementing this variant took an iterator, a state and two `iterate` methods.
