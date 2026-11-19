@@ -74,8 +74,11 @@ The package also includes the linesearch-free adaptive methods AdaPGM and AdaPDM
 # Statement of need
 
 Nonsmooth structured optimization problems arise pervasively in statistics, machine learning, signal and image processing, and optimal control, wherever a differentiable loss or data-fidelity term is combined with nonsmooth regularizers or constraints.
-Because no single algorithm applies uniformly well to every instance of this problem class, practitioners benefit from a library that offers many interchangeable methods behind a common interface, rather than a single monolithic solver.
-Moreover, methods differ in the number and structure of terms they support, in the convexity and smoothness assumptions they require, and in their empirical convergence behavior.
+Because methods differ in the term structure they support, in their convexity and smoothness assumptions, and in their empirical behavior, no single algorithm performs well across all instances.
+Practitioners therefore need a large collection of solvers that can be swapped behind a common interface, so that algorithms can be compared and the best suited one selected for the problem at hand.
+Researchers developing new methods, in turn, need a modular and extensible framework in which a novel solver can be implemented with little code, reuse shared components (gradient computation, proximal mappings, linesearch and stepsize strategies, termination handling), and be benchmarked fairly against existing methods.
+
+`ProximalAlgorithms.jl` addresses both needs: it provides a large toolbox of proximal and splitting solvers, and a modular, extensible framework for developing new ones.
 
 # Software design
 
