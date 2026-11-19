@@ -68,8 +68,8 @@ This makes splitting methods well suited to large-scale problems in which nonsmo
 - **Three-term splitting** ($f + g + h$): the Davis–Yin splitting scheme [@davis2017].
 - **Primal-dual splitting** ($f + g + h \circ L$): Chambolle–Pock [@chambolle2011], Vũ–Condat [@vu2013; @condat2013], and the asymmetric forward-backward-adjoint (AFBA) method [@latafat2017].
 
-Several of the linesearch methods implemented in the package build on the forward-backward and Douglas–Rachford envelopes, introduced by @patrinos2013 and @patrinos2014, respectively.
-More recent linesearch-free adaptive schemes for convex problems are being implemented as well, particularly AdaPGM and AdaPDM [@latafat2025].
+Several linesearch methods build on the forward-backward and Douglas–Rachford envelopes [@patrinos2013; @patrinos2014].
+The package also includes the linesearch-free adaptive methods AdaPGM and AdaPDM [@latafat2025].
 
 # Statement of need
 
