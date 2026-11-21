@@ -83,10 +83,10 @@ Base.@kwdef mutable struct AdaptivePrimalDualState{R,Tx,Ty}
 end
 
 function Base.iterate(iter::AdaptivePrimalDualIteration)
-    iter.Lopnorm > 0 || throw(ArgumentError("`Lopnorm` must be positive, got $iter.Lopnorm"))
-    iter.t > 0 || throw(ArgumentError("`t` must be positive, got $iter.t"))
-    iter.epsil > 0 || throw(ArgumentError("`epsil` must be positive, got $iter.epsil"))
-    iter.nu > 1 + iter.epsil || throw(ArgumentError("`nu` must satisfy nu > 1 + epsil, got nu = $iter.nu, epsil = $iter.epsil"))
+    iter.Lopnorm > 0 || throw(ArgumentError("`Lopnorm` must be positive, got $(iter.Lopnorm)"))
+    iter.t > 0 || throw(ArgumentError("`t` must be positive, got $(iter.t)"))
+    iter.epsil > 0 || throw(ArgumentError("`epsil` must be positive, got $(iter.epsil)"))
+    iter.nu > 1 + iter.epsil || throw(ArgumentError("`nu` must satisfy nu > 1 + epsil, got nu = $(iter.nu), epsil = $(iter.epsil)"))
 
     x = copy(iter.x0)
     y = copy(iter.y0)

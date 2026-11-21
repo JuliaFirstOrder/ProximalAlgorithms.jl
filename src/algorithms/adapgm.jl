@@ -54,7 +54,7 @@ Base.@kwdef mutable struct AdaptiveProximalGradientState{R,Tx}
     gamma_old::R      # previous stepsize parameter
 end
 
-function initial_stepsize(f, g, x, grad_f_x)
+function initial_stepsize(f, x, grad_f_x)
     R = real(eltype(x))
     L = lower_bound_smoothness_constant(f, I, x, grad_f_x)
     return (isfinite(L) && L > 0) ? 1/R(L) : one(R)
@@ -63,7 +63,7 @@ end
 function Base.iterate(iter::AdaptiveProximalGradientIteration)
     x = copy(iter.x0)
     f_x, grad_f_x = value_and_gradient(iter.f, x)
-    gamma = iter.gamma === nothing ? initial_stepsize(iter.f, iter.g, x, grad_f_x) : iter.gamma
+    gamma = iter.gamma === nothing ? initial_stepsize(iter.f, x, grad_f_x) : iter.gamma
     y = x - gamma .* grad_f_x
     z, g_z = prox(iter.g, y, gamma)
     f_z, grad_f_z = value_and_gradient(iter.f, z)
