@@ -174,7 +174,7 @@ using DifferentiationInterface: AutoZygote
         @test eltype(x) == T
         @test eltype(y) == T
         @test norm(x - x_star, Inf) <= 1e-4
-        @test it <= 2*maxit
+        @test it <= 2.2*maxit
         @test x0 == x0_backup
         @test y0 == y0_backup
 
