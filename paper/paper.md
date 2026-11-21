@@ -86,19 +86,18 @@ All solvers in `ProximalAlgorithms.jl` are implemented as Julia iterators, so th
 Gradients are obtained, by default, through automatic differentiation via [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl), which gives access to essentially every Julia automatic-differentiation backend, while proximal mappings follow the lightweight [ProximalCore.jl](https://github.com/JuliaFirstOrder/ProximalCore.jl) interface implemented by [ProximalOperators.jl](https://github.com/JuliaFirstOrder/ProximalOperators.jl) and other packages.
 Users can just as easily supply hand-written gradients or proximal mappings for custom objective terms.
 
-`ProximalAlgorithms.jl` deliberately does not provide a modeling language that automatically decomposes an arbitrary objective into terms and picks a matching algorithm, in the way that, e.g., disciplined convex programming frameworks do for problems expressible in their grammar.
-Instead, the user formulates the problem directly in terms of the objective terms ($f$, $g$, $h$, and, where relevant, a linear operator $L$) that a chosen algorithm expects, and the package supplies the iteration logic, termination handling, and (where applicable) adaptive stepsize with or without linesearch machinery.
+`ProximalAlgorithms.jl` deliberately omits a modeling layer that decomposes an objective and selects an algorithm automatically (as disciplined convex programming frameworks do). 
+Instead, the user formulates the problem directly through the objective terms ($f$, $g$, $h$, and optionally $L$) that the chosen algorithm expects, and the package supplies the iteration logic, termination handling, and (where applicable) stepsize machinery.
 This design keeps the package lightweight and composable: new algorithms can be added by implementing a small, self-contained iterator interface, and existing algorithms can be reused as subproblem solvers inside other packages.
 [StructuredOptimization.jl](https://github.com/JuliaFirstOrder/StructuredOptimization.jl) provides a high-level modeling language and a user-friendly interface to invoke `ProximalAlgorithms.jl`.
 
 # State of the field
 
-`ProximalAlgorithms.jl` has been under development since October 2017, positioning it as one of the earlier general-purpose toolboxes offering a broad, unified interface to first-order splitting methods.
-`ProximalAlgorithms.jl` gives users of the Julia optimization ecosystem direct access to a wide range of well-established, first-order splitting algorithms through a single, consistent, allocation-conscious interface, backed by `ProximalOperators.jl`s extensive library of proximable functions.
+`ProximalAlgorithms.jl` has been under development since October 2017 and gives users of the Julia optimization ecosystem direct access to a wide range of well-established, first-order splitting algorithms through a single, consistent, allocation-conscious interface, backed by `ProximalOperators.jl`'s extensive library of proximable functions.
 
 This complements, rather than duplicates, other optimization software in the Julia ecosystem.
 [RegularizedOptimization.jl](https://github.com/JuliaSmoothOptimizers/RegularizedOptimization.jl) [@gollier2026] implements model-based trust-region and quadratic-regularization methods for a similar class of nonsmooth problems.
-Such methods typically require fewer evaluations of the smooth term and its gradient than the linesearch-based methods in `ProximalAlgorithms.jl`, at the cost of more proximal-operator evaluations.
+Such methods may require fewer evaluations of the smooth term and its gradient than the linesearch-based methods in `ProximalAlgorithms.jl`, at the cost of more proximal-operator evaluations.
 [FrankWolfe.jl](https://github.com/ZIB-IOL/FrankWolfe.jl) is a toolbox for convex optimization using conditional gradient algorithms [@besancon2022], which rely on linear minimization oracles instead of proximal mappings.
 [Manopt.jl](https://manoptjl.org/) [@bergmann2022] provides algorithms for optimization problems given on a Riemannian manifold and includes some splitting-based methods.
 
@@ -139,7 +138,7 @@ x, iters = solver(x0 = ones(2), f = f, g = g)
 
 Here `f` wraps the smooth Rosenbrock term and `g` is the scaled $\ell_1$-norm, whose proximal mapping is the coordinate-wise soft-thresholding operator.
 The `ForwardBackward` algorithm is instantiated with a termination tolerance and verbosity option, and then called with the initial point and the two objective terms to produce the solution and the iteration count. 
-Instead of providing the gradient of $f$, one can wrap the smooth cost for automatic differentiation, as with `f_auto`:
+Instead of providing the gradient of $f$, one can wrap the smooth cost for automatic differentiation:
 
 ```julia
 using Zygote
@@ -175,8 +174,6 @@ We acknowledge contributions from Ellis Brown, Guillaume Dalle, William Kong, Pa
 
 # AI usage disclosure
 
-Generative AI tools were not used to develop the software.
-Claude Sonnet 5.5 was adopted to improve readability and proofread this text.
-All AI-generated suggestions were critically reviewed, modified where necessary, and fully validated by the authors, who retain complete responsibility.
+Generative AI tools were not used to develop the software; Claude Sonnet 5.5 was used to improve readability and proofread this text, and all suggestions were reviewed and validated by the authors, who retain full responsibility.
 
 # References
