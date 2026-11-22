@@ -27,6 +27,7 @@ Algorithm | Assumptions | Oracle | Implementation | References
 Proximal gradient | ``f`` locally smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ForwardBackward`](@ref) | [Lions1979](@cite), [DeMarchi2024](@cite)
 Douglas-Rachford | | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DouglasRachford`](@ref) | [Eckstein1992](@cite)
 Fast proximal gradient | ``f`` convex, smooth, ``g`` convex | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`FastForwardBackward`](@ref) | [Tseng2008](@cite), [Beck2009](@cite)
+AdaPGM | ``f`` convex, smooth, ``g`` convex | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`AdaptiveProximalGradient`](@ref) | [Latafat2025](@cite)
 PANOC | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`PANOC`](@ref) | [Stella2017](@cite)
 ZeroFPR | ``f`` smooth | ``\nabla f``, ``\operatorname{prox}_{\gamma g}`` | [`ZeroFPR`](@ref) | [Themelis2018](@cite)
 Douglas-Rachford line-search | ``f`` smooth | ``\operatorname{prox}_{\gamma f}``, ``\operatorname{prox}_{\gamma g}`` | [`DRLS`](@ref) | [Themelis2022](@cite)
@@ -39,6 +40,8 @@ ProximalAlgorithms.DouglasRachford
 ProximalAlgorithms.DouglasRachfordIteration
 ProximalAlgorithms.FastForwardBackward
 ProximalAlgorithms.FastForwardBackwardIteration
+ProximalAlgorithms.AdaptiveProximalGradient
+ProximalAlgorithms.AdaptiveProximalGradientIteration
 ProximalAlgorithms.PANOC
 ProximalAlgorithms.PANOCIteration
 ProximalAlgorithms.ZeroFPR
@@ -74,6 +77,7 @@ Algorithm | Assumptions | Oracle | Implementation | References
 Chambolle-Pock | ``f\equiv 0``, ``g, h`` convex, ``L`` linear operator | ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`ChambollePock`](@ref) | [Chambolle2011](@cite)
 Vu-Condat | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`VuCondat`](@ref) | [Vu2013](@cite), [Condat2013](@cite)
 AFBA      | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`AFBA`](@ref) | [Latafat2017](@cite)
+AdaPDM    | ``f`` convex and smooth, ``g, h`` convex, ``L`` linear operator | ``\nabla f``, ``\operatorname{prox}_{\gamma g}``, ``\operatorname{prox}_{\gamma h}``, ``L``, ``L^*`` | [`AdaptivePrimalDual`](@ref) | [Latafat2025](@cite)
 
 ```@docs
 ProximalAlgorithms.ChambollePock
@@ -82,4 +86,6 @@ ProximalAlgorithms.VuCondat
 ProximalAlgorithms.VuCondatIteration
 ProximalAlgorithms.AFBA
 ProximalAlgorithms.AFBAIteration
+ProximalAlgorithms.AdaptivePrimalDual
+ProximalAlgorithms.AdaptivePrimalDualIteration
 ```

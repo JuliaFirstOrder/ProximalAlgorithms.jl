@@ -134,6 +134,28 @@ using ProximalAlgorithms:
         @test x0 == x0_backup
     end
 
+    @testset "AdaPGM (with Lf)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL)
+        x, it = @inferred solver(x0 = x0, f = fA_autodiff, g = g, Lf = Lf)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 30
+        @test x0 == x0_backup
+    end
+
+    @testset "AdaPGM (w/o Lf)" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.AdaptiveProximalGradient(tol = TOL)
+        x, it = @inferred solver(x0 = x0, f = fA_autodiff, g = g)
+        @test eltype(x) == T
+        @test norm(x - x_star, Inf) <= TOL
+        @test it < 40
+        @test x0 == x0_backup
+    end
+
     @testset "ZeroFPR (fixed step)" begin
         x0 = zeros(T, n)
         x0_backup = copy(x0)
@@ -340,6 +362,44 @@ using ProximalAlgorithms:
         @test eltype(y_afba) == T
         @test norm(x_afba - x_star, Inf) <= 1e-4
         @test it_afba <= 150
+        @test x0 == x0_backup
+    end
+
+    @testset "AdaPDM" begin
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+        solver = ProximalAlgorithms.AdaptivePrimalDual(tol = TOL)
+        (x_adapdm, y_adapdm), it_adapdm = @inferred solver(
+            x0 = x0,
+            y0 = zeros(T, n),
+            f = fA_autodiff,
+            g = g,
+        )
+        @test eltype(x_adapdm) == T
+        @test eltype(y_adapdm) == T
+        @test norm(x_adapdm - x_star, Inf) <= 1e-4
+        @test it_adapdm <= 130
+        @test x0 == x0_backup
+
+        solver = ProximalAlgorithms.AdaPDM(tol = TOL)
+        (x_adapdm, y_adapdm), it_adapdm = @inferred solver(
+            x0 = x0,
+            y0 = zeros(T, n),
+            f = fA_autodiff,
+            h = g,
+        )
+        @test eltype(x_adapdm) == T
+        @test eltype(y_adapdm) == T
+        @test norm(x_adapdm - x_star, Inf) <= 1e-4
+        @test it_adapdm <= 3900
+        @test x0 == x0_backup
+
+        (x_adapdm, y_adapdm), it_adapdm =
+            @inferred solver(x0 = x0, y0 = zeros(T, m), h = f_prox, L = A, g = g)
+        @test eltype(x_adapdm) == T
+        @test eltype(y_adapdm) == T
+        @test norm(x_adapdm - x_star, Inf) <= 1e-4
+        @test it_adapdm <= 700
         @test x0 == x0_backup
     end
 
