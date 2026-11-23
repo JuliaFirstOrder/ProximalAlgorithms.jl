@@ -190,10 +190,26 @@ end
 
         @test it <= maxit
 
-        @assert norm(xf - x_star) <= 1e2 * tol
+        @test norm(xf - x_star) <= 1e2 * tol
 
         @test x0 == x0_backup
+    end
 
+    @testset "AdaPDM" begin
+
+        f = ProximalAlgorithms.AutoDifferentiable(x -> dot(c, x), AutoZygote())
+        g = IndNonnegative()
+
+        x0 = zeros(T, n)
+        x0_backup = copy(x0)
+
+        solver = ProximalAlgorithms.AdaPDM(tol = tol, maxit = maxit)
+        (v, vy), it = solver(x0 = x0, y0=zeros(T, n), f = f, g = g, h = IndAffine(A, b))
+
+        @test eltype(v) == T
+        @test it <= 25_000
+        @test norm(v - x_star) <= 1e2 * tol
+        @test x0 == x0_backup
     end
 
 end
