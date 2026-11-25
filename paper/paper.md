@@ -64,21 +64,18 @@ This makes splitting methods well suited to large-scale problems in which nonsmo
 
 `ProximalAlgorithms.jl` organizes its solvers according to the structure of the problem they address:
 
-- **Two-term splitting** ($f + g$): (Fast) proximal gradient / forward-backward splitting [@lions1979; @beck2009], Douglas–Rachford splitting [@eckstein1992], and the linesearch-based methods ZeroFPR [@themelis2018], PANOC [@stella2017], PANOC+ [@demarchi2022], and Douglas–Rachford line search (DRLS) [@themelis2022].
+- **Two-term splitting** ($f + g$): (Fast) proximal gradient / forward-backward splitting [@lions1979; @beck2009], Douglas–Rachford splitting [@eckstein1992], the linesearch-based methods ZeroFPR [@themelis2018], PANOC [@stella2017], PANOC+ [@demarchi2022], and Douglas–Rachford line search (DRLS) [@themelis2022], and the linesearch-free adaptive AdaPGM [@latafat2025].
 - **Three-term splitting** ($f + g + h$): the Davis–Yin splitting scheme [@davis2017].
-- **Primal-dual splitting** ($f + g + h \circ L$): Chambolle–Pock [@chambolle2011], Vũ–Condat [@vu2013; @condat2013], and the asymmetric forward-backward-adjoint (AFBA) method [@latafat2017].
-
-Several linesearch methods build on the forward-backward and Douglas–Rachford envelopes [@patrinos2013; @patrinos2014].
-The package also includes the linesearch-free adaptive methods AdaPGM and AdaPDM [@latafat2025].
+- **Primal-dual splitting** ($f + g + h \circ L$): Chambolle–Pock [@chambolle2011], Vũ–Condat [@vu2013; @condat2013], the asymmetric forward-backward-adjoint (AFBA) method [@latafat2017], and the linesearch-free adaptive AdaPDM [@latafat2025].
 
 # Statement of need
 
 Nonsmooth structured optimization problems arise pervasively in statistics, machine learning, signal and image processing, and optimal control, wherever a differentiable loss or data-fidelity term is combined with nonsmooth regularizers or constraints.
 Because methods differ in the term structure they support, in their convexity and smoothness assumptions, and in their empirical behavior, no single algorithm performs well across all instances.
-Practitioners therefore need a large collection of solvers that can be swapped behind a common interface, so that algorithms can be compared and the best suited one selected for the problem at hand.
+Practitioners therefore need a collection of solvers that can be swapped behind a common interface, so that algorithms can be compared and the best suited one selected for the problem at hand.
 Researchers developing new methods, in turn, need a modular and extensible framework in which a novel solver can be implemented with little code, reuse shared components (gradient computation, proximal mappings, linesearch and stepsize strategies, termination handling), and be benchmarked fairly against existing methods.
 
-`ProximalAlgorithms.jl` addresses both needs: it provides a large toolbox of proximal and splitting solvers, and a modular, extensible framework for developing new ones.
+`ProximalAlgorithms.jl` addresses both needs: it provides a toolbox of proximal and splitting solvers, and a flexible framework for developing new ones.
 
 # Software design
 
@@ -98,7 +95,7 @@ This design keeps the package lightweight and composable: new algorithms can be 
 This complements, rather than duplicates, other optimization software in the Julia ecosystem.
 [RegularizedOptimization.jl](https://github.com/JuliaSmoothOptimizers/RegularizedOptimization.jl) [@gollier2026] implements model-based trust-region and quadratic-regularization methods for a similar class of nonsmooth problems.
 Such methods may require fewer evaluations of the smooth term and its gradient than the linesearch-based methods in `ProximalAlgorithms.jl`, at the cost of more proximal-operator evaluations.
-[FrankWolfe.jl](https://github.com/ZIB-IOL/FrankWolfe.jl) is a toolbox for convex optimization using conditional gradient algorithms [@besancon2022], which rely on linear minimization oracles instead of proximal mappings.
+[FrankWolfe.jl](https://github.com/ZIB-IOL/FrankWolfe.jl) [@besancon2022] is a toolbox for convex optimization using conditional gradient algorithms, which rely on linear minimization oracles instead of proximal mappings.
 [Manopt.jl](https://manoptjl.org/) [@bergmann2022] provides algorithms for optimization problems given on a Riemannian manifold and includes some splitting-based methods.
 
 There are also related Python packages that implement proximal methods, often restricted to convex problems or designed for specific applications, such as 
