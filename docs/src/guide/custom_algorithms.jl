@@ -120,11 +120,12 @@ x, iters = alg(x0=zeros(300), f=LeastSquares(A, b), g=NormL1(λ), Lf=Lf)
 # Keyword arguments given at call time are forwarded to the iterator, so restart can be switched off here.
 x2, iters2 = alg(x0=zeros(300), f=LeastSquares(A, b), g=NormL1(λ), Lf=Lf, restart=false)
 
-# FastForwardBackward evaluates ``\nabla f`` through `value_and_gradient`, so we define it for `LeastSquares` here.
+# FastForwardBackward evaluates ``\nabla f`` through `value_and_gradient`, so we define it for [`LeastSquares`](https://juliafirstorder.github.io/ProximalOperators.jl/stable/functions/#ProximalOperators.LeastSquares) here.
 function ProximalAlgorithms.value_and_gradient(f::LeastSquares, x)
     tmp = f.A * x - f.b
-    fx = 0.5*norm(tmp, 2)^2
+    fx = 0.5*f.lambda*norm(tmp, 2)^2
     dfx = f.A' * tmp
+    dfx .*= f.lambda
     return fx, dfx
 end
 
